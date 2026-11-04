@@ -43,8 +43,14 @@ table of solo players and groups. Prototype stage. License: GPL-3.0.
 - API docs: `Interface/AddOns/Blizzard_APIDocumentationGenerated/LFGListInfoDocumentation.lua`
 - Sister addon with the same conventions: `C:\Users\jonat\Repositories\TerribleBuffTracker`
 
+## GSD Workflow
+- **Project plan & workflow:** managed with GSD in `.planning/` — see `.planning/PROJECT.md` (context, requirements, decisions), `.planning/STATE.md`, and per milestone `ROADMAP.md` / `REQUIREMENTS.md`. Design notes from the prototype: `.planning/research/`
+- **Milestone branching** (`git.branching_strategy = "milestone"`): each milestone runs on `milestone/{milestone}-{slug}`; on completion, push the branch, squash-merge it into `main` with one clean message, then tag `vX.Y.Z` on `main` and push the tag (see PROJECT.md → Git Workflow)
+- **Milestone close-out:** milestones are atomic, and each one ends with a **Release Review** phase (code cleanup, README screenshots, version, changelog draft, then the author's review of `README.md` and `CHANGELOG.md`). A bug introduced and fixed inside a milestone is never mentioned outside `.planning/` (changelog, README, this file, code comments, commit messages on `main`). See PROJECT.md → Milestone Close-out
+- **Changelog / README:** read by people and mostly written by the author. Agents don't add changelog entries during a milestone; the Release Review drafts the version's section once, for the author to review
+
 ## Workflow
-- **Never overwrite or rewrite `CHANGELOG.md`.** Append only, and only when asked
+- **Never overwrite or rewrite `CHANGELOG.md`.** Outside the Release Review's draft, append only, and only when asked
 - Run `stylua .` from the repo root after finishing a task
 - Never use `sed -i` or shell redirects on `.md` files or anything in `.planning/` — use the Edit tool
 - Deploy with `./scripts/install.bat`, then `/reload` in game
