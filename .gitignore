@@ -1,0 +1,13 @@
+*.zip
+
+# human notes
+.mynotes.org
+
+# BigWigs packager scratch directory, local test zips (scripts/package.bat)
+.release/
+dist/
+
+# Emacs swap files
+.\#*
+\#*
+*.~*

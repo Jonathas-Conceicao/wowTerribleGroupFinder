@@ -1,0 +1,20 @@
+## Interface: 16001
+## Title: TerribleGroupFinder
+## Notes: A group finder for WoW Forever with group and player ordering and quick messages
+## Author: Jonathas-Conceicao
+## Version: @project-version@
+## URL: https://github.com/Jonathas-Conceicao/wowTerribleGroupFinder.git
+## Category: Group Finder
+## X-License: GPL-3.0
+## SavedVariables: TerribleGroupFinderDB
+
+Core.lua
+Preview.lua
+GearScore.lua
+Messages.lua
+Listings.lua
+UI\Widgets.lua
+UI\Table.lua
+UI\MainFrame.lua
+UI\InPlace.lua
+UI\Listing.lua
