@@ -32,12 +32,13 @@ M.KEYS = {
 	{ key = "{level}", tip = "Your level." },
 	{ key = "{role}", tip = "The roles you can play, for example Tank/Healer." },
 }
--- Presets that were once the default; a saved copy of one becomes the new default (once).
+-- Earlier default presets: a saved copy of one is replaced by the current default (version 2 migration, once).
 local PREVIOUS = {
 	invite = { "Hi {name}! We're forming a group for {activity}, want to join?" },
 	request = {
 		"Hi {name}! Level {level} {class} here ({role}), could I join you for {activity}?",
-		-- The gear score era text; its old key is spelled in two pieces, as it is no key any more.
+		-- An earlier request default that carried a gear score key; the key is spelled in two
+		-- pieces so it is never read as a key.
 		"Hi {name}! Level {level} {class} here ({role}, GS {g" .. "s}), could I join you for {activity}?",
 	},
 }
@@ -375,16 +376,30 @@ function M.BuildPanel(panel)
 		example:SetWordWrap(true)
 		example:SetMaxLines(2)
 		handles.example = example
+		local function Sample()
+			for _, l in ipairs(ns.Preview.listings) do
+				if (kind == "invite") == (l.solo == true) then
+					return l
+				end
+			end
+		end
 		local function Example()
-			local sample = ns.Preview.listings[kind == "invite" and #ns.Preview.listings or 1]
+			local sample = Sample()
 			example:SetText("e.g. " .. M.Format(kind, sample, edit:GetText()))
 		end
 
 		edit:HookScript("OnTextChanged", function(e, user)
 			local text = e:GetText()
 			if text:find("[\r\n]") then
-				text = text:gsub("[\r\n]+", " ")
+				local pos = e:GetCursorPosition()
+				local prefix = text:sub(1, pos)
+				local ascii = not prefix:find("[\128-\255]")
+				local before = (prefix:gsub("[\r\n]+", " "))
+				text = (text:gsub("[\r\n]+", " "))
 				e:SetText(text)
+				if ascii then
+					e:SetCursorPosition(#before)
+				end
 				if user then
 					M.Set(kind, text)
 				end
@@ -408,8 +423,8 @@ function M.BuildPanel(panel)
 			Example()
 		end)
 
-		-- Key buttons: two rows (4 + 3), wrapping further only if a row would not fit.
-		local x, rowY = 0, -86
+		-- Key buttons: two rows (4 + 3); wraps once at most.
+		local x, rowY, wrapped = 0, -86, false
 		for i, k in ipairs(M.KEYS) do
 			local label = k.label or k.key
 			local b = W.Button(block, label, 60, 22, function()
@@ -435,8 +450,8 @@ function M.BuildPanel(panel)
 			b:SetText(label)
 			local fs = b:GetFontString()
 			b:SetWidth((fs and fs:GetStringWidth() or 0) + 24)
-			if i == 5 or (x > 0 and x + b:GetWidth() > BOX_WIDTH) then
-				x, rowY = 0, rowY - 24
+			if not wrapped and (i == 5 or (x > 0 and x + b:GetWidth() > BOX_WIDTH)) then
+				x, rowY, wrapped = 0, rowY - 24, true
 			end
 			b:SetPoint("TOPLEFT", x, rowY)
 			x = x + b:GetWidth() + 4

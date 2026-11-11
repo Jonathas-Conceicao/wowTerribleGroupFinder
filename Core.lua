@@ -10,9 +10,8 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
--- Gear score is switched off for v0.1. Setting this to true brings back the GS column, "Your
--- GS", the tooltip lines and the ready-check inspects. Messages have no gear score key.
--- See .planning/research/GEARSCORE.md.
+-- Gear score is switched off. Setting this to true brings back the GS column, "Your GS", the
+-- tooltip lines and the ready-check inspects. Messages have no gear score key.
 ns.GEAR_SCORE = false
 
 -- How a listing's voice chat is set up (the game's enum; the same values elsewhere).
