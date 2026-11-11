@@ -50,6 +50,13 @@ Milestone v0.1: Phase 1 complete (2026-11-11) — gear score switched off behind
 carries the CurseForge / Wago IDs and the `Media/Textures` icon; packaging ships only the addon
 files and the texture. In-game checks pending (Phase 1 HUMAN-UAT).
 
+Phase 2 complete (2026-11-11) — the Browse list scrolls with our own `WowScrollBoxList` +
+`MinimalScrollBar` (separate header / row templates in `UI/Templates.xml`, `W.List` fallback);
+section headers use the finder's grouping look; selection by result ID like stock; single inset,
+search box in the stone band, stock column headers above BarTop, Needs my role and status in the
+bottom bar; stock row art, fonts, colours and greyed rows; stock spinner and search-state texts;
+stock sounds. In-game checks pending (Phase 2 HUMAN-UAT).
+
 ## Requirements
 
 ### Validated
@@ -72,6 +79,8 @@ files and the texture. In-game checks pending (Phase 1 HUMAN-UAT).
 
 See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release). Validated in Phase 1
 (Gear Score Off and Release Plumbing): GS-01, GS-02, REL-01, REL-02, REL-03 (in-game checks pending).
+Validated in Phase 2 (List Foundation): UIP-02, UIP-03, UIP-04, UIP-05, UIP-06, UIP-10, UIP-12
+(in-game checks pending).
 
 ### Deferred (next-milestone candidates)
 
@@ -179,4 +188,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after Phase 1 of milestone v0.1 Initial Release*
+*Last updated: 2026-11-11 after Phase 2 of milestone v0.1 Initial Release*
