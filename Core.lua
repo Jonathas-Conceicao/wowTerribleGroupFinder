@@ -16,9 +16,13 @@ ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 -- GS preset was reset for good. See .planning/research/GEARSCORE.md.
 ns.GEAR_SCORE = false
 
---- A character name without its realm suffix.
+--- A character name without its realm suffix; nil for anything but a readable string (a
+--- secret value can't be matched or used as a key).
 function ns.Short(name)
-	return name and (name:match("^([^%-]+)") or name)
+	if type(name) ~= "string" or (issecretvalue and issecretvalue(name)) then
+		return nil
+	end
+	return name:match("^([^%-]+)") or name
 end
 
 local DEFAULTS = {

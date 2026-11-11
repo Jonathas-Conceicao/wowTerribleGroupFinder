@@ -62,6 +62,11 @@ local fresh = {} -- name -> true once learned this session
 
 local Short = ns.Short
 
+-- Unit names and GUIDs may be secret on the modern client: never compare or index with one.
+local function Secret(v)
+	return v ~= nil and issecretvalue ~= nil and issecretvalue(v)
+end
+
 -- An item link's level, its quality's factor (nil while not loaded), and two-handed.
 local function Item(link)
 	if not link then
@@ -215,8 +220,16 @@ function Next()
 			return C_Timer.After(INSPECT_GAP * 2, Next)
 		end
 		local unit = table.remove(queue, 1)
-		if UnitExists(unit) and UnitIsConnected(unit) and CanInspect(unit) then
-			local c = { unit = unit, guid = UnitGUID(unit), name = UnitName(unit) }
+		local guid, name = UnitGUID(unit), UnitName(unit)
+		if
+			guid
+			and not Secret(guid)
+			and not Secret(name)
+			and UnitExists(unit)
+			and UnitIsConnected(unit)
+			and CanInspect(unit)
+		then
+			local c = { unit = unit, guid = guid, name = name }
 			current = c
 			NotifyInspect(unit)
 			C_Timer.After(INSPECT_WAIT, function()
@@ -241,8 +254,8 @@ function GS.ScanGroup()
 	local count = raid and GetNumGroupMembers() or GetNumSubgroupMembers()
 	for i = 1, count do
 		local unit = (raid and "raid" or "party") .. i
-		local name = UnitName(unit)
-		if name and not UnitIsUnit(unit, "player") and not fresh[Short(name)] then
+		local short = Short(UnitName(unit))
+		if short and not UnitIsUnit(unit, "player") and not fresh[short] then
 			queue[#queue + 1] = unit
 		end
 	end
@@ -268,7 +281,7 @@ function GS.Init(db)
 		frame = CreateFrame("Frame")
 		frame:SetScript("OnEvent", function(_, event, arg)
 			if event == "INSPECT_READY" then
-				if current and arg == current.guid then
+				if current and not Secret(arg) and arg == current.guid then
 					Read(0)
 				end
 			elseif event == "READY_CHECK" then
