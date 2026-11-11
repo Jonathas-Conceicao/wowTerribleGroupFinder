@@ -887,6 +887,15 @@ function Instance:Refresh()
 		return
 	end
 	self.spinner:Hide()
+	-- A failed search shows only its text, as Forever's list does: no rows, no selection.
+	if self.source.failed and self.source.failed() then
+		self.list:Clear()
+		self.selectedID = nil
+		self.stateText:SetText(LFG_LIST_SEARCH_FAILED or "Search failed.")
+		self.status:SetText("")
+		self:RefreshButtons()
+		return
+	end
 	self.activeIDs = ActiveActivityIDs(self)
 	local solo, groups = self:Collect()
 	-- Drop a gone or delisted selection before the rows are filled, so no row draws it.
@@ -899,9 +908,7 @@ function Instance:Refresh()
 		end
 	end
 	local state = ""
-	if self.source.failed and self.source.failed() then
-		state = LFG_LIST_SEARCH_FAILED or "Search failed."
-	elseif found == 0 then
+	if found == 0 then
 		state = LFG_LIST_NO_RESULTS_FOUND or "No results found."
 	elseif view.search ~= "" and solo + groups == 0 then
 		state = "No listings match your search."
