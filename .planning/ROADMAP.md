@@ -101,7 +101,11 @@ Plans:
   2. The milestone version `X.Y.Z` is confirmed against the TOC's `@project-version@` and the tag `vX.Y.Z`
   3. `CHANGELOG.md` has a drafted `## vX.Y.Z` section at the top built from the milestone's net changes
   4. The author has reviewed `README.md` and the `CHANGELOG.md` draft and confirmed the phase
-**Plans**: TBD
+**Plans**: 2 plans
+
+Plans:
+- [ ] 05-01-PLAN.md — Code cleanup (dead code, planning refs, cheap review items), CLAUDE.md accuracy edits, version check (wave 1)
+- [ ] 05-02-PLAN.md — `## v0.1.0` changelog draft and 05-HUMAN-UAT.md for the author's review (wave 2)
 
 ## Progress
 
