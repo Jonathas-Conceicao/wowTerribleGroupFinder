@@ -100,16 +100,20 @@ end
 -- the three panels (Hide() only); any of them showing again hides it.
 local messages, messagesTab, refreshMessages
 
-local function ShowMessages()
-	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
-		f:Hide()
-	end
+local function UncheckStock()
 	for _, key in ipairs({ "ListingTab", "BrowsingTab", "WhoListingTab" }) do
 		local tab = LFGParentFrame[key]
 		if tab and tab.SetChecked then
 			tab:SetChecked(false)
 		end
 	end
+end
+
+local function ShowMessages()
+	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
+		f:Hide()
+	end
+	UncheckStock()
 	messages:Show()
 	if messagesTab.SetChecked then
 		messagesTab:SetChecked(true)
@@ -143,8 +147,17 @@ local function AddMessagesTab()
 	messagesTab:SetPoint("TOPLEFT", below, "BOTTOMLEFT", 0, -2)
 	if messagesTab.Icon then
 		messagesTab.Icon:SetTexture("Interface\\Icons\\INV_Letter_15")
-		messagesTab.Icon:SetSize(30, 30)
-		messagesTab.Icon:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+		if messagesTab.SetFillToInterior then
+			messagesTab:SetFillToInterior(true)
+		elseif messagesTab.UpdateIconInterior then
+			messagesTab.fillToInterior = true -- our own tab; read by its first SetChecked
+		else
+			messagesTab.Icon:SetSize(30, 30)
+			messagesTab.Icon:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+		end
+	end
+	if messagesTab.SetChecked then
+		messagesTab:SetChecked(false)
 	end
 	messagesTab.tooltipText = "Messages"
 	if messagesTab.SetCustomOnMouseUpHandler then
@@ -157,7 +170,13 @@ local function AddMessagesTab()
 		messagesTab:EnableMouse(true)
 		messagesTab:SetScript("OnMouseUp", ShowMessages)
 	end
-	W.Tooltip(messagesTab, "Messages", "Whisper presets for inviting players and asking groups.")
+	if type(LFGParentFrame.UpdateTabs) == "function" then
+		hooksecurefunc(LFGParentFrame, "UpdateTabs", function()
+			if messages and messages:IsShown() then
+				UncheckStock()
+			end
+		end)
+	end
 	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
 		f:HookScript("OnShow", HideMessages)
 	end
