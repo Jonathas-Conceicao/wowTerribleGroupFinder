@@ -1147,11 +1147,13 @@ function T.Attach(host, area, source)
 	for _, key in ipairs(CELL_KEYS) do
 		local b = W.Create("Button", header, HEADER_BUTTON)
 		b:SetHeight(19)
+		local j = justify[key] or "LEFT"
 		local text = b.Text
 		if text then
+			-- Inset 4 px from the edge the text is justified to, so it stays inside its column.
 			text:ClearAllPoints()
-			text:SetPoint(justify[key] or "LEFT", b, justify[key] or "LEFT", justify[key] == "CENTER" and 0 or 4, 0)
-			text:SetJustifyH(justify[key] or "LEFT")
+			text:SetPoint(j, b, j, (j == "CENTER" and 0) or (j == "RIGHT" and -4) or 4, 0)
+			text:SetJustifyH(j)
 		else
 			text = W.Text(b, "GameFontNormalSmall", 11, justify[key])
 			text:SetAllPoints()
@@ -1162,7 +1164,10 @@ function T.Attach(host, area, source)
 		if W.HasAtlas(SORT_ARROW) then
 			local arrow = b:CreateTexture(nil, "OVERLAY")
 			arrow:SetAtlas(SORT_ARROW, true)
-			if b.Text then
+			if b.Text and j == "RIGHT" then
+				-- Right-justified labels end at the column's edge: the arrow goes before them.
+				arrow:SetPoint("RIGHT", text, "LEFT", -3, 0)
+			elseif b.Text then
 				arrow:SetPoint("LEFT", text, "RIGHT", 3, 0)
 			else
 				arrow:SetPoint("RIGHT", b, "RIGHT", -2, 0)
