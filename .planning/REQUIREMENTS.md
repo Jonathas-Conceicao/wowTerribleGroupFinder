@@ -75,4 +75,38 @@ reviews before the milestone closes.
 
 ## Traceability
 
-(Filled by the roadmap.)
+| Requirement | Phase | Status |
+|-------------|-------|--------|
+| GS-01 | Phase 1 | Pending |
+| GS-02 | Phase 1 | Pending |
+| REL-01 | Phase 1 | Pending |
+| REL-02 | Phase 1 | Pending |
+| REL-03 | Phase 1 | Pending |
+| UIP-02 | Phase 2 | Pending |
+| UIP-03 | Phase 2 | Pending |
+| UIP-04 | Phase 2 | Pending |
+| UIP-05 | Phase 2 | Pending |
+| UIP-06 | Phase 2 | Pending |
+| UIP-10 | Phase 2 | Pending |
+| UIP-12 | Phase 2 | Pending |
+| UIP-07 | Phase 3 | Pending |
+| UIP-08 | Phase 3 | Pending |
+| UIP-09 | Phase 3 | Pending |
+| UIP-13 | Phase 3 | Pending |
+| UIP-14 | Phase 3 | Pending |
+| UIP-15 | Phase 3 | Pending |
+| UIP-16 | Phase 3 | Pending |
+| MSG-01 | Phase 4 | Pending |
+| MSG-02 | Phase 4 | Pending |
+| MSG-03 | Phase 4 | Pending |
+| MSG-04 | Phase 4 | Pending |
+| MSG-05 | Phase 4 | Pending |
+| MSG-06 | Phase 4 | Pending |
+| LOCK-01 | Phase 4 | Pending |
+| LOCK-02 | Phase 4 | Pending |
+| LOCK-03 | Phase 4 | Pending |
+| UIP-01 | Phase 4 | Pending |
+| UIP-11 | Phase 4 | Pending |
+| REL-04 | Phase 5 | Pending |
+
+**Coverage:** 31/31 v0.1 requirements mapped, none duplicated.
