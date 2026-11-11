@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 04-04-PLAN.md
-last_updated: "2026-11-11T19:19:06.116Z"
-last_activity: 2026-11-11 -- Phase --phase execution started
+status: ready_to_plan
+stopped_at: Phase 4 complete (verification human_needed; in-game checks in 04-HUMAN-UAT.md)
+last_updated: "2026-11-11T19:50:00.000Z"
+last_activity: 2026-11-11
 progress:
-  total_phases: 6
+  total_phases: 5
   completed_phases: 4
   total_plans: 15
   completed_plans: 15
-  percent: 100
+  percent: 80
 ---
 
 # Project State
@@ -21,22 +21,22 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-11)
 
 **Core value:** Finding the right players or group fast: the listing must be easy to read and order (role, level, gear score) without leaving or replacing Forever's own group finder.
-**Current focus:** Phase --phase — 4
+**Current focus:** Phase 5 — Release Review
 
 ## Current Position
 
-Phase: --phase (4) — EXECUTING
-Plan: 1 of --name
-Status: Executing Phase --phase
-Last activity: 2026-11-11 -- Phase --phase execution started
+Phase: 5
+Plan: Not started
+Status: Ready to plan
+Last activity: 2026-11-11
 
-Progress: [██████████] 100%
+Progress: [████████░░] 80%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 11
+- Total plans completed: 15
 - Average duration: -
 - Total execution time: -
 
@@ -47,6 +47,7 @@ Progress: [██████████] 100%
 | 1 | 3 | - | - |
 | 2 | 4 | ~2h 10m | ~33min |
 | 3 | 4 | - | - |
+| 4 | 4 | - | - |
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
@@ -83,6 +84,12 @@ Recent decisions affecting current work:
 - 03: hide button = icon button (`W.IconButton`, 24x22, eye atlases, x/+ fallback); `row.message` is now a plain Whisper button (unlist path removed)
 - Phase 4 plan 02: pressed look derived from LockSource/LockID on every row fill; Group Invite never pressed, starts no lock
 - Phase 4 plan 04: Messages tab fill-to-interior via SetFillToInterior, else own fillToInterior field, else 30x30 fallback; UpdateTabs post-hook unchecks stock tabs while Messages shows
+- 04: presets stored with `{addon}` (rendered `[TGF]`, normalised first and once in Format / on focus lost / on key insert); `{gs}` removed; unknown keys render literally; `{players}` = `max(GetNumGroupMembers(), 1)`
+- 04: Auto-invite only after a real auto-send and only with `ns.CanInvite()`; lockdown prefills (no send, no invite, no lock); a failed send prints a notice and starts no lock
+- 04: 1 s contact lock in Messages.lua (GetTime deadline + C_Timer); only auto-send clicks start it; others ignore clicks with unchanged look; `W.SetPressed` swaps the UIPanelButton art; delist / hide outside the lock
+- 04: one-time preset migration keyed on `messages.version` (old defaults → new, custom kept); rendered text clipped to 255 bytes on a UTF-8 boundary
+- 04: one `M.BuildPanel` for game and preview (Who-tab layers, InputScrollFrameTemplate boxes, two key-button rows)
+- 04: execution ran four single-plan waves sequentially on the main tree; REQUIREMENTS.md ticked by hand (SDK requirements command splits lines)
 
 ### Pending Todos
 
@@ -95,13 +102,13 @@ None yet.
 - Phase 2 in-game checks pending (11 items in `phases/02-list-foundation/02-HUMAN-UAT.md`); check #1 first: if our XML templates don't resolve via `C_XMLUtil.GetTemplateInfo`, the table silently uses the fallback list
 - Phase 3 in-game checks pending (11 items in `phases/03-rows-tooltip-and-own-listing/03-HUMAN-UAT.md`), incl. the author decision on playstyle colour (ROADMAP SC3 says light grey; built green as stock's row label per D-17) and remaining-slot semantics on quest/custom groups
 - Phase 3 advisory UI review (18/24, `03-UI-REVIEW.md`): tooltip blank-line rules vs UI-SPEC (no blank after leader block when there is no comment; two extra blanks in extras), raw `|cff..` colours for delisted/invited/sent, no hint on a non-leader's own row; review info items IN-01..IN-03 in `03-REVIEW.md`. Candidates for Phase 5 cleanup
-- Phase 4 inputs: `row.message` is a plain Whisper button calling `Instance:Message` → `ns.Messages.Send`; the bottom Send Message uses `ShownSelection`; the delist and hide buttons must stay outside the 1 s contact lock; hardcoded English labels remain (future localization item); Activity width at 620 (UAT Q1)
+- Phase 4 in-game checks pending (11 items in `phases/04-messages-and-contact/04-HUMAN-UAT.md`): live whisper + invite, 1 s pressed look (does `SetButtonState`/art swap hold through mouse-up), lockdown prefill, Auto-invite disabled look + tooltip, key-button widths (two rows under 410 px), 56 px boxes, Who layers, side-tab icon fill (Q4 `INV_Letter_15`), preset migration, taint log
+- Phase 4 advisory UI review (19/24, `04-UI-REVIEW.md`): key-row forced break at `i == 5` can start a third row over Auto-send (same as review IN-01); intro text near its 4-line cap; no feedback on locked clicks / lockdown prefill; disabled Auto-invite label font size; example line uses sample data in game. Candidates for Phase 5 cleanup
+- Phase 4 code review: open info items IN-01 (key-row wrap could start a third row with wide labels), IN-02 (example sample picked by position), IN-03 (newline strip moves the cursor) in `04-REVIEW.md` / `04-REVIEW.iter2.md`; hardcoded English labels remain (future localization item); Activity width at 620 (UAT Q1)
 - Phase 5 inputs: README.md still mentions gear score (lines ~7, ~12); `.pkgmeta` excludes LICENSE from the release zip (author convention, review WR-01; GPL-3.0 may want it shipped); `CF_API_KEY` is the packager's deprecated name for `CF_API_TOKEN` (kept per author); whether CurseForge / Wago accept the `forever` game type is only known after the first tagged release; open review info items IN-01..IN-09 in `phases/02-list-foundation/02-REVIEW.md`
 
 ## Session Continuity
 
-Last session: 2026-11-11T19:19:06.107Z
-Stopped at: Completed 04-04-PLAN.md
+Last session: 2026-11-11T19:50:00.000Z
+Stopped at: Phase 4 complete
 Resume file: None
-
-**Planned Phase:** 4 (Messages and Contact) — 4 plans — 2026-11-11T19:01:27.307Z
