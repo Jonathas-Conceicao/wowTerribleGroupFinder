@@ -15,7 +15,7 @@ Our own score, on the item level scale:
 - Each gear slot's item level, times a quality factor, times the slot's weight (GearScore's
   public slot weights), summed and divided by the total weight of the 17 gear slots.
 - A two-hander takes both hand weights (the off-hand slot is skipped).
-- Shirt and tabard do not count. An empty slot counts 0.
+- The shirt and tabard do not count. An empty slot counts 0.
 - Items whose quality has not loaded yet count with factor 1 and mark the result incomplete;
   incomplete results are retried and not stored.
 - Stored scores are rounded to one decimal.
