@@ -22,3 +22,4 @@ stylua.toml text eol=lf
 *.png binary
 *.blp binary
 *.tga binary
+*.ase binary
