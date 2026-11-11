@@ -53,12 +53,12 @@ local COMPOSITION = {
 local LEFT = {
 	{ key = "name", label = "Name", x = 4, w = 150 },
 	{ key = "level", label = "Lvl", x = 156, w = 30, justify = "CENTER" },
-	{ key = "role", label = "Roles", x = 190, w = 76 },
+	{ key = "role", label = "Roles", x = 190, w = 92 },
 }
 if ns.GEAR_SCORE then
-	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 268, w = 44, justify = "CENTER" }
+	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 284, w = 44, justify = "CENTER" }
 end
-local ACTIVITY_X = ns.GEAR_SCORE and 318 or 268
+local ACTIVITY_X = ns.GEAR_SCORE and 334 or 284
 local FIRST_DESC = { level = true, gs = ns.GEAR_SCORE or nil }
 -- Every cell of a row and of the header, in order.
 local CELL_KEYS = {}
@@ -67,6 +67,15 @@ for _, col in ipairs(LEFT) do
 end
 CELL_KEYS[#CELL_KEYS + 1] = "activity"
 CELL_KEYS[#CELL_KEYS + 1] = "listed"
+-- Every sortable column, in header order, with its label.
+local COLUMNS = {}
+for _, col in ipairs(LEFT) do
+	COLUMNS[#COLUMNS + 1] = col
+end
+COLUMNS[#COLUMNS + 1] = { key = "activity", label = "Activity" }
+COLUMNS[#COLUMNS + 1] = { key = "listed", label = "Listed" }
+local SORT_ARROW = "auctionhouse-ui-sortarrow"
+local HEADER_BUTTON = "ColumnDisplayButtonShortTemplate"
 
 local SECTION_LABEL = {
 	solo = LFG_LIST_CATEGORY_SOLO_PLAYERS or "Solo players",
@@ -750,16 +759,48 @@ function Instance:Refresh()
 	if not self.band:IsVisible() then
 		return
 	end
-	local solo, groups = self:Collect()
 	self.fits:SetChecked(view.fitsRoles)
-	for _, col in ipairs(LEFT) do
-		self.header[col.key]:SetText(col.label .. (view.sort == col.key and (view.desc and " v" or " ^") or ""))
+	local useArrow = W.HasAtlas(SORT_ARROW)
+	for _, col in ipairs(COLUMNS) do
+		local b = self.header[col.key]
+		local sorted = view.sort == col.key
+		b:SetText(col.label .. (sorted and not useArrow and (view.desc and " v" or " ^") or ""))
+		if b.arrow then
+			b.arrow:SetShown(sorted)
+			if sorted then
+				if view.desc then
+					b.arrow:SetTexCoord(0, 1, 0, 1)
+				else
+					b.arrow:SetTexCoord(0, 1, 1, 0)
+				end
+			end
+		end
 	end
-	self.header.activity:SetText("Activity" .. (view.sort == "activity" and (view.desc and " v" or " ^") or ""))
-	self.header.listed:SetText("Listed" .. (view.sort == "listed" and (view.desc and " v" or " ^") or ""))
-	local empty = self.source.searching and self.source.searching() and (SEARCHING or "Searching...")
-		or "Nothing listed here. Pick activities and search, or clear the search box."
-	self.list:SetItems(self.items, empty)
+	if self.source.searching and self.source.searching() then
+		self.list:Clear()
+		self.spinner:Show()
+		self.stateText:SetText("")
+		self:RefreshButtons()
+		return
+	end
+	self.spinner:Hide()
+	local solo, groups = self:Collect()
+	self.list:SetItems(self.items)
+	local found = 0
+	for _, l in ipairs(self.source.listings()) do
+		if not l.mine then
+			found = found + 1
+		end
+	end
+	local state = ""
+	if self.source.failed and self.source.failed() then
+		state = LFG_LIST_SEARCH_FAILED or "Search failed."
+	elseif found == 0 then
+		state = LFG_LIST_NO_RESULTS_FOUND or "No results found."
+	elseif view.search ~= "" and solo + groups == 0 then
+		state = "No listings match your search."
+	end
+	self.stateText:SetText(state)
 	self.status:SetText(format("%d solo players, %d groups", solo, groups))
 	if self.myGS then
 		local gs, stale = ns.GS.Of(ns.Me())
@@ -781,7 +822,7 @@ end
 
 -- The list host: Blizzard's ScrollBox (our scriptless templates keep header and row frames in
 -- separate pools) where the API and the templates exist, else W.List with the same items.
-function Instance:BuildList(back, header)
+function Instance:BuildList(back, placeStrip)
 	local headerTemplate = TemplateKnown(STOCK_HEADER) and STOCK_HEADER or HEADER_TEMPLATE
 	local function Init(frame, item)
 		if item.header then
@@ -825,14 +866,14 @@ function Instance:BuildList(back, header)
 					GameTooltip:Hide()
 				end
 			end)
-			box:SetPoint("TOPLEFT", back, "TOPLEFT", 4, -22)
-			box:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 4)
+			box:SetPoint("TOPLEFT", back, "TOPLEFT", 3, -6)
+			box:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 2)
 			bar:SetPoint("TOPLEFT", box, "TOPRIGHT", 2, -4)
 			bar:SetPoint("BOTTOMLEFT", box, "BOTTOMRIGHT", 0, 2)
 			ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, view)
-			local topLeft = CreateAnchor("TOPLEFT", back, "TOPLEFT", 4, -22)
-			local withBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 4) }
-			local withoutBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 4) }
+			local topLeft = CreateAnchor("TOPLEFT", back, "TOPLEFT", 3, -6)
+			local withBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 2) }
+			local withoutBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 2) }
 			local behavior = ScrollUtil.AddManagedScrollBarVisibilityBehavior(box, bar, withBar, withoutBar)
 			-- The column header strip keeps lining up with the rows when the bar shows.
 			local event = ManagedScrollBarVisibilityBehaviorMixin
@@ -840,15 +881,12 @@ function Instance:BuildList(back, header)
 				and ManagedScrollBarVisibilityBehaviorMixin.Event.OnVisibilityChanged
 			if behavior and behavior.RegisterCallback and event then
 				behavior:RegisterCallback(event, function(_, visible)
-					Layout(header, header, header, -(ACTIONS_W + GAP) - (visible and 16 or 0))
+					placeStrip(visible)
 				end, self)
 			end
 
-			local empty = W.Text(back, "GameFontDisable", 12, "CENTER")
-			empty:SetPoint("CENTER", back, "CENTER", 0, 0)
-			local host = { box = box, bar = bar, empty = empty }
-			function host:SetItems(items, emptyText)
-				empty:SetText(#items == 0 and (emptyText or "") or "")
+			local host = { box = box, bar = bar }
+			function host:SetItems(items)
 				local dp = CreateDataProvider()
 				dp:InsertTable(items)
 				box:SetDataProvider(dp, ScrollBoxConstants.RetainScrollPosition)
@@ -894,8 +932,8 @@ function Instance:BuildList(back, header)
 			self:FillRow(frame, item)
 		end
 	end)
-	list:SetPoint("TOPLEFT", 4, -22)
-	list:SetPoint("BOTTOMRIGHT", -6, 4)
+	list:SetPoint("TOPLEFT", back, "TOPLEFT", 3, -6)
+	list:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 2)
 	return list
 end
 
@@ -911,25 +949,32 @@ function T.Attach(host, area, source)
 		headers = { solo = { header = true, key = "solo" }, groups = { header = true, key = "groups" } },
 	}, Instance)
 
+	-- A one pixel helper at the top of the list area: it only tells us when Browse shows, and
+	-- never takes the mouse (Blizzard's dropdowns sit above it).
 	local band = CreateFrame("Frame", nil, host)
-	band:SetPoint("TOPLEFT", area, "TOPLEFT", 6, -4)
-	band:SetPoint("TOPRIGHT", area, "TOPRIGHT", -6, -4)
-	band:SetHeight(24)
-	band:EnableMouse(true)
+	band:SetPoint("TOPLEFT", area, "TOPLEFT", 0, 0)
+	band:SetPoint("TOPRIGHT", area, "TOPRIGHT", 0, 0)
+	band:SetHeight(1)
 	self.band = band
 
-	self.fits = W.Check(band, "Needs my role", function(b)
+	-- Needs my role sits in the bottom bar, just right of Send Message (placed below).
+	self.fits = W.Check(host, "Needs my role", function(b)
 		view.fitsRoles = b:GetChecked() and true or false
 		T.RefreshAll()
 	end)
-	self.fits:SetPoint("LEFT", 0, 0)
 	W.Tooltip(
 		self.fits,
 		"Needs my role",
 		"Moves to the end (greyed) groups with no open slot for a role you play, and solo players who can't fill a slot your group has open."
 	)
-	local search = W.EditBox(band, 150, "SearchBoxTemplate")
-	search:SetPoint("LEFT", self.fits.Label, "RIGHT", 18, 0)
+	-- The search box sits in the stone band, right of the refresh button and before the
+	-- options gear; without the button it hangs at the host's top right, leaving room for it.
+	local search = W.EditBox(host, 150, "SearchBoxTemplate")
+	if source.refreshAnchor then
+		search:SetPoint("LEFT", source.refreshAnchor, "RIGHT", 10, 0)
+	else
+		search:SetPoint("TOPRIGHT", host, "TOPRIGHT", -48, -38)
+	end
 	if search.Instructions then
 		search.Instructions:SetText("Name, activity or note")
 	end
@@ -937,10 +982,10 @@ function T.Attach(host, area, source)
 		view.search = lower(b:GetText() or "")
 		T.RefreshAll()
 	end)
+	self.search = search
 	if ns.GEAR_SCORE then
-		self.myGS = W.Text(band, "GameFontNormal", 12, "RIGHT")
-		self.myGS:SetPoint("RIGHT", -4, 0)
-		local gsHover = CreateFrame("Frame", nil, band)
+		self.myGS = W.Text(host, "GameFontNormal", 12, "RIGHT")
+		local gsHover = CreateFrame("Frame", nil, host)
 		gsHover:SetAllPoints(self.myGS)
 		gsHover:EnableMouse(true)
 		W.Tooltip(
@@ -950,30 +995,50 @@ function T.Attach(host, area, source)
 		)
 	end
 
-	-- A dark backing so nothing of the frame's own list shows or takes the mouse through.
+	-- A backing for the list so nothing of the frame's own list takes the mouse through; it
+	-- draws nothing (the frame's art is behind it) and starts just below BarTop (art top -20).
 	local back = CreateFrame("Frame", nil, host)
-	back:SetPoint("TOPLEFT", band, "BOTTOMLEFT", -2, -2)
-	back:SetPoint("BOTTOMRIGHT", area, "BOTTOMRIGHT", -4, 58)
+	back:SetPoint("TOPLEFT", area, "TOPLEFT", 0, -20)
+	back:SetPoint("BOTTOMRIGHT", area, "BOTTOMRIGHT", 0, 60)
 	back:EnableMouse(true)
-	local inset = W.Inset(back)
-	inset:SetAllPoints()
 
-	local header = CreateFrame("Frame", nil, back)
-	header:SetPoint("TOPLEFT", 4, -2)
-	header:SetPoint("TOPRIGHT", -6, -2)
-	header:SetHeight(18)
-	local headLine = W.Line(header)
-	headLine:SetPoint("BOTTOMLEFT", 0, 0)
-	headLine:SetPoint("BOTTOMRIGHT", 0, 0)
+	-- The column header strip: the 20 px from the art top down to BarTop. Its right edge
+	-- follows the ScrollBox's (-22 with the scroll bar, -6 without).
+	local header = CreateFrame("Frame", nil, host)
+	header:SetHeight(20)
+	local function PlaceStrip(barShown)
+		header:ClearAllPoints()
+		header:SetPoint("TOPLEFT", area, "TOPLEFT", 3, 0)
+		header:SetPoint("TOPRIGHT", area, "TOPRIGHT", barShown and -22 or -6, 0)
+	end
+	PlaceStrip(false)
 	local justify = { level = "CENTER", gs = "CENTER", listed = "RIGHT" }
 	for _, key in ipairs(CELL_KEYS) do
-		local b = CreateFrame("Button", nil, header)
-		b:SetHeight(18)
-		local text = W.Text(b, "GameFontNormalSmall", 11, justify[key])
-		text:SetAllPoints()
-		local hl = b:CreateTexture(nil, "HIGHLIGHT")
-		hl:SetAllPoints()
-		hl:SetColorTexture(1, 1, 1, 0.08)
+		local b = W.Create("Button", header, HEADER_BUTTON)
+		b:SetHeight(19)
+		local text = b.Text
+		if text then
+			text:ClearAllPoints()
+			text:SetPoint(justify[key] or "LEFT", b, justify[key] or "LEFT", justify[key] == "CENTER" and 0 or 4, 0)
+			text:SetJustifyH(justify[key] or "LEFT")
+		else
+			text = W.Text(b, "GameFontNormalSmall", 11, justify[key])
+			text:SetAllPoints()
+			local hl = b:CreateTexture(nil, "HIGHLIGHT")
+			hl:SetAllPoints()
+			hl:SetColorTexture(1, 1, 1, 0.08)
+		end
+		if W.HasAtlas(SORT_ARROW) then
+			local arrow = b:CreateTexture(nil, "OVERLAY")
+			arrow:SetAtlas(SORT_ARROW, true)
+			if b.Text then
+				arrow:SetPoint("LEFT", text, "RIGHT", 3, 0)
+			else
+				arrow:SetPoint("RIGHT", b, "RIGHT", -2, 0)
+			end
+			arrow:Hide()
+			b.arrow = arrow
+		end
 		b:SetScript("OnClick", function()
 			if view.sort == key then
 				view.desc = not view.desc
@@ -1005,7 +1070,7 @@ function T.Attach(host, area, source)
 	end
 	self.header = header
 
-	self.list = self:BuildList(back, header)
+	self.list = self:BuildList(back, PlaceStrip)
 
 	-- Forever's own bottom buttons sit at these spots.
 	self.send = W.Button(host, SEND_MESSAGE or "Send Message", 111, 28, function()
@@ -1016,8 +1081,27 @@ function T.Attach(host, area, source)
 		self:Invite(FindByID(self, self.selectedID))
 	end)
 	self.invite:SetPoint("BOTTOMRIGHT", -21, 16)
-	self.status = W.Text(host, "GameFontHighlightSmall", 11, "CENTER")
-	self.status:SetPoint("BOTTOM", 0, 26)
+	self.fits:SetPoint("LEFT", self.send, "RIGHT", 8, 0)
+	self.status = W.Text(host, "GameFontHighlightSmall", 11, "RIGHT")
+	self.status:SetPoint("RIGHT", self.invite, "LEFT", -8, 0)
+	self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
+	if self.myGS then
+		self.myGS:SetPoint("RIGHT", self.status, "LEFT", -12, 0)
+	end
+
+	-- What the list can't show: the spinner while searching, and the no-results, failed and
+	-- nothing-matches texts (stock puts them at the art's top, 240 wide).
+	self.stateText = W.Text(host, "GameFontDisable", 12, "CENTER")
+	self.stateText:SetWidth(240)
+	self.stateText:SetWordWrap(true)
+	self.stateText:SetPoint("TOP", area, "TOP", 0, -40)
+	self.spinner = W.Create("Frame", host, "LoadingSpinnerTemplate")
+	self.spinner:SetSize(48, 48)
+	self.spinner:SetPoint("CENTER", area, "CENTER", 0, 0)
+	self.spinner:Hide()
+	self.spinnerLabel = self.spinner:CreateFontString(nil, "ARTWORK", "GameFontNormalLarge")
+	self.spinnerLabel:SetPoint("BOTTOM", self.spinner, "TOP", 0, 6)
+	self.spinnerLabel:SetText(SEARCHING or "Searching")
 
 	band:SetScript("OnShow", function()
 		self:Refresh()
