@@ -440,6 +440,15 @@ local function Gray(text)
 	return format("|cff%02x%02x%02x%s|r", floor(c.r * 255 + 0.5), floor(c.g * 255 + 0.5), floor(c.b * 255 + 0.5), text)
 end
 
+-- Only you while solo, or your group's leader, can unlist (Forever's own rule for its delist
+-- button); a group member's listing contains them too.
+local function CanUnlist(inst)
+	if inst.source.preview() then
+		return true
+	end
+	return not IsInGroup() or UnitIsGroupLeader("player") == true
+end
+
 -- The row's message button: whisper the player or the group's leader (Messages.lua), or
 -- unlist your own listing.
 function Instance:Message(l)
@@ -448,6 +457,9 @@ function Instance:Message(l)
 	end
 	local preview = self.source.preview()
 	if l.mine then
+		if not CanUnlist(self) then
+			return
+		end
 		if preview then
 			ns.state.myListing = nil
 			ns.Print("preview: unlisted (C_LFGList.RemoveListing).")
@@ -824,7 +836,11 @@ function Instance:FillRow(row, item)
 	row.hide:SetShown(not l.mine)
 	row.hide:SetText(hidden and "+" or "x")
 	row.message:SetText(l.mine and "Unlist" or "Whisper")
-	row.message:SetEnabled(l.mine or not l.delisted)
+	if l.mine then
+		row.message:SetEnabled(CanUnlist(self))
+	else
+		row.message:SetEnabled(not l.delisted)
+	end
 end
 
 local sections = { solo = {}, groups = {} }
