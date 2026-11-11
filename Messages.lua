@@ -97,7 +97,8 @@ end
 function M.Send(l, preview)
 	local kind = KindFor(l)
 	local text = M.Format(kind, l)
-	local target = l.leader.fullName or l.leader.name
+	-- Forever lists only your own mega-realm: whisper by plain character name.
+	local target = l.leader.name
 	local _, auto = M.Get(kind)
 	if auto then
 		ns.state.messaged[l.id] = true
