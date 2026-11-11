@@ -8,6 +8,10 @@
 --  best known; only while ns.GEAR_SCORE is on), Activity, Listed. Hidden players (X) and, with Needs my role, listings with
 --  no slot for you are greyed and moved to the end of their section, never removed.
 --
+--  The list is Blizzard's own ScrollBox (WowScrollBoxList + MinimalScrollBar) with separate
+--  header and row frames; where the ScrollBox API or our templates (UI/Templates.xml) are
+--  missing, W.List draws the same items.
+--
 --  Columns can't overlap: Name, Lvl, Roles (and GS, while ns.GEAR_SCORE is on) have fixed widths from the left, Listed
 --  and the row's buttons are anchored to the right, and Activity takes what is left
 --  between them; every cell is width-bound, so long text is cut, not drawn over a neighbour.
@@ -17,12 +21,16 @@ local W = ns.W
 local wipe = W.wipe
 
 local lower, find, format = string.lower, string.find, string.format
-local max, min = math.max, math.min
+local max, min, floor = math.max, math.min, math.floor
 
 local T = { instances = {} }
 ns.Table = T
 
-local ROW_HEIGHT = 32
+local ROW_TEMPLATE = "TerribleGroupFinderListRowTemplate"
+local HEADER_TEMPLATE = "TerribleGroupFinderListHeaderTemplate"
+local STOCK_HEADER = "LFGBrowseSearchEntryGroupingTemplate"
+local HEADER_H, ROW_H = 36, 40 -- the finder's section header and result row heights
+local CELL_H = 32 -- a cell's height, centred in the row
 local SLOTS = 5
 local RELIST_SLACK = 30 -- seconds: a listing read again later keeps its time within this
 local GAP = 6
@@ -389,6 +397,19 @@ end
 local Instance = {}
 Instance.__index = Instance
 
+local function TemplateKnown(name)
+	return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
+end
+
+local function Gray(text)
+	local c = GRAY_FONT_COLOR
+	if c and c.WrapTextInColorCode then
+		return c:WrapTextInColorCode(text)
+	end
+	c = c or { r = 0.5, g = 0.5, b = 0.5 }
+	return format("|cff%02x%02x%02x%s|r", floor(c.r * 255 + 0.5), floor(c.g * 255 + 0.5), floor(c.b * 255 + 0.5), text)
+end
+
 -- The row's message button: whisper the player or the group's leader (Messages.lua), or
 -- unlist your own listing.
 function Instance:Message(l)
@@ -483,9 +504,9 @@ local function Layout(owner, cells, rightAnchor, rightOffset)
 	cells.activity:SetPoint("RIGHT", cells.listed, "LEFT", -GAP, 0)
 end
 
-function Instance:MakeRow(parent)
+-- Builds a result row once, on a frame the list gave us.
+function Instance:BuildRow(row)
 	local inst = self
-	local row = CreateFrame("Button", nil, parent)
 	W.RowHighlight(row)
 	row.selected = row:CreateTexture(nil, "BACKGROUND")
 	row.selected:SetAllPoints()
@@ -496,25 +517,11 @@ function Instance:MakeRow(parent)
 	row.line:SetPoint("BOTTOMLEFT", 0, 0)
 	row.line:SetPoint("BOTTOMRIGHT", 0, 0)
 
-	-- The section divider look (shown on header items).
-	row.divider = row:CreateTexture(nil, "BACKGROUND")
-	row.divider:SetPoint("TOPLEFT", 0, -6)
-	row.divider:SetPoint("BOTTOMRIGHT", 0, 0)
-	if not W.Atlas(row.divider, "common-button-list-collapseExpand") then
-		row.divider:SetColorTexture(0.2, 0.17, 0.12, 0.9)
-	end
-	row.dividerLabel = W.Text(row, "GameFontNormal", 12)
-	row.dividerLabel:SetPoint("LEFT", 12, -3)
-	row.dividerLabel:SetWidth(300)
-	row.fold = W.Text(row, "GameFontNormal", 14, "RIGHT")
-	row.fold:SetPoint("RIGHT", -12, -3)
-	row.fold:SetWidth(30)
-
 	-- Each cell holds its texts; Layout anchors the cells.
 	local cells = {}
 	for _, key in ipairs(CELL_KEYS) do
 		local cell = CreateFrame("Frame", nil, row)
-		cell:SetHeight(ROW_HEIGHT)
+		cell:SetHeight(CELL_H)
 		cells[key] = cell
 	end
 	row.cells = cells
@@ -560,10 +567,6 @@ function Instance:MakeRow(parent)
 	Layout(row, cells, row.message, -GAP)
 
 	row:SetScript("OnClick", function(r)
-		if r.item and r.item.header then
-			view.collapsed[r.item.key] = not view.collapsed[r.item.key] or nil
-			return T.RefreshAll()
-		end
 		inst.selected = r.listing
 		inst:Refresh()
 	end)
@@ -577,41 +580,63 @@ function Instance:MakeRow(parent)
 		GameTooltip:Hide()
 	end)
 	W.Tooltip(row.hide, "Hide", "Greys this player and moves them to the end until they make a new listing.")
-	return row
 end
 
-function Instance:FillHeader(row, item)
-	row.listing = nil
-	for _, cell in pairs(row.cells) do
-		cell:Hide()
+-- Builds a section header once. Forever's grouping template brings its own parts; otherwise
+-- the same ones are built here. Hovering brightens only the header's own atlas: no row
+-- highlight, no selected texture.
+local function HeaderIcon(frame, atlas, text)
+	if W.HasAtlas(atlas) then
+		local tex = frame:CreateTexture(nil, "ARTWORK")
+		tex:SetAtlas(atlas, true)
+		tex:SetPoint("RIGHT", -12, -5)
+		return tex
 	end
-	row.hide:Hide()
-	row.message:Hide()
-	row.selected:Hide()
-	row.line:Hide()
-	row.divider:Show()
-	row.dividerLabel:Show()
-	row.fold:Show()
-	row.dividerLabel:SetText(format("%s |cff999999(%d)|r", SECTION_LABEL[item.key], item.count))
-	row.fold:SetText(view.collapsed[item.key] and "+" or "-")
+	local fs = W.Text(frame, "GameFontNormal", 14, "RIGHT")
+	fs:SetWidth(20)
+	fs:SetPoint("RIGHT", -12, -5)
+	fs:SetText(text)
+	return fs
+end
+
+function Instance:BuildHeader(frame)
+	if not frame.ResultBG then
+		frame.ResultBG = frame:CreateTexture(nil, "BACKGROUND")
+		frame.ResultBG:SetPoint("TOPLEFT", 3, -8)
+		frame.ResultBG:SetPoint("BOTTOMRIGHT", -3, 0)
+		W.Atlas(frame.ResultBG, "common-button-list-collapseExpand", 0.2, 0.17, 0.12, 0.9)
+		frame.CategoryLabel = W.Text(frame, "GameFontNormal", 12)
+		frame.CategoryLabel:SetWidth(300)
+		frame.CategoryLabel:SetPoint("LEFT", 12, -4)
+		frame.ExpandIcon = HeaderIcon(frame, "common-button-list-plus", "+")
+		frame.CollapseIcon = HeaderIcon(frame, "common-button-list-minus", "-")
+		frame.Highlight = frame:CreateTexture(nil, "HIGHLIGHT")
+		frame.Highlight:SetPoint("TOPLEFT", 3, -7)
+		frame.Highlight:SetPoint("BOTTOMRIGHT", -3, -1)
+		W.Atlas(frame.Highlight, "common-button-list-collapseExpand", 1, 1, 1, 0.08)
+		frame.Highlight:SetBlendMode("ADD")
+	end
+	frame:SetScript("OnClick", function(f)
+		local key = f.item and f.item.key
+		if key then
+			view.collapsed[key] = not view.collapsed[key] or nil
+			T.RefreshAll()
+		end
+	end)
+end
+
+function Instance:FillHeader(frame, item)
+	frame.item = item
+	frame.CategoryLabel:SetText(format("%s %s", SECTION_LABEL[item.key], Gray("(" .. item.count .. ")")))
+	local collapsed = view.collapsed[item.key] == true
+	frame.ExpandIcon:SetShown(collapsed)
+	frame.CollapseIcon:SetShown(not collapsed)
 end
 
 function Instance:FillRow(row, item)
 	row.item = item
-	if item.header then
-		return self:FillHeader(row, item)
-	end
 	local l = item
 	row.listing = l
-	for _, cell in pairs(row.cells) do
-		cell:Show()
-	end
-	row.divider:Hide()
-	row.dividerLabel:Hide()
-	row.fold:Hide()
-	row.line:Show()
-	row.hide:Show()
-	row.message:Show()
 
 	local who = l.leader
 	row.icon:SetClass(who.class)
@@ -727,6 +752,126 @@ function Instance:Refresh()
 	self.invite:SetEnabled(sel ~= nil and sel.solo and not sel.mine and ns.CanInvite())
 end
 
+-- The list host: Blizzard's ScrollBox (our scriptless templates keep header and row frames in
+-- separate pools) where the API and the templates exist, else W.List with the same items.
+function Instance:BuildList(back, header)
+	local headerTemplate = TemplateKnown(STOCK_HEADER) and STOCK_HEADER or HEADER_TEMPLATE
+	local function Init(frame, item)
+		if item.header then
+			if not frame.tgfBuilt then
+				self:BuildHeader(frame)
+				frame.tgfBuilt = true
+			end
+			self:FillHeader(frame, item)
+		else
+			if not frame.tgfBuilt then
+				self:BuildRow(frame)
+				frame.tgfBuilt = true
+			end
+			self:FillRow(frame, item)
+		end
+	end
+
+	if
+		CreateScrollBoxListLinearView
+		and CreateDataProvider
+		and CreateAnchor
+		and ScrollUtil
+		and ScrollUtil.InitScrollBoxListWithScrollBar
+		and ScrollUtil.AddManagedScrollBarVisibilityBehavior
+		and ScrollBoxConstants
+		and TemplateKnown(ROW_TEMPLATE)
+		and TemplateKnown(HEADER_TEMPLATE)
+	then
+		local box = W.Create("Frame", back, "WowScrollBoxList")
+		local bar = W.Create("EventFrame", back, "MinimalScrollBar")
+		if box.SetDataProvider and bar.Init then
+			local view = CreateScrollBoxListLinearView()
+			view:SetElementFactory(function(factory, item)
+				factory(item.header and headerTemplate or ROW_TEMPLATE, Init)
+			end)
+			view:SetElementExtentCalculator(function(_, item)
+				return item.header and HEADER_H or ROW_H
+			end)
+			view:SetElementResetter(function(frame)
+				if GameTooltip:GetOwner() == frame then
+					GameTooltip:Hide()
+				end
+			end)
+			box:SetPoint("TOPLEFT", back, "TOPLEFT", 4, -22)
+			box:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 4)
+			bar:SetPoint("TOPLEFT", box, "TOPRIGHT", 2, -4)
+			bar:SetPoint("BOTTOMLEFT", box, "BOTTOMRIGHT", 0, 2)
+			ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, view)
+			local topLeft = CreateAnchor("TOPLEFT", back, "TOPLEFT", 4, -22)
+			local withBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 4) }
+			local withoutBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 4) }
+			local behavior = ScrollUtil.AddManagedScrollBarVisibilityBehavior(box, bar, withBar, withoutBar)
+			-- The column header strip keeps lining up with the rows when the bar shows.
+			local event = ManagedScrollBarVisibilityBehaviorMixin
+				and ManagedScrollBarVisibilityBehaviorMixin.Event
+				and ManagedScrollBarVisibilityBehaviorMixin.Event.OnVisibilityChanged
+			if behavior and behavior.RegisterCallback and event then
+				behavior:RegisterCallback(event, function(_, visible)
+					Layout(header, header, header, -(ACTIONS_W + GAP) - (visible and 16 or 0))
+				end, self)
+			end
+
+			local empty = W.Text(back, "GameFontDisable", 12, "CENTER")
+			empty:SetPoint("CENTER", back, "CENTER", 0, 0)
+			local host = { box = box, bar = bar, empty = empty }
+			function host:SetItems(items, emptyText)
+				empty:SetText(#items == 0 and (emptyText or "") or "")
+				local dp = CreateDataProvider()
+				dp:InsertTable(items)
+				box:SetDataProvider(dp, ScrollBoxConstants.RetainScrollPosition)
+			end
+			function host:Clear()
+				box:RemoveDataProvider()
+			end
+			function host:Reinitialize()
+				box:ReinitializeFrames()
+			end
+			function host:ForEachFrame(fn)
+				box:ForEachFrame(fn)
+			end
+			return host
+		end
+		box:Hide()
+		bar:Hide()
+	end
+
+	local list = W.List(back, {
+		header = {
+			height = HEADER_H,
+			make = function(l)
+				local frame = CreateFrame("Button", nil, l)
+				self:BuildHeader(frame)
+				return frame
+			end,
+		},
+		row = {
+			height = ROW_H,
+			make = function(l)
+				local frame = CreateFrame("Button", nil, l)
+				self:BuildRow(frame)
+				return frame
+			end,
+		},
+	}, function(item)
+		return item.header and "header" or "row"
+	end, function(frame, item)
+		if item.header then
+			self:FillHeader(frame, item)
+		else
+			self:FillRow(frame, item)
+		end
+	end)
+	list:SetPoint("TOPLEFT", 4, -22)
+	list:SetPoint("BOTTOMRIGHT", -6, 4)
+	return list
+end
+
 --- Builds a table filling `area` (the Browse frame's list area), with its bottom buttons on
 --- `host`. source: listings() -> the listings to show; preview() -> true for sample data;
 --- searching() -> true while a search runs.
@@ -787,7 +932,7 @@ function T.Attach(host, area, source)
 
 	local header = CreateFrame("Frame", nil, back)
 	header:SetPoint("TOPLEFT", 4, -2)
-	header:SetPoint("TOPRIGHT", -12, -2)
+	header:SetPoint("TOPRIGHT", -6, -2)
 	header:SetHeight(18)
 	local headLine = W.Line(header)
 	headLine:SetPoint("BOTTOMLEFT", 0, 0)
@@ -832,13 +977,7 @@ function T.Attach(host, area, source)
 	end
 	self.header = header
 
-	self.list = W.List(back, ROW_HEIGHT, function(parent)
-		return self:MakeRow(parent)
-	end, function(row, item)
-		self:FillRow(row, item)
-	end)
-	self.list:SetPoint("TOPLEFT", 4, -22)
-	self.list:SetPoint("BOTTOMRIGHT", -4, 4)
+	self.list = self:BuildList(back, header)
 
 	-- Forever's own bottom buttons sit at these spots.
 	self.send = W.Button(host, SEND_MESSAGE or "Send Message", 111, 28, function()
