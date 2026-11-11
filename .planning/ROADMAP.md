@@ -45,7 +45,13 @@ Plans:
   3. The Browse frame shows a single inset with the search box in the stone band, column headers above the bar, and Needs my role and the status text in the bottom bar
   4. Rows use the stock background, hover and selected art, fonts and colours; greyed rows use stock grey with desaturated icons; groups show the leader icon
   5. Searching shows the stock spinner; empty results, a failed search and our own filter each show their text; hide and checkboxes play the stock sounds
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 02-01-PLAN.md — ScrollBox host, Templates.xml, per-kind W.List fallback, stock grouping headers + harness stubs for all paths (wave 1)
+- [ ] 02-02-PLAN.md — Selection by result ID, T.ClearSelection wiring, stock sounds, 26x26 W.Check (wave 2)
+- [ ] 02-03-PLAN.md — Layout (single inset, search box in stone band, column headers above BarTop, bottom bar) + search states (wave 3)
+- [ ] 02-04-PLAN.md — Stock row look (mid2 art, fonts, colours, greyed rows, leader icon), CLAUDE.md, regression, deploy (wave 4)
 **UI hint**: yes
 
 ### Phase 3: Rows, Tooltip and Own Listing
@@ -90,7 +96,7 @@ Plans:
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
 | 1. Gear Score Off and Release Plumbing | 3/3 | Complete    | 2026-11-11 |
-| 2. List Foundation | 0/TBD | Not started | - |
+| 2. List Foundation | 0/4 | Not started | - |
 | 3. Rows, Tooltip and Own Listing | 0/TBD | Not started | - |
 | 4. Messages and Contact | 0/TBD | Not started | - |
 | 5. Release Review | 0/TBD | Not started | - |

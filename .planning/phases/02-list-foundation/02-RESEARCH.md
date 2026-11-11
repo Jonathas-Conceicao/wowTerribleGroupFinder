@@ -438,11 +438,14 @@ Baseline: `node run.js "C:/Users/jonat/Repositories/TerribleGroupFinder"` curren
 | A5 | Atlas names exist in the Forever client data | Atlases | Cosmetic; colour fallbacks (Q5/Q7) |
 | A6 | A HIGHLIGHT-layer ADD hover texture on our own Button behaves like the stock script-driven one | Atlases | Cosmetic |
 
-## Open Questions
+## Open Questions (RESOLVED)
 
 1. **Addon XML visible to `C_XMLUtil`?** Known: Blizzard always resolves template names through it; nothing in source forbids addon templates. Unclear: not testable locally. Recommendation: capability gate + UAT-1 first; fallback already planned (D-05).
+   RESOLVED: plan 02-01 gates the ScrollBox path on `C_XMLUtil.GetTemplateInfo` for both templates and falls back to the per-kind `W.List`; in-game check UAT-1 confirms which path runs.
 2. **`LFGBrowseSearchEntryGroupingTemplate` inside our pool in a `[Secure]`-flagged addon world.** The template lives in a `## Secure: 1` addon, but instantiating its scriptless virtual from addon code is the same as inheriting it in XML; no script runs. Recommendation: keep `tgfBuilt`-flag one-time script (`SetScript("OnClick")`) on our own frame only.
+   RESOLVED: plan 02-01 builds header frames once behind `tgfBuilt` and sets the OnClick on our own pooled frame only; nothing is written to Blizzard's frames.
 3. **Selection clear on tab re-show (stock does it).** Recommendation: add `OnShow` clear in `Attach` for parity unless the author wants selection to persist across tabs.
+   RESOLVED (adopted, stock parity, orchestrator decision in the AFK run): the Browse frame's existing `OnShow` hook in `UI/InPlace.lua` `Attach` calls `ns.Table.ClearSelection()` (plan 02-02 Task 3); the preview stand-in clears it when its Browse tab is selected. Recorded as an in-game check in the 02-02 SUMMARY.
 
 ## Sources
 
