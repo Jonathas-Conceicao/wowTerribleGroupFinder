@@ -1223,9 +1223,12 @@ function T.Attach(host, area, source)
 	self.fits:SetPoint("LEFT", self.send, "RIGHT", 8, 0)
 	self.status = W.Text(host, "GameFontHighlightSmall", 11, "RIGHT")
 	self.status:SetPoint("RIGHT", self.invite, "LEFT", -8, 0)
-	self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
 	if self.myGS then
-		self.myGS:SetPoint("RIGHT", self.status, "LEFT", -12, 0)
+		-- Your GS sits after Needs my role, and the status takes the room after it.
+		self.myGS:SetPoint("LEFT", self.fits.Label, "RIGHT", 12, 0)
+		self.status:SetPoint("LEFT", self.myGS, "RIGHT", 8, 0)
+	else
+		self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
 	end
 
 	-- What the list can't show: the spinner while searching, and the no-results, failed and
