@@ -240,10 +240,12 @@ function M.Send(l, preview, from)
 				SendChatMessage(text, "WHISPER", nil, target)
 			end
 		end)
-		if ok then
-			ns.state.messaged[l.id] = true
+		if not ok then
+			ns.Print(string.format("could not send the whisper to %s.", target))
+			return false
 		end
-		if invite and pcall(C_PartyInfo.InviteUnit, target) then
+		ns.state.messaged[l.id] = true
+		if invite and C_PartyInfo and C_PartyInfo.InviteUnit and pcall(C_PartyInfo.InviteUnit, target) then
 			ns.state.invited[l.id] = true
 		end
 		M.StartLock(l.id, from or "row")
@@ -399,6 +401,10 @@ function M.BuildPanel(panel)
 				e:SetText(text)
 			end
 			M.Set(kind, text)
+			local stored = M.Get(kind)
+			if stored ~= e:GetText() then
+				e:SetText(stored)
+			end
 			Example()
 		end)
 
@@ -418,6 +424,10 @@ function M.BuildPanel(panel)
 				end
 				edit:SetFocus()
 				M.Set(kind, edit:GetText())
+				local stored = M.Get(kind)
+				if stored ~= edit:GetText() then
+					edit:SetText(stored)
+				end
 				Example()
 			end)
 			b:SetNormalFontObject("GameFontNormalSmall")
