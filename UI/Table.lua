@@ -475,6 +475,18 @@ local function BossNames(l, inst)
 	return #names > 0 and names or nil
 end
 
+-- Right-hand text of a tooltip line: the member's zone in grey, then Gear Score when given.
+local function RightText(m, gs)
+	local zone
+	if type(m.area) == "string" and m.area ~= "" then
+		zone = ColorCode(W.GRAY) .. m.area .. "|r"
+	end
+	if zone and gs then
+		return zone .. "  " .. gs
+	end
+	return zone or gs
+end
+
 -- Forever's own tooltip content, in its order and wording.
 local function StockTooltip(tip, l, ids, inst)
 	if l.delisted then
@@ -509,12 +521,19 @@ local function StockTooltip(tip, l, ids, inst)
 		roles = RoleMarkup(who.role)
 	end
 	local left = prefix .. PlayerText(who, roles)
-	tip.line(left, WHITE, false, ns.GEAR_SCORE and ("GS " .. GSLine(who)) or nil)
+	local leaderGS = ns.GEAR_SCORE and ("GS " .. GSLine(who)) or nil
+	tip.line(left, WHITE, false, (group and not l.mine) and RightText(who, leaderGS) or leaderGS)
 
 	if group and #l.members <= 10 then
 		for _, m in ipairs(l.members) do
 			if m ~= who and not m.leader then
-				tip.line("   " .. PlayerText(m, RoleMarkup(m.role)), WHITE, false, ns.GEAR_SCORE and GSLine(m) or nil)
+				local memberGS = ns.GEAR_SCORE and GSLine(m) or nil
+				tip.line(
+					"   " .. PlayerText(m, RoleMarkup(m.role)),
+					WHITE,
+					false,
+					l.mine and memberGS or RightText(m, memberGS)
+				)
 			end
 		end
 	end
