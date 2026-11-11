@@ -3,7 +3,7 @@ status: partial
 phase: 05-release-review
 source: [05-CONTEXT.md, 05-RESEARCH.md, 05-01-SUMMARY.md, 05-02-SUMMARY.md]
 started: 2026-11-11T21:00:00Z
-updated: 2026-11-11T21:00:00Z
+updated: 2026-11-11T23:40:00Z
 ---
 
 ## Current Test
@@ -13,7 +13,7 @@ updated: 2026-11-11T21:00:00Z
 ## Tests
 
 ### 1. README review
-expected: README.md was not edited. Suggested changes: drop "sortable by ... gear score" (the sorts are role, level, activity, listed) and the gear score bullet (gear score is off); describe the Messages tab (key buttons, Default button, Auto-send, Auto-invite and the 1 s contact lock); describe the own-listing row with delist, the row tooltip, Needs my role, the hide button, the search box and the icon; reword "**Status:** prototype / proof of concept." for a first release (and decide whether CLAUDE.md's "Prototype stage" wording changes too).
+expected: README.md was not edited. Suggested changes: drop "sortable by ... gear score" (the sorts are role, level, activity, listed) and the gear score bullet (gear score is off); describe the Messages tab (key buttons, Default button, Auto-send, Auto-invite and the 1 s contact lock); describe the own-listing row with delist, the row tooltip, Needs my role, the hide button, the search box and the icon; mention player location (each row shows the solo player's or the leader's zone, and a group's tooltip shows each member's zone; added in the inserted phase 04.1, after this review was drafted); reword "**Status:** prototype / proof of concept." for a first release (and decide whether CLAUDE.md's "Prototype stage" wording changes too).
 result: [pending]
 
 ### 2. README screenshots
@@ -21,7 +21,7 @@ expected: No screenshots exist in the repo, so the screenshot step was skipped. 
 result: [pending]
 
 ### 3. CHANGELOG draft review
-expected: Review the `## v0.1.0` section (first `## ` heading, so the release workflow publishes it). The old `## Unreleased` bootstrap line ("Project bootstrap: TOC, core namespace, install and release scripts.") likely folds into v0.1.0 or goes; left as is, the author edits it.
+expected: Review the `## v0.1.0` section (now with a player location bullet under Added, from the inserted phase 04.1) (first `## ` heading, so the release workflow publishes it). The old `## Unreleased` bootstrap line ("Project bootstrap: TOC, core namespace, install and release scripts.") likely folds into v0.1.0 or goes; left as is, the author edits it.
 result: [pending]
 
 ### 4. Version
@@ -57,7 +57,7 @@ expected: Tooltip blank-line rules vs UI-SPEC; raw `|cff..` status colours; a hi
 result: [pending]
 
 ### 12. In-game checks
-expected: Run the pending in-game checks in `.planning/phases/01-gear-score-off-and-release-plumbing/01-HUMAN-UAT.md` (4 pending), `.planning/phases/02-list-foundation/02-HUMAN-UAT.md` (11 pending), `.planning/phases/03-rows-tooltip-and-own-listing/03-HUMAN-UAT.md` (11 pending) and `.planning/phases/04-messages-and-contact/04-HUMAN-UAT.md` (11 pending): 37 in total. Plus a quick look at this phase's cleanup in game: key buttons still 4 + 3 and never a third row, the example line names a solo player (invite) / a group (request), pasting multi-line text keeps the cursor where it was, the hide hint wording, and no stale status while searching.
+expected: Run the pending in-game checks in `.planning/phases/01-gear-score-off-and-release-plumbing/01-HUMAN-UAT.md` (4 pending), `.planning/phases/02-list-foundation/02-HUMAN-UAT.md` (11 pending), `.planning/phases/03-rows-tooltip-and-own-listing/03-HUMAN-UAT.md` (11 pending), `.planning/phases/04-messages-and-contact/04-HUMAN-UAT.md` (11 pending) and `.planning/phases/04.1-player-location/04.1-HUMAN-UAT.md` (8 pending: player location, the zone on each row's second line and in group tooltips): 45 in total. Plus a quick look at this phase's cleanup in game: key buttons still 4 + 3 and never a third row, the example line names a solo player (invite) / a group (request), pasting multi-line text keeps the cursor where it was, the hide hint wording, and no stale status while searching.
 result: [pending]
 
 ### 13. Phase confirmation

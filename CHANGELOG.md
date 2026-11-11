@@ -14,6 +14,7 @@ First release: Forever's own group finder gets a sortable table of solo players 
 - Hide a player until they list again; hidden and delisted listings are greyed and moved to the end, never removed
 - Select a row for Send Message and Group Invite at the bottom, or use the Whisper button on each row
 - Row tooltip in Forever's style, with friends in the group and listed age
+- Player location: each row shows the solo player's or the group leader's zone, and a group's tooltip shows each member's zone
 - Friend, Battle.net friend, guildmate and recent ally marks
 - Messages tab with whisper presets for solo players and group leaders, key buttons, Auto-send and Auto-invite; a short pause after each automatic send, and nothing is sent during chat lockdown
 - Slash commands `/tgf`, `/tgf preview`, `/tgf reset` and `/tgf version`
