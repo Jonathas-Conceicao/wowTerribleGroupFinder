@@ -899,6 +899,9 @@ function Instance:BuildRow(row)
 	row.comment = W.Text(cells.activity, "GameFontDisableSmall", 10)
 	row.comment:SetPoint("TOPLEFT", 0, -19)
 	row.comment:SetPoint("RIGHT", 0, 0)
+	if row.comment.SetMaxLines then
+		row.comment:SetMaxLines(1)
+	end
 	row.listed = W.Text(cells.listed, "GameFontDisableSmall", 10, "RIGHT")
 	row.listed:SetAllPoints()
 	-- What these texts look like on a normal row, put back on every fill.
