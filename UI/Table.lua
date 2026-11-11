@@ -756,7 +756,8 @@ function Instance:FillRow(row, item)
 	if not l.solo and FriendsLine(l) and not (who.bnet or who.friend or who.recent) then
 		tags = tags .. " " .. W.Icon("friendsIn")
 	end
-	row.name:SetText(who.name .. W.Marks(who) .. (l.mine and " |cff33ff33(you)|r" or "") .. tags)
+	local nameText = who.name .. W.Marks(who) .. (l.mine and " |cff33ff33(you)|r" or "") .. tags
+	row.name:SetText(greyed and Plain(nameText) or nameText)
 	if l.solo then
 		row.sub:SetText(who.spec or W.ClassName(who.class))
 	else
@@ -772,7 +773,8 @@ function Instance:FillRow(row, item)
 	if greyed then
 		row.count:SetText(Plain(row.count:GetText() or ""))
 	end
-	row.activity:SetText(ActivityText(l))
+	local activityText = ActivityText(l)
+	row.activity:SetText(greyed and Plain(activityText) or activityText)
 	row.comment:SetText(l.comment or "")
 
 	local hidden = IsHidden(l)
