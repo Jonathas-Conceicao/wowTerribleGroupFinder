@@ -17,6 +17,10 @@ local function Secret(v)
 	return v ~= nil and issecretvalue ~= nil and issecretvalue(v)
 end
 
+local function Num(v)
+	return type(v) == "number" and not Secret(v)
+end
+
 local acts = {} -- activityID -> our activity table, made once each
 local function Act(id)
 	local a = acts[id]
@@ -35,6 +39,7 @@ local function Act(id)
 		minLevel = info.minLevelSuggestion or info.minLevel or 1,
 		maxLevel = info.maxLevelSuggestion or 60,
 		size = (info.maxNumPlayers and info.maxNumPlayers > 0) and info.maxNumPlayers or 5,
+		groupID = Num(info.groupFinderActivityGroupID) and info.groupFinderActivityGroupID or nil,
 	}
 	acts[id] = a
 	return a
@@ -109,6 +114,35 @@ function L.Social(id, members)
 	end
 end
 
+local COUNT_KEYS = { "TANK", "HEALER", "DAMAGER" }
+
+-- A table of the three role numbers read with a suffix, or nil when any is missing or secret.
+local function RoleNumbers(c, suffix)
+	local out = {}
+	for _, role in ipairs(COUNT_KEYS) do
+		local n = c[role .. suffix]
+		if not Num(n) then
+			return nil
+		end
+		out[role] = n
+	end
+	return out
+end
+
+--- The group's members per role and the slots still open per role, as the game counts them
+--- (GetSearchResultMemberCounts is not in the API documentation: nil when it is missing, fails
+--- or hands back anything but plain numbers).
+local function ReadCounts(id)
+	if not C_LFGList.GetSearchResultMemberCounts then
+		return nil, nil
+	end
+	local ok, c = pcall(C_LFGList.GetSearchResultMemberCounts, id)
+	if not ok or type(c) ~= "table" or Secret(c) then
+		return nil, nil
+	end
+	return RoleNumbers(c, ""), RoleNumbers(c, "_REMAINING")
+end
+
 local function Read(id, now)
 	local info = C_LFGList.GetSearchResultInfo(id)
 	if type(info) ~= "table" then
@@ -154,7 +188,10 @@ local function Read(id, now)
 	l.listedAt = now - l.age
 	l.delisted = info.isDelisted == true
 	l.mine = info.hasSelf == true or nil
-	l.voice = info.voiceMode ~= nil and info.voiceMode ~= 0
+	l.voiceMode = Num(info.voiceMode) and info.voiceMode or nil
+	l.voice = l.voiceMode ~= nil and l.voiceMode ~= ns.VOICE.None
+	l.playstyle = Num(info.generalPlaystyle) and info.generalPlaystyle or nil
+	l.counts, l.remaining = ReadCounts(id)
 	l.newPlayerFriendly = info.newPlayerFriendly == true
 	return l
 end

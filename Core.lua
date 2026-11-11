@@ -16,6 +16,9 @@ ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 -- GS preset was reset for good. See .planning/research/GEARSCORE.md.
 ns.GEAR_SCORE = false
 
+-- How a listing's voice chat is set up (the game's enum; the same values elsewhere).
+ns.VOICE = (Enum and Enum.LFGEntryVoiceMode) or { None = 0, Legacy = 1, Discord = 2, Custom = 3 }
+
 --- A character name without its realm suffix; nil for anything but a readable string (a
 --- secret value can't be matched or used as a key).
 function ns.Short(name)
@@ -173,6 +176,7 @@ local function MyEntry()
 	for i, key in ipairs(mine.activities) do
 		acts[i] = ns.Preview.activities[key]
 	end
+	local voiceMode = mine.voiceMode or (mine.voice and ns.VOICE.Discord or ns.VOICE.None)
 	return {
 		id = 0,
 		mine = true,
@@ -180,11 +184,13 @@ local function MyEntry()
 		acts = acts,
 		members = party,
 		leader = party[1],
-		comment = "Your listing",
+		comment = mine.comment,
 		age = 0,
 		listedAt = time(),
 		newPlayerFriendly = mine.newPlayerFriendly,
-		voice = mine.voice,
+		voiceMode = voiceMode,
+		voice = voiceMode ~= ns.VOICE.None,
+		playstyle = mine.playstyle,
 	}
 end
 

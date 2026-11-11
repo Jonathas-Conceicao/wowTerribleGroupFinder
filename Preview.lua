@@ -106,6 +106,7 @@ local function Add(l, minutes)
 	nextId = nextId + 1
 	l.id, l.age, l.listedAt = nextId, minutes * 60, -minutes * 60
 	l.solo = #l.members == 1
+	l.voice = l.voiceMode ~= nil and l.voiceMode ~= ns.VOICE.None
 	l.acts = {}
 	for i, key in ipairs(l.activities) do
 		l.acts[i] = activities[key]
@@ -166,7 +167,12 @@ Group(
 	{ "Kaelthorn:PALADIN:34:TANK:36.2", "Mirabelle:MAGE:33:DAMAGER:~31.8" },
 	"GY then Lib, need healer + 2",
 	11,
-	{ voice = true }
+	{
+		voiceMode = ns.VOICE.Discord,
+		playstyle = 3,
+		counts = { TANK = 1, HEALER = 0, DAMAGER = 1 },
+		remaining = { TANK = 0, HEALER = 1, DAMAGER = 2 },
+	}
 )
 Group(
 	"WC",
@@ -175,12 +181,22 @@ Group(
 	2,
 	{ newPlayerFriendly = true }
 )
-Group("BRD", {
-	"Grimtusk:WARRIOR:58:TANK:61.5",
-	"Solenne:PRIEST:57:HEALER:57.9",
-	"Varok:HUNTER:56:DAMAGER:~55.4",
-	"Isolde:MAGE:58:DAMAGER:59.2",
-}, "Arena + Emperor, 1 dps", 7)
+Group(
+	"BRD",
+	{
+		"Grimtusk:WARRIOR:58:TANK:61.5",
+		"Solenne:PRIEST:57:HEALER:57.9",
+		"Varok:HUNTER:56:DAMAGER:~55.4",
+		"Isolde:MAGE:58:DAMAGER:59.2",
+	},
+	"Arena + Emperor, 1 dps",
+	7,
+	{
+		voiceMode = ns.VOICE.None,
+		counts = { TANK = 1, HEALER = 1, DAMAGER = 2 },
+		remaining = { TANK = 0, HEALER = 0, DAMAGER = 1 },
+	}
+)
 Group(
 	"STRAT",
 	{ "Aldric:PALADIN:60:HEALER:66.0", "Morwen:WARLOCK:60:DAMAGER:63.4" },
@@ -200,7 +216,7 @@ Group(
 	{ "Tamsin:DRUID:31:HEALER:~33.0", "Bram:WARRIOR:30:TANK:29.6" },
 	"Chill run, newbies welcome",
 	15,
-	{ newPlayerFriendly = true, voice = true }
+	{ newPlayerFriendly = true, voiceMode = ns.VOICE.Legacy, playstyle = 1 }
 )
 Group("UBRS", {
 	"Ostrava:WARRIOR:60:TANK:68.1",
@@ -225,13 +241,18 @@ Group("MC", {
 	"Mael:ROGUE:60:DAMAGER:64.9",
 	"Nessa:MAGE:60:DAMAGER",
 	"Orrin:WARRIOR:60:DAMAGER",
-}, "Pug MC, SR +1, need fire res healers", 38, { voice = true })
+}, "Pug MC, SR +1, need fire res healers", 38, { voiceMode = ns.VOICE.Discord })
 Group(
 	"ONY",
 	{ "Pellam:WARRIOR:60:TANK:69.9", "Quenna:PRIEST:60:HEALER", "Rivka:MAGE:60:DAMAGER" },
 	"Ony pug, Discord required",
 	19,
-	{ voice = true }
+	{
+		voiceMode = ns.VOICE.Discord,
+		playstyle = 4,
+		counts = { TANK = 1, HEALER = 1, DAMAGER = 1 },
+		remaining = { TANK = 0, HEALER = 0, DAMAGER = 2 },
+	}
 )
 Group("EPL", { "Stellan:PALADIN:55:DAMAGER", "Torva:HUNTER:54:DAMAGER:53.0" }, "Questing Tyr's Hand, anyone welcome", 6)
 Group("STV", { "Ulric:ROGUE:38:DAMAGER", "Maren:PRIEST:37:HEALER:~36.1" }, "Kill quests in STV, any class", 3)
@@ -239,7 +260,16 @@ Group("WSG", { "Wren:DRUID:29:HEALER", "Xander:WARRIOR:29:DAMAGER", "Yara:ROGUE:
 Group("CUSTOM", { "Zephyr:MAGE:60:DAMAGER", "Sorrel:MAGE:60:DAMAGER" }, "Two mages selling portals", 45)
 
 Solo("DM", "Ashlin:PRIEST:20:21.3", "HD", "Holy", "Westfall", "Healer LF DM group", 3)
-Solo("DM", "Ironvale:WARRIOR:21:24.0", "TD", "Protection", "Westfall", "Can tank, know the place", 1)
+Solo(
+	"DM",
+	"Ironvale:WARRIOR:21:24.0",
+	"TD",
+	"Protection",
+	"Westfall",
+	"Can tank, know the place",
+	1,
+	{ voiceMode = ns.VOICE.Discord, playstyle = 2 }
+)
 Solo("DM", "Saelis:PRIEST:20:~19.5", "HD", nil, "Stormwind City", nil, 2)
 Solo("DM", "Quintus:MAGE:22:~23.0", "D", "Fire", "Westfall", "Have water for everyone", 4)
 Solo({ "DM", "WC" }, "Marrow:ROGUE:19", "D", nil, "The Barrens", "Need the Defias quest", 6)
