@@ -173,6 +173,35 @@ local function HasAtlas(atlas)
 end
 W.HasAtlas = HasAtlas
 
+-- Inline atlas markup for tooltip text; empty when the client doesn't know the atlas.
+function W.AtlasMarkup(atlas, size)
+	if not HasAtlas(atlas) then
+		return ""
+	end
+	if type(CreateAtlasMarkup) == "function" then
+		return CreateAtlasMarkup(atlas, size, size)
+	end
+	return "|A:" .. atlas .. ":" .. size .. ":" .. size .. "|a"
+end
+
+-- A listing's playstyle as text: the game's own string, its global, or the preview's names.
+function W.Playstyle(value)
+	if type(value) ~= "number" or value == 0 then
+		return nil
+	end
+	if type(GetGeneralPlaystyleString) == "function" then
+		local ok, text = pcall(GetGeneralPlaystyleString, value)
+		if ok and type(text) == "string" and text ~= "" then
+			return text
+		end
+	end
+	local text = _G["GROUP_FINDER_GENERAL_PLAYSTYLE" .. value]
+	if type(text) == "string" and text ~= "" then
+		return text
+	end
+	return ns.Preview and ns.Preview.playstyles and ns.Preview.playstyles[value] or nil
+end
+
 -- Sets an atlas when the client knows it; otherwise a flat colour (when given).
 function W.Atlas(tex, atlas, r, g, b, a)
 	if tex.SetAtlas and HasAtlas(atlas) then

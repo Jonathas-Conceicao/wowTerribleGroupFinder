@@ -315,96 +315,287 @@ local function FriendsLine(l)
 	return #names > 0 and table.concat(names, ", ") or nil
 end
 
-local function ShowTooltip(row)
+local WHITE = { r = 1, g = 1, b = 1 }
+local TIP_ROLE_ATLAS = { TANK = "tank", HEALER = "heal", DAMAGER = "dps" }
+
+-- Writes tooltip lines with a pending blank line: a blank is only added once something follows
+-- it, so the tooltip never starts or ends with a blank and never has two in a row.
+local function TipWriter()
+	local t = { pending = false, any = false }
+	function t.blank()
+		if t.any then
+			t.pending = true
+		end
+	end
+	function t.line(text, c, wrap, right)
+		if t.pending then
+			GameTooltip:AddLine(" ")
+			t.pending = false
+		end
+		c = c or WHITE
+		if right then
+			GameTooltip:AddDoubleLine(text, right, c.r, c.g, c.b, 1, 1, 1)
+		else
+			GameTooltip:AddLine(text, c.r, c.g, c.b, wrap)
+		end
+		t.any = true
+	end
+	return t
+end
+
+local function ColorCode(c)
+	return format("|cff%02x%02x%02x", floor(c.r * 255 + 0.5), floor(c.g * 255 + 0.5), floor(c.b * 255 + 0.5))
+end
+
+local function RoleMarkup(role, micro)
+	local key = TIP_ROLE_ATLAS[role]
+	if not key then
+		return ""
+	end
+	return W.AtlasMarkup("groupfinder-icon-role-" .. (micro and "micro-" or "large-") .. key, 14)
+end
+
+-- A player on a tooltip line: class-coloured name and marks, level in grey, then the roles.
+local function PlayerText(m, roles)
+	local text = W.Colored(m.class, m.name) .. W.Marks(m)
+	text = text .. "  " .. ColorCode(W.GRAY) .. (LEVEL_ABBR or "Lvl") .. " " .. m.level .. "|r"
+	if roles ~= "" then
+		text = text .. "  " .. roles
+	end
+	return text
+end
+
+local function VoiceLabels()
+	local v = ns.VOICE
+	return {
+		[v.None] = VOICE_CHAT_MODE_NONE or "None",
+		[v.Legacy] = VOICE_CHAT_MODE_LEGACY or "In-game",
+		[v.Discord] = VOICE_CHAT_MODE_DISCORD or "Discord",
+		[v.Custom] = VOICE_CHAT_MODE_CUSTOM or "Custom",
+	}
+end
+
+local function IsSecret(v)
+	return issecretvalue ~= nil and issecretvalue(v)
+end
+
+-- The listing's activities as tooltip lines: groupless ones first, then each activity group's
+-- name with its activities indented. Flat when the game gives no group info.
+local function ActivityLines(tip, l, ids)
+	local indent = LFG_LIST_INDENT or "   %s"
+	local loose, groups, order = {}, {}, {}
+	local flat = not (C_LFGList and C_LFGList.GetActivityGroupInfo)
+	if not flat then
+		for _, a in ipairs(l.acts) do
+			local gid = a.groupID
+			if not gid or gid == 0 then
+				loose[#loose + 1] = a
+			else
+				local g = groups[gid]
+				if not g then
+					local ok, name, index = pcall(C_LFGList.GetActivityGroupInfo, gid)
+					if not ok or type(name) ~= "string" or IsSecret(name) then
+						flat = true
+						break
+					end
+					g = {
+						name = name,
+						index = type(index) == "number" and not IsSecret(index) and index or 0,
+						acts = {},
+					}
+					groups[gid] = g
+					order[#order + 1] = g
+				end
+				g.acts[#g.acts + 1] = a
+			end
+		end
+	end
+	if flat then
+		loose = l.acts
+		order = {}
+	end
+	local function colorOf(a)
+		return ids and ids[a.key] and W.BRIGHTBLUE or W.GRAY
+	end
+	for _, a in ipairs(loose) do
+		tip.line(a.name, colorOf(a))
+	end
+	table.sort(order, function(x, y)
+		if x.index ~= y.index then
+			return x.index < y.index
+		end
+		return x.name < y.name
+	end)
+	for i, g in ipairs(order) do
+		if i > 1 then
+			tip.blank()
+		end
+		local any = false
+		for _, a in ipairs(g.acts) do
+			if ids and ids[a.key] then
+				any = true
+			end
+		end
+		tip.line(g.name, any and W.BRIGHTBLUE or W.GRAY)
+		for _, a in ipairs(g.acts) do
+			tip.line(format(indent, a.name), colorOf(a))
+		end
+	end
+end
+
+-- The names of the bosses the group has defeated, read when the tooltip opens (single activity only).
+local function BossNames(l)
+	if #l.acts ~= 1 or not (C_LFGList and C_LFGList.GetSearchResultEncounterInfo) then
+		return nil
+	end
+	local ok, info = pcall(C_LFGList.GetSearchResultEncounterInfo, l.id)
+	if not ok or type(info) ~= "table" or IsSecret(info) then
+		return nil
+	end
+	local names = {}
+	for _, name in ipairs(info) do
+		if type(name) == "string" and not IsSecret(name) then
+			names[#names + 1] = name
+		end
+	end
+	return #names > 0 and names or nil
+end
+
+-- Forever's own tooltip content, in its order and wording.
+local function StockTooltip(tip, l, ids)
+	if l.delisted then
+		tip.line(LFG_LIST_ENTRY_DELISTED or "Delisted", W.RED)
+	elseif l.newPlayerFriendly then
+		tip.line(
+			W.AtlasMarkup("newplayerchat-chaticon-newcomer", 14)
+				.. " "
+				.. (LFG_LIST_NEW_PLAYER_FRIENDLY_HEADER or "New player friendly"),
+			W.GREEN
+		)
+	end
+
+	local who = l.leader
+	local group = not l.solo and #l.members > 1
+	local prefix = ""
+	if group then
+		if type(CreateSimpleTextureMarkup) == "function" then
+			prefix = CreateSimpleTextureMarkup("Interface\\GroupFrame\\UI-Group-LeaderIcon", 16, 16)
+		else
+			prefix = W.AtlasMarkup("groupfinder-icon-leader", 16)
+		end
+	end
+	local roles = ""
+	if l.solo or not group then
+		for _, role in ipairs(ROLES) do
+			if who.roles and who.roles[ROLE_KEY[role]] then
+				roles = roles .. RoleMarkup(role, true)
+			end
+		end
+	else
+		roles = RoleMarkup(who.role)
+	end
+	local left = prefix .. PlayerText(who, roles)
+	tip.line(left, WHITE, false, ns.GEAR_SCORE and ("GS " .. GSLine(who)) or nil)
+
+	if group and #l.members <= 10 then
+		for _, m in ipairs(l.members) do
+			if m ~= who and not m.leader then
+				tip.line("   " .. PlayerText(m, RoleMarkup(m.role)), WHITE, false, ns.GEAR_SCORE and GSLine(m) or nil)
+			end
+		end
+	end
+
+	if type(l.comment) == "string" and not IsSecret(l.comment) and l.comment ~= "" then
+		tip.blank()
+		tip.line(format(LFG_LIST_COMMENT_FORMAT or '"%s"', l.comment), W.LIGHTGRAY, true)
+		tip.blank()
+	end
+
+	if group then
+		local c = l.counts
+		local tanks, healers, dps = 0, 0, 0
+		if type(c) == "table" and not IsSecret(c) and type(c.TANK) == "number" then
+			tanks, healers, dps = c.TANK, c.HEALER or 0, c.DAMAGER or 0
+		else
+			for _, m in ipairs(l.members) do
+				if m.role == "TANK" then
+					tanks = tanks + 1
+				elseif m.role == "HEALER" then
+					healers = healers + 1
+				elseif m.role == "DAMAGER" then
+					dps = dps + 1
+				end
+			end
+		end
+		tip.line(
+			format(
+				LFG_LIST_TOOLTIP_MEMBERS or "Members: %d (%d Tank, %d Healer, %d Damage)",
+				#l.members,
+				tanks,
+				healers,
+				dps
+			),
+			W.NORMAL
+		)
+	else
+		tip.line(format(LFG_LIST_TOOLTIP_MEMBERS_SIMPLE or "Members: %d", 1), W.NORMAL)
+	end
+	if l.voiceMode ~= nil then
+		local label = VoiceLabels()[l.voiceMode]
+		if label then
+			tip.line(format(VOICE_CHAT_MODE_FORMAT or "Voice chat: %s", label), W.NORMAL)
+		end
+	end
+
+	tip.blank()
+	ActivityLines(tip, l, ids)
+
+	local bosses = BossNames(l)
+	if bosses then
+		tip.blank()
+		tip.line(LFG_LIST_BOSSES_DEFEATED or "Bosses defeated:", W.NORMAL)
+		for _, name in ipairs(bosses) do
+			tip.line("   " .. name, W.RED)
+		end
+	end
+end
+
+-- What we add after the stock content.
+local function ExtrasTooltip(tip, l)
+	tip.blank()
+	local playstyle = W.Playstyle(l.playstyle)
+	if playstyle then
+		tip.line(playstyle, W.GREEN)
+	end
+	if l.solo then
+		local who = l.leader
+		local where = (who.spec and (who.spec .. (who.area and ", " or "")) or "") .. (who.area or "")
+		if where ~= "" then
+			tip.line(where, W.GRAY)
+		end
+	end
+	local friends = FriendsLine(l)
+	if friends then
+		tip.blank()
+		tip.line(LFG_LIST_TOOLTIP_FRIENDS_IN_GROUP or "Friends in group:", WHITE)
+		tip.line(friends, WHITE, true)
+	end
+	tip.blank()
+	tip.line("Listed " .. W.Age(l.age) .. " ago", W.GRAY)
+	if IsHidden(l) then
+		tip.line("Hidden until they make a new listing (use the eye button to show).", W.GRAY, true)
+	end
+end
+
+local function ShowTooltip(row, inst)
 	local l = row.listing
 	if not l then
 		return
 	end
 	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
-	GameTooltip:SetText(l.acts[1] and l.acts[1].name or "?", 1, 0.82, 0)
-	for i = 2, #l.acts do
-		GameTooltip:AddLine("  " .. l.acts[i].name, 0.8, 0.8, 0.8)
-	end
-	if l.delisted then
-		GameTooltip:AddLine(LFG_LIST_ENTRY_DELISTED or "Delisted", 1, 0.2, 0.2)
-	end
-	if l.newPlayerFriendly then
-		GameTooltip:AddLine(
-			W.Icon("newPlayer") .. " " .. (LFG_LIST_NEW_PLAYER_FRIENDLY_HEADER or "New player friendly"),
-			0.3,
-			1,
-			0.3
-		)
-	end
-	if l.comment then
-		GameTooltip:AddLine(l.comment, 0.6, 0.6, 0.6, true)
-	end
-	GameTooltip:AddLine(" ")
-	if l.solo then
-		local who = l.leader
-		local left = W.Colored(who.class, who.name)
-			.. W.Marks(who)
-			.. format("  level %d %s", who.level, W.ClassName(who.class))
-		if ns.GEAR_SCORE then
-			GameTooltip:AddDoubleLine(left, "GS " .. GSLine(who))
-		else
-			GameTooltip:AddLine(left)
-		end
-		local where = (who.spec and (who.spec .. (who.area and ", " or "")) or "") .. (who.area or "")
-		if where ~= "" then
-			GameTooltip:AddLine(where, 0.8, 0.8, 0.8)
-		end
-		local roles = {}
-		for _, role in ipairs(ROLES) do
-			if who.roles and who.roles[ROLE_KEY[role]] then
-				roles[#roles + 1] = W.ROLE_NAME[role]
-			end
-		end
-		GameTooltip:AddLine("Can play: " .. table.concat(roles, ", "), 0.8, 0.8, 0.8)
-	else
-		RoleCounts(l)
-		GameTooltip:AddLine(format("Members: %d/%d", #l.members, Size(l)), 1, 1, 1)
-		local limit = min(#l.members, 12)
-		for i = 1, limit do
-			local m = l.members[i]
-			local left = (m.leader and "* " or "  ")
-				.. W.Colored(m.class, m.name)
-				.. W.Marks(m)
-				.. format(" |cff999999%d %s|r", m.level, W.ROLE_NAME[m.role])
-			if ns.GEAR_SCORE then
-				GameTooltip:AddDoubleLine(left, GSLine(m))
-			else
-				GameTooltip:AddLine(left)
-			end
-		end
-		if #l.members > limit then
-			GameTooltip:AddLine(format("  ... and %d more", #l.members - limit), 0.6, 0.6, 0.6)
-		end
-		local needs = {}
-		for _, role in ipairs(ROLES) do
-			if open[role] > 0 then
-				needs[#needs + 1] = open[role] .. " " .. W.ROLE_NAME[role]
-			end
-		end
-		if #needs > 0 then
-			GameTooltip:AddLine("Looking for: " .. table.concat(needs, ", "), 0.3, 1, 0.3)
-		end
-	end
-	local friends = FriendsLine(l)
-	if friends then
-		GameTooltip:AddLine(" ")
-		GameTooltip:AddLine(LFG_LIST_TOOLTIP_FRIENDS_IN_GROUP or "Friends in group:")
-		GameTooltip:AddLine(friends, 1, 1, 1, true)
-	end
-	GameTooltip:AddLine(" ")
-	local flags = { "Listed " .. W.Age(l.age) .. " ago" }
-	if l.voice then
-		flags[#flags + 1] = W.Icon("voice") .. " voice chat"
-	end
-	GameTooltip:AddLine(table.concat(flags, ", "), 0.6, 0.6, 0.6)
-	if IsHidden(l) then
-		GameTooltip:AddLine("Hidden until they make a new listing (use the eye button to show).", 0.6, 0.6, 0.6, true)
-	end
+	local tip = TipWriter()
+	StockTooltip(tip, l, inst and inst.activeIDs)
+	ExtrasTooltip(tip, l)
 	GameTooltip:Show()
 end
 
@@ -683,7 +874,9 @@ function Instance:BuildRow(row)
 		inst:RefreshButtons()
 		inst.list:Reinitialize()
 	end)
-	row:SetScript("OnEnter", ShowTooltip)
+	row:SetScript("OnEnter", function(r)
+		ShowTooltip(r, self)
+	end)
 	row:SetScript("OnLeave", function()
 		GameTooltip:Hide()
 	end)
