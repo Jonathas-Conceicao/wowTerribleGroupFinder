@@ -18,21 +18,16 @@ reviews before the milestone closes.
 
 ### Messages (MSG)
 
-- [x] **MSG-01
-**: The default request preset is `{addon} Level {level} {class}, for {activity}` (rendered `[TGF] Level 23 Warrior, for The Deadmines`)
-- [x] **MSG-02
-**: The default invite preset is `{addon} Group for {activity} with {players} players`, where `{players}` is the player's current group size
+- [ ] **MSG-01**: The default request preset is `{addon} Level {level} {class}, for {activity}` (rendered `[TGF] Level 23 Warrior, for The Deadmines`)
+- [ ] **MSG-02**: The default invite preset is `{addon} Group for {activity} with {players} players`, where `{players}` is the player's current group size
 - [ ] **MSG-03**: Under each preset's text box the player sees one button per key; clicking it inserts the key at the cursor
-- [x] **MSG-04
-**: The addon key renders `[TGF]`, is always at the start of the message and at most once; its button puts it at the front
+- [ ] **MSG-04**: The addon key renders `[TGF]`, is always at the start of the message and at most once; its button puts it at the front
 - [ ] **MSG-05**: The invite preset has Auto-send and, after it, Auto-invite; Auto-invite is disabled (greyed) unless Auto-send is checked, and unchecks when Auto-send is unchecked
-- [x] **MSG-06
-**: With Auto-send and Auto-invite on, one click on a solo player whispers the preset and then sends the group invite
+- [ ] **MSG-06**: With Auto-send and Auto-invite on, one click on a solo player whispers the preset and then sends the group invite
 
 ### Contact lock (LOCK)
 
-- [x] **LOCK-01
-**: After a click that auto-sends, every whisper / invite button ignores clicks for 1 s
+- [ ] **LOCK-01**: After a click that auto-sends, every whisper / invite button ignores clicks for 1 s
 - [ ] **LOCK-02**: During that second the clicked button stays visibly pressed ("sending"); the send itself is instant
 - [ ] **LOCK-03**: The bottom Send Message button uses the same preset path and the same lock as the row button
 
