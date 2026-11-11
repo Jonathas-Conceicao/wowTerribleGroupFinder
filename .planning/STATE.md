@@ -2,9 +2,9 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: executing
-stopped_at: Completed 01-02-PLAN.md
-last_updated: "2026-11-11T16:13:50.528Z"
+status: verifying
+stopped_at: Completed 01-03-PLAN.md
+last_updated: "2026-11-11T16:15:47.601Z"
 last_activity: 2026-11-11
 progress:
   total_phases: 6
@@ -27,7 +27,7 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 Phase: 1 (Gear Score Off and Release Plumbing) — EXECUTING
 Plan: 3 of 3
-Status: Ready to execute
+Status: Phase complete — ready for verification
 Last activity: 2026-11-11
 
 Progress: [███████░░░] 67%
@@ -59,6 +59,7 @@ Recent decisions affecting current work:
 - Roadmap: ScrollBox move (UIP-05) sits in Phase 2 because it unblocks the header and row look (UIP-02, UIP-06)
 - Roadmap: gear score is switched off first (Phase 1) so later phases never build GS columns or `{gs}` keys
 - Roadmap: contact lock and Auto-invite (Phase 4) come after rows exist, since the lock covers row and bottom buttons
+- 01-03: IconTexture resolved from TOC path (strip addon prefix, probe .blp/.tga); CF_API_KEY kept as secret name
 
 ### Pending Todos
 
@@ -70,8 +71,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-11T16:13:50.522Z
-Stopped at: Completed 01-02-PLAN.md
+Last session: 2026-11-11T16:15:47.291Z
+Stopped at: Completed 01-03-PLAN.md
 Resume file: None
 
 **Planned Phase:** 1 (Gear Score Off and Release Plumbing) — 3 plans — 2026-11-11T16:09:19.621Z
