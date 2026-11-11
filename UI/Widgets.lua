@@ -262,10 +262,18 @@ function W.Button(parent, text, width, height, onClick)
 	return b
 end
 
--- UICheckButtonTemplate with its own label.
+-- Forever's checkbox sound: on when checked (or a row is picked), off when unchecked.
+function W.PlayCheckbox(on)
+	if PlaySound and SOUNDKIT then
+		PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+	end
+end
+
+-- UICheckButtonTemplate, 26x26, with the template's own label (GameFontNormalSmall) where it
+-- has one, else a label of our own. Every click plays the checkbox sound first.
 function W.Check(parent, label, onClick)
 	local c = Create("CheckButton", parent, "UICheckButtonTemplate")
-	c:SetSize(24, 24)
+	c:SetSize(26, 26)
 	if not c:GetNormalTexture() then
 		c:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
 		c:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
@@ -273,14 +281,19 @@ function W.Check(parent, label, onClick)
 		c:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
 	end
 	if c.Text then
-		c.Text:SetText("")
+		c.Text:SetText(label or "")
+		c.Label = c.Text
+	else
+		c.Label = W.Text(c, "GameFontHighlightSmall", 11)
+		c.Label:SetPoint("LEFT", c, "RIGHT", 2, 1)
+		c.Label:SetText(label or "")
 	end
-	c.Label = W.Text(c, "GameFontHighlightSmall", 11)
-	c.Label:SetPoint("LEFT", c, "RIGHT", 2, 1)
-	c.Label:SetText(label or "")
-	if onClick then
-		c:SetScript("OnClick", onClick)
-	end
+	c:SetScript("OnClick", function(b, ...)
+		W.PlayCheckbox(b:GetChecked() and true or false)
+		if onClick then
+			onClick(b, ...)
+		end
+	end)
 	return c
 end
 
