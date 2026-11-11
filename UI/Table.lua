@@ -444,8 +444,13 @@ local function ActivityLines(tip, l, ids)
 end
 
 -- The names of the bosses the group has defeated, read when the tooltip opens (single activity only).
-local function BossNames(l)
-	if #l.acts ~= 1 or not (C_LFGList and C_LFGList.GetSearchResultEncounterInfo) then
+local function BossNames(l, inst)
+	if
+		l.mine
+		or (inst and inst.source.preview())
+		or #l.acts ~= 1
+		or not (C_LFGList and C_LFGList.GetSearchResultEncounterInfo)
+	then
 		return nil
 	end
 	local ok, info = pcall(C_LFGList.GetSearchResultEncounterInfo, l.id)
@@ -462,7 +467,7 @@ local function BossNames(l)
 end
 
 -- Forever's own tooltip content, in its order and wording.
-local function StockTooltip(tip, l, ids)
+local function StockTooltip(tip, l, ids, inst)
 	if l.delisted then
 		tip.line(LFG_LIST_ENTRY_DELISTED or "Delisted", W.RED)
 	elseif l.newPlayerFriendly then
@@ -550,7 +555,7 @@ local function StockTooltip(tip, l, ids)
 	tip.blank()
 	ActivityLines(tip, l, ids)
 
-	local bosses = BossNames(l)
+	local bosses = BossNames(l, inst)
 	if bosses then
 		tip.blank()
 		tip.line(LFG_LIST_BOSSES_DEFEATED or "Bosses defeated:", W.NORMAL)
@@ -594,7 +599,7 @@ local function ShowTooltip(row, inst)
 	end
 	GameTooltip:SetOwner(row, "ANCHOR_RIGHT")
 	local tip = TipWriter()
-	StockTooltip(tip, l, inst and inst.activeIDs)
+	StockTooltip(tip, l, inst and inst.activeIDs, inst)
 	ExtrasTooltip(tip, l)
 	GameTooltip:Show()
 end
