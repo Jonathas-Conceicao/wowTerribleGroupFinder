@@ -1,9 +1,10 @@
 ---
 gsd_state_version: 1.0
-status: complete
-stopped_at: Project initialized (GSD config only, no milestone yet)
-last_updated: "2026-11-04T12:00:00.000Z"
-last_activity: 2026-11-04 -- GSD project initialized on top of the prototype
+milestone: v0.1
+milestone_name: Initial Release
+status: planning
+last_updated: "2026-11-11T15:40:47.418Z"
+last_activity: 2026-11-11
 progress:
   total_phases: 0
   completed_phases: 0
@@ -16,16 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-11-04)
+See: .planning/PROJECT.md (updated 2026-11-11)
 
 **Core value:** Finding the right players or group fast: the listing is easy to read and order without leaving Forever's own group finder.
-**Current focus:** Planning the first milestone (`/gsd-new-milestone`)
+**Current focus:** Milestone v0.1 Initial Release — defining requirements
 
 ## Current Position
 
-Milestone: none yet. The prototype is on `main` (initial commit, pre-GSD).
-Status: Between milestones.
-Last activity: 2026-11-04 -- GSD project initialized
+Phase: Not started (defining requirements)
+Plan: —
+Status: Defining requirements
+Last activity: 2026-11-11 — Milestone v0.1 started
 
 ## Performance Metrics
 

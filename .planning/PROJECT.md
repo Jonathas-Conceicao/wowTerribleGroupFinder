@@ -13,10 +13,30 @@ players looking for groups or members who find the stock bulletin board hard to 
 Finding the right players or group fast: the listing must be easy to read and order (role,
 level, gear score) without leaving or replacing Forever's own group finder.
 
-## Next Milestone
+## Current Milestone: v0.1 Initial Release
 
-None planned yet. The repository holds a working prototype; start the next milestone with
-`/gsd-new-milestone`. Candidates are under Requirements → Deferred.
+**Goal:** Ship the first public release: Forever's finder looks and works as close as possible
+to the stock one, with our table, sorting, hiding and quick contact on top; gear score is
+switched off for now.
+
+**Target features:**
+- Gear score switched off (no column, no own GS, no inspects, no `{gs}`); code kept behind a
+  disabled switch; a backlog item decides between finishing it and dropping it
+- New preset defaults: request `[TGF] Level {level} {class}, for {activity}`, invite
+  `[TGF] Group for {activity} with {players} players` (`{players}` = your group's size)
+- Key buttons under each preset's text box that insert a key; the addon key (`[TGF]`) always
+  sits at the start, at most once
+- Invite preset: Auto-send, then Auto-invite (enabled only with Auto-send) that also sends the
+  group invite after the whisper
+- 1 s anti-spam lock after an automatic send: the clicked button stays pressed ("sending"),
+  every whisper / invite button ignores clicks until it ends
+- Fix: section headers (Solo players / Groups) get their own hover look, not the row highlight
+- UI parity with Forever's stock finder (look and usability), from a fresh review of
+  wow-ui-source `forever` (see `research/UI-PARITY.md`)
+- Release readiness: CurseForge `1798577` / Wago `Q6aqvA6W` IDs, release workflow upload keys,
+  addon icon (sources under `Media/Source/`, in-game texture as the TOC `IconTexture`),
+  packaging checked
+- Release Review phase (code cleanup, version, changelog draft, author review)
 
 ## Current State
 
@@ -37,22 +57,20 @@ data and stubbed smoke tests, not yet in the live client. Design notes:
 - ✓ Hide until relisted, and Needs my role, grey and move rows to the end of their section — prototype
 - ✓ Whisper per row from presets (invite / request, placeholders, Auto-send off by default) in a Messages side tab — prototype
 - ✓ Send Message and Group Invite (solo players) bottom buttons — prototype
-- ✓ Gear score: ours, cached between sessions, outdated colour, ready-check inspect of the group, own GS shown — prototype
+- ✓ Gear score: ours, cached between sessions, outdated colour, ready-check inspect of the group, own GS shown — prototype (switched off in v0.1, code kept; see Deferred)
 - ✓ Battle.net friend, friend and recent ally marks on names; "Friends in group" tooltip — prototype
 - ✓ Preview stand-in and sample data for development (`/tgf preview` in game) — prototype
 
 ### Active
 
-<!-- Current scope. Empty until the next milestone is defined. -->
+<!-- Current scope: milestone v0.1 Initial Release. Detailed REQ-IDs in REQUIREMENTS.md. -->
 
-(None — no milestone in progress)
+See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release).
 
 ### Deferred (next-milestone candidates)
 
-- Live-client validation of the prototype and fixes (layout at 620 wide, hidden parts staying hidden, Messages tab, friend marks, whisper prefill, ready-check inspects)
-- Gear score tuning against real gear, and sharing scores between TerribleGroupFinder users by addon whisper
+- Gear score: decide between finishing it (tuning against real gear, sharing scores between TerribleGroupFinder users by addon whisper) and dropping it fully (code switched off in v0.1)
 - Settings panel, remembered sort / filters, localization-ready strings
-- First public release (CurseForge / Wago IDs, release workflow keys, README screenshots)
 
 ### Out of Scope
 
@@ -85,7 +103,8 @@ data and stubbed smoke tests, not yet in the live client. Design notes:
 | Improve Forever's finder in place, not a new window | Players keep the game's flow; search and listing stay Blizzard's | ✓ Good |
 | Follow Forever's model: solo players or groups, no applications | That is how Forever's finder works; "apply" is a retail concept | ✓ Good |
 | Never remove rows: hidden / no-slot listings greyed at the end | Players keep the whole picture while focusing on what fits | ✓ Good |
-| Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | — Pending (tune in game) |
+| Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | — On hold (switched off in v0.1) |
+| Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | — Pending |
 | Whisper presets with Auto-send off by default | Prefill keeps the player in control; Auto-send is opt-in | ✓ Good |
 | License GPL-3.0 | Open source, share-alike | ✓ Good |
 
@@ -154,4 +173,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-04 after initialization (GSD config only, no milestone)*
+*Last updated: 2026-11-11 at the start of milestone v0.1 Initial Release*
