@@ -67,6 +67,17 @@ local source = {
 	preview = function()
 		return ns.UsingPreview()
 	end,
+	-- Your own row stays only while Forever has an active listing for you.
+	hasListing = function()
+		if ns.UsingPreview() then
+			return ns.state.myListing ~= nil
+		end
+		if not (C_LFGList and C_LFGList.HasActiveEntryInfo) then
+			return false
+		end
+		local active = C_LFGList.HasActiveEntryInfo()
+		return not (issecretvalue and issecretvalue(active)) and active == true
+	end,
 	searching = function()
 		return LFGBrowseFrame and LFGBrowseFrame.searching == true
 	end,

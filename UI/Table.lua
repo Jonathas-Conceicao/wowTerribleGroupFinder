@@ -34,7 +34,7 @@ local CELL_H = 32 -- a cell's height, centred in the row
 local SLOTS = 5
 local RELIST_SLACK = 30 -- seconds: a listing read again later keeps its time within this
 local GAP = 6
-local HIDE_W, MSG_W = 20, 66
+local HIDE_W, MSG_W = 24, 66
 local ACTIONS_W = HIDE_W + 3 + MSG_W + 2 -- the buttons at a row's right edge
 local LISTED_W = 44
 local NAME_W, DISCORD = 130, 16 -- the name text's width (the cell's less the class icon), the Discord icon
@@ -403,7 +403,7 @@ local function ShowTooltip(row)
 	end
 	GameTooltip:AddLine(table.concat(flags, ", "), 0.6, 0.6, 0.6)
 	if IsHidden(l) then
-		GameTooltip:AddLine("Hidden until they make a new listing (+ to show).", 0.6, 0.6, 0.6, true)
+		GameTooltip:AddLine("Hidden until they make a new listing (use the eye button to show).", 0.6, 0.6, 0.6, true)
 	end
 	GameTooltip:Show()
 end
@@ -461,27 +461,34 @@ local function CanUnlist(inst)
 	return not IsInGroup() or UnitIsGroupLeader("player") == true
 end
 
--- The row's message button: whisper the player or the group's leader (Messages.lua), or
--- unlist your own listing.
+-- The row's message button: whisper the player or the group's leader (Messages.lua).
 function Instance:Message(l)
-	if not l then
+	if not l or l.mine then
 		return
 	end
-	local preview = self.source.preview()
-	if l.mine then
-		if not CanUnlist(self) then
-			return
-		end
-		if preview then
-			ns.state.myListing = nil
-			ns.Print("preview: unlisted (C_LFGList.RemoveListing).")
-		else
-			C_LFGList.RemoveListing()
-		end
-	else
-		ns.Messages.Send(l, preview)
-	end
+	ns.Messages.Send(l, self.source.preview())
 	T.RefreshAll()
+end
+
+-- The delist button on your own row (Forever's: a click, no confirmation, no new search).
+function Instance:Delist()
+	W.PlayCheckbox(true)
+	if self.source.preview() then
+		ns.state.myListing = nil
+		ns.Print("preview: unlisted (C_LFGList.RemoveListing).")
+		T.RefreshAll()
+		return
+	end
+	if not (C_LFGList and C_LFGList.HasActiveEntryInfo and C_LFGList.RemoveListing) then
+		return
+	end
+	local active = C_LFGList.HasActiveEntryInfo()
+	if issecretvalue and issecretvalue(active) then
+		return
+	end
+	if active == true then
+		C_LFGList.RemoveListing()
+	end
 end
 
 -- Forever's Group Invite: solo players only.
@@ -643,10 +650,18 @@ function Instance:BuildRow(row)
 		fs.__tgfColor = { fs:GetTextColor() }
 	end
 
-	row.hide = W.Button(row, "x", HIDE_W, 20, function(b)
+	row.hide = W.IconButton(row, HIDE_W, 22)
+	row.hide:SetPoint("RIGHT", -2, 0)
+	row.hide:SetScript("OnClick", function(b)
 		Hide(b:GetParent().listing)
 	end)
-	row.hide:SetPoint("RIGHT", -2, 0)
+	row.delist = W.IconButton(row, 24, 22)
+	row.delist:SetPoint("RIGHT", -8, 0)
+	row.delist:SetFrameLevel(row:GetFrameLevel() + 2)
+	row.delist:SetScript("OnClick", function()
+		inst:Delist()
+	end)
+	row.delist:Hide()
 	row.message = W.Button(row, "Whisper", MSG_W, 20, function(b)
 		inst:Message(b:GetParent().listing)
 	end)
@@ -672,7 +687,15 @@ function Instance:BuildRow(row)
 	row:SetScript("OnLeave", function()
 		GameTooltip:Hide()
 	end)
-	W.Tooltip(row.hide, "Hide", "Greys this player and moves them to the end until they make a new listing.")
+	W.Tooltip(row.hide, function(b)
+		return IsHidden(b:GetParent().listing) and "Show" or "Hide"
+	end, function(b)
+		if IsHidden(b:GetParent().listing) then
+			return "Brings this player back to the normal order."
+		end
+		return "Greys this player and moves them to the end until they make a new listing."
+	end)
+	W.Tooltip(row.delist, LFG_LIST_UNLIST or "Unlist")
 end
 
 -- Builds a section header once. Forever's grouping template brings its own parts; otherwise
@@ -840,7 +863,7 @@ function Instance:FillRow(row, item)
 	if greyed then
 		row.count:SetText(Plain(row.count:GetText() or ""))
 	end
-	local activityText = ActivityText(l)
+	local activityText = l.mine and (LFG_SELF_LISTING or "Your listing") or ActivityText(l)
 	row.activity:SetText(greyed and Plain(activityText) or activityText)
 	row.comment:SetText(l.comment or "")
 
@@ -868,7 +891,7 @@ function Instance:FillRow(row, item)
 		local r, g, b = W.ClassColor(who.class)
 		row.name:SetTextColor(r, g, b)
 		W.SetColor(row.level, W.GRAY)
-		W.SetColor(row.activity, MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY)
+		W.SetColor(row.activity, l.mine and W.LIGHTGREEN or (MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY))
 		W.SetColor(row.comment, W.LIGHTGRAY)
 		for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
 			local c = fs.__tgfColor
@@ -886,13 +909,27 @@ function Instance:FillRow(row, item)
 	end
 
 	row.selected:SetShown(IsSelected(self, l))
+	row.message:SetShown(not l.mine)
+	row.message:SetText("Whisper")
+	row.message:SetEnabled(not l.delisted)
 	row.hide:SetShown(not l.mine)
-	row.hide:SetText(hidden and "+" or "x")
-	row.message:SetText(l.mine and "Unlist" or "Whisper")
-	if l.mine then
-		row.message:SetEnabled(CanUnlist(self))
+	if row.hide.styled and W.HasAtlas("transmog-icon-hidden") and W.HasAtlas("socialqueuing-icon-eye") then
+		row.hide:SetText("")
+		row.hide.Icon:SetAtlas(hidden and "socialqueuing-icon-eye" or "transmog-icon-hidden")
+		row.hide.Icon:SetSize(16, 16)
+		row.hide.Icon:Show()
 	else
-		row.message:SetEnabled(not l.delisted)
+		row.hide.Icon:Hide()
+		row.hide:SetText(hidden and "+" or "x")
+	end
+	row.delist:SetShown(l.mine and CanUnlist(self) or false)
+	if W.HasAtlas("groupfinder-icon-redx") then
+		row.delist:SetText("")
+		row.delist.Icon:SetAtlas("groupfinder-icon-redx", true)
+		row.delist.Icon:Show()
+	else
+		row.delist.Icon:Hide()
+		row.delist:SetText("x")
 	end
 end
 
@@ -903,6 +940,8 @@ function Instance:Collect()
 	wipe(sections.solo)
 	wipe(sections.groups)
 	local mine
+	local hasListing = self.source.hasListing
+	local listed = hasListing == nil or hasListing()
 	wipe(self.byID)
 	wipe(self.shownIDs)
 	for _, l in ipairs(self.source.listings()) do
@@ -910,7 +949,7 @@ function Instance:Collect()
 			self.byID[l.id] = l
 		end
 		if l.mine then
-			mine = l
+			mine = listed and l or nil
 		elseif Matches(l) then
 			l.demoted = Demoted(l)
 			local list = sections[l.solo and "solo" or "groups"]

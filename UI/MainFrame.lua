@@ -332,6 +332,9 @@ local function BuildBrowse(parent)
 		preview = function()
 			return true
 		end,
+		hasListing = function()
+			return ns.state.myListing ~= nil
+		end,
 		failed = function()
 			return false
 		end,
