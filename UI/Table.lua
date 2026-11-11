@@ -156,8 +156,19 @@ local function FitsMyRoles(l)
 		local r = l.leader.roles or {}
 		return (r.tank and t > 0) or (r.healer and h > 0) or (r.dps and d > 0) or false
 	end
-	RoleCounts(l)
 	local mine = ns.MyRoles()
+	-- The game's own count of open slots per role, when it gave one. All zeros for a group
+	-- that is not full means the activity has no roles to count: the estimate decides then.
+	local left = l.remaining
+	if left and (left.TANK > 0 or left.HEALER > 0 or left.DAMAGER > 0 or #l.members >= Size(l)) then
+		for _, role in ipairs(ROLES) do
+			if mine[ROLE_KEY[role]] and left[role] > 0 then
+				return true
+			end
+		end
+		return false
+	end
+	RoleCounts(l)
 	for _, role in ipairs(ROLES) do
 		if mine[ROLE_KEY[role]] and open[role] > 0 then
 			return true
