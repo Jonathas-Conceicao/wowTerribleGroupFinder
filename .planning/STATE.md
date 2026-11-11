@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: planning
-stopped_at: Phase 2 UI-SPEC approved
-last_updated: "2026-11-11T16:56:29.642Z"
+stopped_at: Completed 02-01-PLAN.md
+last_updated: "2026-11-11T17:02:19.878Z"
 last_activity: 2026-11-11
 progress:
   total_phases: 6
   completed_phases: 1
   total_plans: 7
-  completed_plans: 3
-  percent: 43
+  completed_plans: 4
+  percent: 57
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: Not started
 Status: Ready to plan
 Last activity: 2026-11-11
 
-Progress: [███████░░░] 67%
+Progress: [██████░░░░] 57%
 
 ## Performance Metrics
 
@@ -45,6 +45,7 @@ Progress: [███████░░░] 67%
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
 | 1 | 3 | - | - |
+| Phase 02 P01 | 40min | 3 tasks | 5 files |
 
 ## Accumulated Context
 
@@ -60,6 +61,7 @@ Recent decisions affecting current work:
 - Roadmap: gear score is switched off first (Phase 1) so later phases never build GS columns or `{gs}` keys
 - Roadmap: contact lock and Auto-invite (Phase 4) come after rows exist, since the lock covers row and bottom buttons
 - 01-03: IconTexture resolved from TOC path (strip addon prefix, probe .blp/.tga); CF_API_KEY kept as secret name
+- 02-01: list host is WowScrollBoxList + MinimalScrollBar with scriptless header/row templates; W.List per-kind pools are the fallback
 
 ### Pending Todos
 
@@ -73,8 +75,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: --stopped-at
-Stopped at: Phase 2 UI-SPEC approved
-Resume file: --resume-file
+Last session: 2026-11-11T17:02:19.872Z
+Stopped at: Completed 02-01-PLAN.md
+Resume file: None
 
 **Planned Phase:** 2 (List Foundation) — 4 plans — 2026-11-11T16:56:29.637Z

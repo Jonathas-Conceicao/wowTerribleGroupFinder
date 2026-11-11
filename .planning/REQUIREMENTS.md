@@ -34,10 +34,12 @@ reviews before the milestone closes.
 ### UI parity (UIP) — from research/UI-PARITY.md
 
 - [ ] **UIP-01**: The Messages side tab starts unchecked, fills its icon like Forever's tabs, never shows checked together with another tab, and has a stock-style tooltip
-- [ ] **UIP-02**: Section headers look and hover like Forever's own grouping header (collapse/expand atlas, plus/minus), not the row highlight (fixes the header hover bug)
+- [x] **UIP-02
+**: Section headers look and hover like Forever's own grouping header (collapse/expand atlas, plus/minus), not the row highlight (fixes the header hover bug)
 - [ ] **UIP-03**: Selection works like stock: by result ID, click again to clear, not on delisted / own rows, cleared on new results, with the click sound; no double-click whisper
 - [ ] **UIP-04**: Layout: no second inset/border; search box in the stone band; column headers in the strip above `BarTop`; Needs my role and status in the bottom bar; the freed GS width goes to Roles / Activity
-- [ ] **UIP-05**: The list scrolls with Blizzard's ScrollBox and MinimalScrollBar, with separate header / row frames and their own heights
+- [x] **UIP-05
+**: The list scrolls with Blizzard's ScrollBox and MinimalScrollBar, with separate header / row frames and their own heights
 - [ ] **UIP-06**: Rows look like stock: mid2 background / hover / selected art, stock fonts and colours, greyed rows in stock grey with desaturated icons, leader icon on groups
 - [ ] **UIP-07**: Solo players show the stock micro role icons; voice chat icon and wording match stock
 - [ ] **UIP-08**: Your own listing row has the stock delist button (leader / solo only) and "Your listing" in green
