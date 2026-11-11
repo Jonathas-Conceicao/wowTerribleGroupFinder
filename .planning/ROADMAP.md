@@ -50,7 +50,7 @@ Plans:
 Plans:
 - [x] 02-01-PLAN.md — ScrollBox host, Templates.xml, per-kind W.List fallback, stock grouping headers + harness stubs for all paths (wave 1)
 - [x] 02-02-PLAN.md — Selection by result ID, T.ClearSelection wiring, stock sounds, 26x26 W.Check (wave 2)
-- [ ] 02-03-PLAN.md — Layout (single inset, search box in stone band, column headers above BarTop, bottom bar) + search states (wave 3)
+- [x] 02-03-PLAN.md — Layout (single inset, search box in stone band, column headers above BarTop, bottom bar) + search states (wave 3)
 - [ ] 02-04-PLAN.md — Stock row look (mid2 art, fonts, colours, greyed rows, leader icon), CLAUDE.md, regression, deploy (wave 4)
 **UI hint**: yes
 
