@@ -45,6 +45,11 @@ data and stubbed smoke tests, not yet in the live client. Design notes:
 [research/DESIGN-NOTES.md](research/DESIGN-NOTES.md); Blizzard source map:
 [research/FOREVER-GROUPFINDER.md](research/FOREVER-GROUPFINDER.md).
 
+Milestone v0.1: Phase 1 complete (2026-11-11) — gear score switched off behind
+`ns.GEAR_SCORE = false` (design kept in [research/GEARSCORE.md](research/GEARSCORE.md)); TOC
+carries the CurseForge / Wago IDs and the `Media/Textures` icon; packaging ships only the addon
+files and the texture. In-game checks pending (Phase 1 HUMAN-UAT).
+
 ## Requirements
 
 ### Validated
@@ -65,7 +70,8 @@ data and stubbed smoke tests, not yet in the live client. Design notes:
 
 <!-- Current scope: milestone v0.1 Initial Release. Detailed REQ-IDs in REQUIREMENTS.md. -->
 
-See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release).
+See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release). Validated in Phase 1
+(Gear Score Off and Release Plumbing): GS-01, GS-02, REL-01, REL-02, REL-03 (in-game checks pending).
 
 ### Deferred (next-milestone candidates)
 
@@ -173,4 +179,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 at the start of milestone v0.1 Initial Release*
+*Last updated: 2026-11-11 after Phase 1 of milestone v0.1 Initial Release*
