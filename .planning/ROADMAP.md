@@ -28,7 +28,12 @@ v0.1 ships the first public release: Forever's own group finder, improved in pla
   3. `.planning/research/GEARSCORE.md` holds the gear score design notes and the backlog has the "finish or drop" item
   4. The TOC carries the CurseForge and Wago IDs and an `IconTexture`; the icon sources sit under `Media/Source/` and the in-game texture under `Media/Textures/`
   5. The package zip from `scripts/package` and the install output contain only the addon files and the in-game texture
-**Plans**: TBD
+**Plans**: 3 plans
+
+Plans:
+- [ ] 01-01-PLAN.md — Gear score off behind `ns.GEAR_SCORE` (Core, GearScore, Messages, Listings, Table) + smoke harness checks (wave 1)
+- [ ] 01-02-PLAN.md — `.planning/research/GEARSCORE.md` design notes and backlog 999.1 check (wave 1)
+- [ ] 01-03-PLAN.md — Store IDs, upload keys, icon (Media/Source, png2tga, TGA), packaging / install fixes and checks (wave 2)
 
 ### Phase 2: List Foundation
 **Goal**: The Browse list is built like the stock one: it scrolls with Blizzard's ScrollBox, and headers, selection, layout and row look match Forever's finder
@@ -84,7 +89,7 @@ v0.1 ships the first public release: Forever's own group finder, improved in pla
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Gear Score Off and Release Plumbing | 0/TBD | Not started | - |
+| 1. Gear Score Off and Release Plumbing | 0/3 | Planned | - |
 | 2. List Foundation | 0/TBD | Not started | - |
 | 3. Rows, Tooltip and Own Listing | 0/TBD | Not started | - |
 | 4. Messages and Contact | 0/TBD | Not started | - |
