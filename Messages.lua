@@ -200,7 +200,9 @@ function M.BuildPanel(parent)
 	tokens:SetText(
 		"Placeholders: "
 			.. M.TOKENS
-			.. ". {name} is who you whisper, {activity} their listing's; the rest are you (your roles, class, level)."
+			.. ". {name} is who you whisper, {activity} their listing's; the rest are you (your roles, class, level"
+			.. (ns.GEAR_SCORE and ", gear score" or "")
+			.. ")."
 	)
 	return function()
 		for _, kind in ipairs(M.KINDS) do

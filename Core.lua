@@ -11,8 +11,9 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
 -- Gear score is switched off for v0.1. Setting this to true brings back the GS column, "Your
--- GS", the tooltip lines, the {gs} message key and the ready-check inspects. See
--- .planning/research/GEARSCORE.md.
+-- GS", the tooltip lines, the {gs} message key and the ready-check inspects. The default
+-- request preset no longer has {gs} (players add it themselves), and a saved copy of the old
+-- GS preset was reset for good. See .planning/research/GEARSCORE.md.
 ns.GEAR_SCORE = false
 
 --- A character name without its realm suffix.

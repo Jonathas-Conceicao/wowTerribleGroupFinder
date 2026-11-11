@@ -118,13 +118,18 @@ What comes back:
 - The GS column with its header, sort and descending-first entry.
 - "Your GS" in the top band and its tooltip.
 - The GS lines in row tooltips.
-- The `{gs}` key in the Messages tab and in `M.Format`, and `ns.Me().gs`.
+- The `{gs}` key: listed in the Messages tab's placeholder list (whose help text then says
+  the rest include your gear score), filled by `M.Format`, and `ns.Me().gs`.
 - `GS.Init`'s cache prune and its four event registrations: `INSPECT_READY`,
   `READY_CHECK`, `PLAYER_EQUIPMENT_CHANGED`, `PLAYER_ENTERING_WORLD`.
 - Cache use: lookups for listings and group members, and the ready-check inspects.
 
 What does not come back by itself:
 
-- The default request preset no longer contains `GS {gs}`; users add the key themselves.
+- The default request preset no longer contains `GS {gs}` (a fresh install or a "Default"
+  click gives the preset without it); users add the key themselves.
+- The saved request text of anyone who logged in with the switch off and still had the old
+  GS default (`... ({role}, GS {gs}), ...`) was reset to the new default by `M.Init`'s
+  migration. That cannot be undone by the switch; the key has to be added back by hand.
 - README and CHANGELOG wording about gear score.
 - Phase 2's re-layout of the table may need the GS column width again.
