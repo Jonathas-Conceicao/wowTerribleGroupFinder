@@ -889,6 +889,8 @@ function Instance:Refresh()
 	self.spinner:Hide()
 	self.activeIDs = ActiveActivityIDs(self)
 	local solo, groups = self:Collect()
+	-- Drop a gone or delisted selection before the rows are filled, so no row draws it.
+	self:ValidateSelection()
 	self.list:SetItems(self.items)
 	local found = 0
 	for _, l in ipairs(self.source.listings()) do
@@ -913,13 +915,18 @@ function Instance:Refresh()
 	self:RefreshButtons()
 end
 
--- The bottom buttons act on the listing the selected id resolves to; a selection whose
--- listing is gone or delisted is dropped.
-function Instance:RefreshButtons()
+-- Drops a selection whose listing is gone or delisted; returns the selected listing, if any.
+function Instance:ValidateSelection()
 	local sel = FindByID(self, self.selectedID)
 	if self.selectedID and (not sel or sel.delisted) then
 		self.selectedID, sel = nil, nil
 	end
+	return sel
+end
+
+-- The bottom buttons act on the listing the selected id resolves to.
+function Instance:RefreshButtons()
+	local sel = self:ValidateSelection()
 	self.send:SetEnabled(sel ~= nil)
 	self.invite:SetEnabled(sel ~= nil and sel.solo == true and ns.CanInvite())
 end
