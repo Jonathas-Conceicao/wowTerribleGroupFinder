@@ -52,9 +52,9 @@ reviews before the milestone closes.
 
 ### Release (REL)
 
-- [ ] **REL-01**: The TOC carries `X-Curse-Project-ID: 1798577` and `X-Wago-ID: Q6aqvA6W`; the release workflow enables the CurseForge / Wago upload keys
-- [ ] **REL-02**: The icon sources (`baseicon.ase`, `baseicon.png`) live under `Media/Source/`; an in-game texture under `Media/Textures/` is the TOC's `IconTexture`
-- [ ] **REL-03**: Packaging ships only the addon files and the in-game texture (`.pkgmeta`, `scripts/install`, `scripts/package` checked)
+- [x] **REL-01**: The TOC carries `X-Curse-Project-ID: 1798577` and `X-Wago-ID: Q6aqvA6W`; the release workflow enables the CurseForge / Wago upload keys
+- [x] **REL-02**: The icon sources (`baseicon.ase`, `baseicon.png`) live under `Media/Source/`; an in-game texture under `Media/Textures/` is the TOC's `IconTexture`
+- [x] **REL-03**: Packaging ships only the addon files and the in-game texture (`.pkgmeta`, `scripts/install`, `scripts/package` checked)
 - [ ] **REL-04**: Release Review: code cleanup, version confirmed, changelog draft, author review of README.md / CHANGELOG.md
 
 ## Future Requirements (deferred)
@@ -79,11 +79,11 @@ reviews before the milestone closes.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| GS-01 | Phase 1 | Pending |
-| GS-02 | Phase 1 | Pending |
-| REL-01 | Phase 1 | Pending |
-| REL-02 | Phase 1 | Pending |
-| REL-03 | Phase 1 | Pending |
+| GS-01 | Phase 1 | Complete |
+| GS-02 | Phase 1 | Complete |
+| REL-01 | Phase 1 | Complete |
+| REL-02 | Phase 1 | Complete |
+| REL-03 | Phase 1 | Complete |
 | UIP-02 | Phase 2 | Pending |
 | UIP-03 | Phase 2 | Pending |
 | UIP-04 | Phase 2 | Pending |

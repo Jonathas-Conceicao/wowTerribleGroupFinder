@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: verifying
+status: ready_to_plan
 stopped_at: Completed 01-03-PLAN.md
 last_updated: "2026-11-11T16:15:47.601Z"
 last_activity: 2026-11-11
 progress:
   total_phases: 6
-  completed_phases: 0
+  completed_phases: 1
   total_plans: 3
   completed_plans: 2
-  percent: 67
+  percent: 17
 ---
 
 # Project State
@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 ## Current Position
 
-Phase: 1 (Gear Score Off and Release Plumbing) — EXECUTING
-Plan: 3 of 3
-Status: Phase complete — ready for verification
+Phase: 2
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-11-11
 
 Progress: [███████░░░] 67%
@@ -36,7 +36,7 @@ Progress: [███████░░░] 67%
 
 **Velocity:**
 
-- Total plans completed: 0
+- Total plans completed: 3
 - Average duration: -
 - Total execution time: -
 
@@ -44,7 +44,7 @@ Progress: [███████░░░] 67%
 
 | Phase | Plans | Total | Avg/Plan |
 |-------|-------|-------|----------|
-| - | - | - | - |
+| 1 | 3 | - | - |
 
 ## Accumulated Context
 
@@ -68,6 +68,8 @@ None yet.
 ### Blockers/Concerns
 
 - In-game checks are deferred to the author; phases are verified by stubbed fengari smoke tests and `/tgf` preview
+- Phase 1 in-game checks pending (4 items in `phases/01-gear-score-off-and-release-plumbing/01-HUMAN-UAT.md`: Browse without GS, Messages without `{gs}`, no ready-check inspects, TGA icon shows)
+- Phase 5 inputs: README.md still mentions gear score (lines ~7, ~12); `.pkgmeta` excludes LICENSE from the release zip (author convention, review WR-01; GPL-3.0 may want it shipped); `CF_API_KEY` is the packager's deprecated name for `CF_API_TOKEN` (kept per author); whether CurseForge / Wago accept the `forever` game type is only known after the first tagged release
 
 ## Session Continuity
 
