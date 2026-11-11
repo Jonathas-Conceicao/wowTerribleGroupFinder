@@ -52,6 +52,16 @@ function W.ClassColor(class)
 	return c[1], c[2], c[3]
 end
 
+-- Forever's row colours: level and activity grey (BRIGHTBLUE_FONT_COLOR when the activity is
+-- one of your active listing's), and the stock grey of delisted / filtered rows.
+W.GRAY = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
+W.BRIGHTBLUE = BRIGHTBLUE_FONT_COLOR or { r = 0.4, g = 0.73, b = 1 }
+W.DELISTED = { r = 0.3, g = 0.3, b = 0.3 }
+
+function W.SetColor(fs, c)
+	fs:SetTextColor(c.r, c.g, c.b)
+end
+
 -- A gear score on the item level scale ("23.1"), coloured like item quality by how it
 -- compares with a well geared player of that level (blues about five levels above it).
 -- An outdated one (only known from an earlier session) takes its own dusty colour; an

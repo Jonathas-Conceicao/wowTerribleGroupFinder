@@ -527,15 +527,20 @@ end
 -- Builds a result row once, on a frame the list gave us.
 function Instance:BuildRow(row)
 	local inst = self
-	W.RowHighlight(row)
-	row.selected = row:CreateTexture(nil, "BACKGROUND")
-	row.selected:SetAllPoints()
-	if not W.Atlas(row.selected, "groupfinder-highlightbar-yellow") then
-		row.selected:SetColorTexture(1, 0.82, 0, 0.12)
-	end
-	row.line = W.Line(row)
-	row.line:SetPoint("BOTTOMLEFT", 0, 0)
-	row.line:SetPoint("BOTTOMRIGHT", 0, 0)
+	-- Forever's row art: mid2 background, additive hover, additive selected on top. FillRow
+	-- picks the atlases (your own listing has its own pair).
+	row.bg = row:CreateTexture(nil, "BACKGROUND")
+	row.bg:SetPoint("TOPLEFT", 3, -2)
+	row.bg:SetPoint("BOTTOMRIGHT", -3, 0)
+	row.hover = row:CreateTexture(nil, "HIGHLIGHT")
+	row.hover:SetPoint("TOPLEFT", 3, -3)
+	row.hover:SetPoint("BOTTOMRIGHT", -3, -1)
+	row.hover:SetBlendMode("ADD")
+	row.selected = row:CreateTexture(nil, "OVERLAY")
+	row.selected:SetPoint("TOPLEFT", 3, -3)
+	row.selected:SetPoint("BOTTOMRIGHT", -3, -1)
+	row.selected:SetBlendMode("ADD")
+	row.selected:Hide()
 
 	-- Each cell holds its texts; Layout anchors the cells.
 	local cells = {}
@@ -553,7 +558,7 @@ function Instance:BuildRow(row)
 	row.sub = W.Text(cells.name, "GameFontDisableSmall", 10)
 	row.sub:SetPoint("TOPLEFT", 0, -19)
 	row.sub:SetPoint("RIGHT", 0, 0)
-	row.level = W.Text(cells.level, "GameFontHighlight", 12, "CENTER")
+	row.level = W.Text(cells.level, "GameFontDisable", 12, "CENTER")
 	row.level:SetAllPoints()
 	row.slots = {}
 	for i = 1, SLOTS do
@@ -575,6 +580,10 @@ function Instance:BuildRow(row)
 	row.comment:SetPoint("RIGHT", 0, 0)
 	row.listed = W.Text(cells.listed, "GameFontDisableSmall", 10, "RIGHT")
 	row.listed:SetAllPoints()
+	-- What these texts look like on a normal row, put back on every fill.
+	for _, fs in ipairs({ row.sub, row.count, row.comment, row.listed, row.gs or row.count }) do
+		fs.__tgfColor = { fs:GetTextColor() }
+	end
 
 	row.hide = W.Button(row, "x", HIDE_W, 20, function(b)
 		Hide(b:GetParent().listing)
@@ -659,13 +668,77 @@ function Instance:FillHeader(frame, item)
 	frame.CollapseIcon:SetShown(not collapsed)
 end
 
+-- The activity ids of your active listing (a set), read once per refresh: in the game from
+-- C_LFGList (nil or secret under lockdown reads as none), in the preview from the sample one.
+local function ActiveActivityIDs(inst)
+	local ids = {}
+	if inst.source.preview() then
+		local mine = ns.state.myListing
+		for _, key in ipairs(mine and mine.activities or {}) do
+			ids[key] = true
+		end
+		return ids
+	end
+	local info = C_LFGList and C_LFGList.GetActiveEntryInfo and C_LFGList.GetActiveEntryInfo()
+	if type(info) ~= "table" or (issecretvalue and issecretvalue(info)) then
+		return ids
+	end
+	local list = info.activityIDs
+	if type(list) ~= "table" or (issecretvalue and issecretvalue(list)) then
+		return ids
+	end
+	for _, id in ipairs(list) do
+		if not (issecretvalue and issecretvalue(id)) then
+			ids[id] = true
+		end
+	end
+	return ids
+end
+
+-- Text without colour codes, so a greyed row's own colour shows through.
+local function Plain(text)
+	return (text:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", ""))
+end
+
+local function MatchesActive(inst, l)
+	local ids = inst.activeIDs
+	if not ids then
+		return false
+	end
+	for _, a in ipairs(l.acts) do
+		if ids[a.key] then
+			return true
+		end
+	end
+	return false
+end
+
 function Instance:FillRow(row, item)
 	row.item = item
 	local l = item
 	row.listing = l
+	local greyed = l.demoted == true
 
+	-- Art: your own listing has the highlight bar pair, the others Forever's list buttons.
+	if l.mine then
+		W.Atlas(row.bg, "groupfinder-highlightbar", 0.1, 0.1, 0.1, 0.5)
+		W.Atlas(row.hover, "groupfinder-highlightbar-blue", 0.3, 0.5, 1, 0.12)
+	else
+		W.Atlas(row.bg, "common-button-list-mid2", 0.1, 0.1, 0.1, 0.5)
+		W.Atlas(row.hover, "common-button-list-mid2-hover", 0.3, 0.5, 1, 0.12)
+	end
+	W.Atlas(row.selected, "common-button-list-mid2-selected", 1, 0.82, 0, 0.12)
+
+	-- The icon: groups show the leader icon at its atlas size, solo players their class.
 	local who = l.leader
-	row.icon:SetClass(who.class)
+	if not l.solo and W.HasAtlas("groupfinder-icon-leader") then
+		row.icon:SetAtlas("groupfinder-icon-leader", true)
+		row.icon:SetVertexColor(1, 1, 1, 1)
+	else
+		row.icon:SetSize(16, 16)
+		row.icon:SetClass(who.class)
+	end
+	row.icon:SetDesaturated(greyed)
 	local tags = ""
 	if l.newPlayerFriendly then
 		tags = tags .. " " .. W.Icon("newPlayer")
@@ -676,7 +749,7 @@ function Instance:FillRow(row, item)
 	if not l.solo and FriendsLine(l) and not (who.bnet or who.friend or who.recent) then
 		tags = tags .. " " .. W.Icon("friendsIn")
 	end
-	row.name:SetText(W.Colored(who.class, who.name) .. W.Marks(who) .. (l.mine and " |cff33ff33(you)|r" or "") .. tags)
+	row.name:SetText(who.name .. W.Marks(who) .. (l.mine and " |cff33ff33(you)|r" or "") .. tags)
 	if l.solo then
 		row.sub:SetText(who.spec or W.ClassName(who.class))
 	else
@@ -684,32 +757,62 @@ function Instance:FillRow(row, item)
 	end
 	if row.gs then
 		local gs, stale = ListingGS(l)
-		row.gs:SetText(W.GS(gs, who.level, stale))
+		local text = W.GS(gs, who.level, stale)
+		row.gs:SetText(greyed and Plain(text) or text)
 	end
 	row.level:SetText(who.level)
 	SetRoles(row, l)
-	row.activity:SetText("|cffffd100" .. ActivityText(l) .. "|r")
+	if greyed then
+		row.count:SetText(Plain(row.count:GetText() or ""))
+	end
+	row.activity:SetText(ActivityText(l))
 	row.comment:SetText(l.comment or "")
 
 	local hidden = IsHidden(l)
+	local listed
 	if l.delisted then
-		row.listed:SetText("|cffff3333delisted|r")
+		listed = greyed and "delisted" or "|cffff3333delisted|r"
 	elseif ns.state.invited[l.id] then
-		row.listed:SetText("|cff33ff33invited|r")
+		listed = greyed and "invited" or "|cff33ff33invited|r"
 	elseif ns.state.messaged[l.id] then
-		row.listed:SetText("|cff33ff33sent|r")
+		listed = greyed and "sent" or "|cff33ff33sent|r"
 	else
-		row.listed:SetText(W.Age(l.age))
+		listed = W.Age(l.age)
 	end
+	row.listed:SetText(listed)
+
+	-- Colours, set on every fill: the frames are reused. Greyed rows take Forever's delisted
+	-- grey on all text (class-coloured name included) and desaturated icons.
+	local texts = { row.name, row.level, row.activity, row.sub, row.count, row.comment, row.listed, row.gs }
+	if greyed then
+		for _, fs in pairs(texts) do
+			W.SetColor(fs, W.DELISTED)
+		end
+	else
+		local r, g, b = W.ClassColor(who.class)
+		row.name:SetTextColor(r, g, b)
+		W.SetColor(row.level, W.GRAY)
+		W.SetColor(row.activity, MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY)
+		for _, fs in ipairs({ row.sub, row.count, row.comment, row.listed, row.gs or row.count }) do
+			local c = fs.__tgfColor
+			if c and c[1] then
+				fs:SetTextColor(c[1], c[2], c[3])
+			end
+		end
+	end
+	for _, slot in ipairs(row.slots) do
+		slot.tex:SetDesaturated(greyed)
+		slot:SetAlpha(greyed and 0.5 or 1)
+	end
+	for _, cell in pairs(row.cells) do
+		cell:SetAlpha(1)
+	end
+
 	row.selected:SetShown(IsSelected(self, l))
 	row.hide:SetShown(not l.mine)
 	row.hide:SetText(hidden and "+" or "x")
 	row.message:SetText(l.mine and "Unlist" or "Whisper")
 	row.message:SetEnabled(l.mine or not l.delisted)
-	local alpha = l.demoted and 0.4 or 1
-	for _, cell in pairs(row.cells) do
-		cell:SetAlpha(alpha)
-	end
 end
 
 local sections = { solo = {}, groups = {} }
@@ -784,6 +887,7 @@ function Instance:Refresh()
 		return
 	end
 	self.spinner:Hide()
+	self.activeIDs = ActiveActivityIDs(self)
 	local solo, groups = self:Collect()
 	self.list:SetItems(self.items)
 	local found = 0
