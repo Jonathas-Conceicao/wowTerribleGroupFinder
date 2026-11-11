@@ -70,6 +70,9 @@ local source = {
 	searching = function()
 		return LFGBrowseFrame and LFGBrowseFrame.searching == true
 	end,
+	failed = function()
+		return LFGBrowseFrame and LFGBrowseFrame.searchFailed == true
+	end,
 }
 
 local function StayHidden(part)
@@ -164,6 +167,7 @@ local function Attach()
 	end
 	local f = LFGBrowseFrame
 	baseWidth = LFGParentFrame:GetWidth()
+	source.refreshAnchor = f.RefreshButton -- read only; the search box sits right of it
 	tbl = ns.Table.Attach(f, f.BackgroundArt or f, source)
 	for _, key in ipairs(REPLACED) do
 		if f[key] then

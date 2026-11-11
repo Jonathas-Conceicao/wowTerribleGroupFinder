@@ -243,6 +243,27 @@ local function BuildBrowse(parent)
 	if not W.Atlas(artTex, "groupfinder-background") then
 		artTex:SetColorTexture(0.05, 0.05, 0.05, 0.6)
 	end
+	-- Forever's border (common-insideframe) and the two lines: BarTop under the column
+	-- headers, BarMiddle above the bottom bar.
+	local border = art:CreateTexture(nil, "BORDER")
+	if W.Atlas(border, "common-insideframe") then
+		border:SetPoint("TOPLEFT", 0, 2)
+		border:SetPoint("BOTTOMRIGHT", 0, 0)
+	end
+	local barTop = art:CreateTexture(nil, "OVERLAY")
+	if not W.Atlas(barTop, "groupfinder-ScrollLine") then
+		barTop:SetColorTexture(0.35, 0.3, 0.2, 0.8)
+		barTop:SetHeight(1)
+	end
+	barTop:SetPoint("LEFT", art, "TOPLEFT", 0, -20)
+	barTop:SetPoint("RIGHT", art, "TOPRIGHT", 0, -20)
+	local barMiddle = art:CreateTexture(nil, "OVERLAY")
+	if not W.Atlas(barMiddle, "groupfinder-ScrollLine") then
+		barMiddle:SetColorTexture(0.35, 0.3, 0.2, 0.8)
+		barMiddle:SetHeight(1)
+	end
+	barMiddle:SetPoint("LEFT", panel, "BOTTOMLEFT", 0, 61)
+	barMiddle:SetPoint("RIGHT", panel, "BOTTOMRIGHT", 0, 61)
 
 	categoryDrop = W.Dropdown(panel, 140, function()
 		local items = {}
@@ -307,6 +328,10 @@ local function BuildBrowse(parent)
 		preview = function()
 			return true
 		end,
+		failed = function()
+			return false
+		end,
+		refreshAnchor = refresh,
 	})
 	return panel
 end
