@@ -11,9 +11,8 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
 -- Gear score is switched off for v0.1. Setting this to true brings back the GS column, "Your
--- GS", the tooltip lines, the {gs} message key and the ready-check inspects. The default
--- request preset no longer has {gs} (players add it themselves), and a saved copy of the old
--- GS preset was reset for good. See .planning/research/GEARSCORE.md.
+-- GS", the tooltip lines and the ready-check inspects. Messages have no gear score key.
+-- See .planning/research/GEARSCORE.md.
 ns.GEAR_SCORE = false
 
 -- How a listing's voice chat is set up (the game's enum; the same values elsewhere).
@@ -85,6 +84,18 @@ function ns.CanInvite()
 		return true
 	end
 	return not IsInGroup() or UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") or false
+end
+
+-- How many players are in your group now, counting you: 1 solo.
+function ns.GroupSize()
+	if ns.UsingPreview() then
+		return #ns.Party()
+	end
+	local n = GetNumGroupMembers and GetNumGroupMembers() or 0
+	if issecretvalue and issecretvalue(n) then
+		n = 0
+	end
+	return math.max(n or 0, 1)
 end
 
 -- The roles you play: the game's saved group finder roles, else the preview's.
