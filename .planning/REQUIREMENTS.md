@@ -42,7 +42,8 @@ reviews before the milestone closes.
 **: Layout: no second inset/border; search box in the stone band; column headers in the strip above `BarTop`; Needs my role and status in the bottom bar; the freed GS width goes to Roles / Activity
 - [x] **UIP-05
 **: The list scrolls with Blizzard's ScrollBox and MinimalScrollBar, with separate header / row frames and their own heights
-- [ ] **UIP-06**: Rows look like stock: mid2 background / hover / selected art, stock fonts and colours, greyed rows in stock grey with desaturated icons, leader icon on groups
+- [x] **UIP-06
+**: Rows look like stock: mid2 background / hover / selected art, stock fonts and colours, greyed rows in stock grey with desaturated icons, leader icon on groups
 - [ ] **UIP-07**: Solo players show the stock micro role icons; voice chat icon and wording match stock
 - [ ] **UIP-08**: Your own listing row has the stock delist button (leader / solo only) and "Your listing" in green
 - [ ] **UIP-09**: The row tooltip follows the stock order and wording, with our extras (friends in group, hidden note) after
