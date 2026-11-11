@@ -46,6 +46,15 @@ local function Act(id)
 end
 L.Act = Act
 
+-- A string the game gave, or nil when it is missing, empty or secret. The type and secret
+-- checks come before the comparison: a secret string must never be compared.
+local function Text(v)
+	if type(v) ~= "string" or Secret(v) or v == "" then
+		return nil
+	end
+	return v
+end
+
 local function Member(id, i)
 	local p = C_LFGList.GetSearchResultPlayerInfo(id, i)
 	if type(p) ~= "table" then
@@ -64,8 +73,9 @@ local function Member(id, i)
 		level = p.level or 0,
 		role = ROLE_OF[p.assignedRole] or "DAMAGER",
 		leader = p.isLeader == true,
-		spec = p.specName,
-		area = p.areaName,
+		-- A secret or empty spec or zone is dropped on its own; the member stays.
+		spec = Text(p.specName),
+		area = Text(p.areaName),
 	}
 	local r = p.lfgRoles
 	if type(r) == "table" then
