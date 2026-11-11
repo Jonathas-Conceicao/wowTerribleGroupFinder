@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-03-PLAN.md
-last_updated: "2026-11-11T19:16:20.251Z"
+stopped_at: Completed 04-04-PLAN.md
+last_updated: "2026-11-11T19:19:06.116Z"
 last_activity: 2026-11-11 -- Phase --phase execution started
 progress:
   total_phases: 6
-  completed_phases: 3
+  completed_phases: 4
   total_plans: 15
-  completed_plans: 14
-  percent: 93
+  completed_plans: 15
+  percent: 100
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 1 of --name
 Status: Executing Phase --phase
 Last activity: 2026-11-11 -- Phase --phase execution started
 
-Progress: [█████████░] 93%
+Progress: [██████████] 100%
 
 ## Performance Metrics
 
@@ -60,6 +60,7 @@ Progress: [█████████░] 93%
 | Phase 3 P02 | 40min | 3 tasks | 4 files |
 | Phase 04 P01 | 40min | 2 tasks | 2 files |
 | Phase 04 P02 | 30min | 2 tasks | 2 files |
+| Phase 04 P04 | 30min | 3 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -81,6 +82,7 @@ Recent decisions affecting current work:
 - 03: Needs my role reads `GetSearchResultMemberCounts` `*_REMAINING`; all-zero on a non-full group falls back to the composition estimate (in-game check)
 - 03: hide button = icon button (`W.IconButton`, 24x22, eye atlases, x/+ fallback); `row.message` is now a plain Whisper button (unlist path removed)
 - Phase 4 plan 02: pressed look derived from LockSource/LockID on every row fill; Group Invite never pressed, starts no lock
+- Phase 4 plan 04: Messages tab fill-to-interior via SetFillToInterior, else own fillToInterior field, else 30x30 fallback; UpdateTabs post-hook unchecks stock tabs while Messages shows
 
 ### Pending Todos
 
@@ -98,8 +100,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-11T19:16:20.244Z
-Stopped at: Completed 04-03-PLAN.md
+Last session: 2026-11-11T19:19:06.107Z
+Stopped at: Completed 04-04-PLAN.md
 Resume file: None
 
 **Planned Phase:** 4 (Messages and Contact) — 4 plans — 2026-11-11T19:01:27.307Z
