@@ -319,6 +319,8 @@ function W.IconButton(parent, w, h)
 	local b = Create("Button", parent, "UIMenuButtonStretchTemplate")
 	local styled = b.MiddleMiddle ~= nil
 	if not styled then
+		b:Hide()
+		b:SetParent(nil)
 		b = W.Button(parent, "", w, h)
 	end
 	b:SetSize(w, h)
