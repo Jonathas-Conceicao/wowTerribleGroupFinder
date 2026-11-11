@@ -819,6 +819,35 @@ local function Layout(owner, cells, rightAnchor, rightOffset)
 	cells.activity:SetPoint("RIGHT", cells.listed, "LEFT", -GAP, 0)
 end
 
+-- The width a header needs to show its label with the sort arrow beside it: the label, the
+-- 3 px gap, the arrow and 4 px from each edge (a centred label shifts aside for its arrow).
+local function HeaderNeed(b, label)
+	if not (b and b.arrow and b.label) then
+		return 0
+	end
+	b.label:SetText(label)
+	local tw = b.label:GetStringWidth() or 0
+	local aw = b.arrow:GetWidth() or 0
+	return math.ceil(tw + 3 + aw + 8)
+end
+
+-- Widens any fixed column (and Listed) whose header can't hold its label and the sort arrow,
+-- moving the columns after it right; Activity gives up the room. Runs once per header strip,
+-- before the first Layout; a second strip finds the columns wide enough already.
+local function FitColumns(header)
+	local shift = 0
+	for _, col in ipairs(LEFT) do
+		col.x = col.x + shift
+		local need = HeaderNeed(header[col.key], col.label)
+		if need > col.w then
+			shift = shift + need - col.w
+			col.w = need
+		end
+	end
+	ACTIVITY_X = ACTIVITY_X + shift
+	LISTED_W = math.max(LISTED_W, HeaderNeed(header.listed, "Listed"))
+end
+
 -- Sizes the zone to its text, capped by ZONE_MAX and a share of the Activity cell.
 local function FitZone(row)
 	local zone = row.zone
@@ -1325,6 +1354,12 @@ function Instance:Refresh()
 		b:SetText(col.label .. (sorted and not useArrow and (view.desc and " v" or " ^") or ""))
 		if b.arrow then
 			b.arrow:SetShown(sorted)
+			-- A centred label moves left by half the arrow's room, so the pair stays centred.
+			if b.justify == "CENTER" and b.Text then
+				local half = sorted and -math.floor(((b.arrow:GetWidth() or 0) + 3) / 2) or 0
+				b.label:ClearAllPoints()
+				b.label:SetPoint("CENTER", b, "CENTER", half, 0)
+			end
 			if sorted then
 				if view.desc then
 					b.arrow:SetTexCoord(0, 1, 0, 1)
@@ -1642,8 +1677,10 @@ function T.Attach(host, area, source)
 		function b:SetText(t)
 			text:SetText(t)
 		end
+		b.label, b.justify = text, j
 		header[key] = b
 	end
+	FitColumns(header)
 	-- The header's columns line up with the rows': the rows' buttons take ACTIONS_W.
 	Layout(header, header, header, -(ACTIONS_W + GAP))
 	W.Tooltip(
