@@ -235,83 +235,263 @@ function M.Send(l, preview, from)
 end
 
 -------------------------------------------------------------------------------
---  The Messages tab: both presets, each with Auto-send and Reset
+--  The Messages tab: both presets, each with Auto-send, key buttons and Default. One
+--  builder for the game's fourth side tab and the preview stand-in; the frame layers are
+--  those of Forever's Who tab (stone band, art, inset border, one divider).
 -------------------------------------------------------------------------------
 local W
 
+local INTRO =
+	"Each Whisper button contacts that player or group leader with the message below. Auto-send on: it whispers at once. Off: it opens the whisper and you press Enter. Auto-invite also invites a solo player. After an automatic send, the contact buttons rest for 1 second."
+
 local SECTIONS = {
-	{ kind = "invite", title = "Inviting a solo player", help = "The message button on a solo player's row." },
-	{ kind = "request", title = "Asking a group for an invite", help = "The message button on a group's row." },
+	{ kind = "invite", title = "Inviting a solo player", help = "Used by Whisper on a solo player's row.", y = 0 },
+	{ kind = "request", title = "Asking a group for an invite", help = "Used by Whisper on a group's row.", y = -208 },
 }
 
---- Builds the tab's content in `parent` (the space below the title); returns a refresh.
-function M.BuildPanel(parent)
-	W = ns.W
-	local refreshers = {}
-	local y = -4
-	local intro = W.Text(parent, "GameFontHighlightSmall", 11)
-	intro:SetPoint("TOPLEFT", 4, y)
-	intro:SetPoint("RIGHT", -4, 0)
+local BOX_WIDTH, BOX_HEIGHT = 410, 56
+
+local function TemplateKnown(name)
+	return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
+end
+
+--- The frame layers of the Who tab, on `panel`. Atlases the client lacks get flat colours
+--- (art, band) or are skipped (border, divider).
+local function BuildLayers(panel)
+	local art = panel:CreateTexture(nil, "BACKGROUND", nil, 1)
+	art:SetPoint("TOPLEFT", 4, -80)
+	art:SetPoint("BOTTOMRIGHT", -4, 3)
+	W.Atlas(art, "groupfinder-background", 0.05, 0.05, 0.05, 0.8)
+	local band = panel:CreateTexture(nil, "BACKGROUND", nil, 2)
+	band:SetPoint("TOPLEFT", 2, -21)
+	band:SetPoint("BOTTOMRIGHT", art, "TOPRIGHT", 0, -7)
+	W.Atlas(band, "groupfinder-Stat-StoneBG", 0.12, 0.1, 0.08, 1)
+	if W.HasAtlas("common-insideframe") then
+		local border = panel:CreateTexture(nil, "BORDER")
+		border:SetPoint("TOPLEFT", 3, -78)
+		border:SetPoint("BOTTOMRIGHT", -4, 3)
+		border:SetAtlas("common-insideframe")
+	end
+	if W.HasAtlas("groupfinder-ScrollLine") then
+		local line = panel:CreateTexture(nil, "OVERLAY")
+		line:SetPoint("TOPLEFT", 4, -300)
+		line:SetPoint("TOPRIGHT", -4, -300)
+		line:SetAtlas("groupfinder-ScrollLine")
+		local info = C_Texture.GetAtlasInfo("groupfinder-ScrollLine")
+		line:SetHeight(info and info.height or 3)
+	end
+	local intro = W.Text(panel, "GameFontHighlightSmall", 11)
+	intro:SetPoint("TOPLEFT", 14, -27)
+	intro:SetPoint("RIGHT", -14, 0)
 	intro:SetWordWrap(true)
-	intro:SetText(
-		"The message button on each row whispers that player or group leader. With Auto-send off it opens the whisper with the message for you to send with Enter; on, it sends right away."
-	)
-	y = y - 40
+	intro:SetMaxLines(4)
+	intro:SetText(INTRO)
+end
+
+--- A multi-line preset box (InputScrollFrameTemplate, plain Lua, not the Listing tab's
+--- secure one); a single-line edit box where the template is missing. Returns box, edit.
+local function PresetBox(parent)
+	if TemplateKnown("InputScrollFrameTemplate") then
+		local box = W.Create("ScrollFrame", parent, "InputScrollFrameTemplate")
+		local edit = box.EditBox
+		if edit then
+			-- The template's OnLoad ran with width 0 and no letter limit: size, width, limit.
+			box:SetSize(BOX_WIDTH, BOX_HEIGHT)
+			edit:SetWidth(BOX_WIDTH - 18)
+			edit:SetMaxLetters(255)
+			box:SetPoint("TOPLEFT", 6, -20)
+			edit:SetScript("OnEnterPressed", function(e)
+				e:ClearFocus()
+			end)
+			return box, edit
+		end
+		box:Hide()
+		box:SetParent(nil)
+	end
+	local edit = W.EditBox(parent, BOX_WIDTH)
+	edit:SetPoint("TOPLEFT", 6, -20)
+	edit:SetMaxLetters(255)
+	return edit, edit
+end
+
+--- Builds the tab into `panel`; returns a refresh (texts, checkboxes, examples).
+function M.BuildPanel(panel)
+	W = ns.W
+	BuildLayers(panel)
+	local content = CreateFrame("Frame", nil, panel)
+	content:SetPoint("TOPLEFT", 18, -100)
+	content:SetPoint("BOTTOMRIGHT", -18, 16)
+	panel.tgfBlocks = {}
+	local refreshers = {}
+
 	for _, s in ipairs(SECTIONS) do
 		local kind = s.kind
-		local title = W.Text(parent, "GameFontNormal", 13)
-		title:SetPoint("TOPLEFT", 4, y)
+		local block = CreateFrame("Frame", nil, content)
+		block:SetSize(422, 192)
+		block:SetPoint("TOPLEFT", 0, s.y)
+		local handles = { keys = {} }
+		panel.tgfBlocks[kind] = handles
+
+		local title = W.Text(block, "GameFontNormal", 13)
+		title:SetPoint("TOPLEFT", 0, 0)
 		title:SetText(s.title)
-		local help = W.Text(parent, "GameFontDisableSmall", 10)
+		local help = W.Text(block, "GameFontDisableSmall", 10)
 		help:SetPoint("LEFT", title, "RIGHT", 8, 0)
 		help:SetText(s.help)
 
-		local box = W.EditBox(parent, 400)
-		box:SetPoint("TOPLEFT", 10, y - 20)
-		box:SetPoint("RIGHT", -10, 0)
-		box:SetMaxLetters(MAX)
-		local example = W.Text(parent, "GameFontDisableSmall", 10)
-		example:SetPoint("TOPLEFT", 6, y - 46)
-		example:SetPoint("RIGHT", -6, 0)
+		local box, edit = PresetBox(block)
+		handles.box, handles.edit = box, edit
+
+		local example = W.Text(block, "GameFontDisableSmall", 10)
+		example:SetPoint("TOPLEFT", 4, -168)
+		example:SetPoint("RIGHT", -4, 0)
 		example:SetWordWrap(true)
-
-		local auto = W.Check(parent, "Auto-send", function(b)
-			M.Set(kind, nil, b:GetChecked() and true or false)
-		end)
-		auto:SetPoint("TOPLEFT", 4, y - 76)
-		W.Tooltip(
-			auto,
-			"Auto-send",
-			"On: the message button sends the message at once. Off: it opens the whisper and you press Enter."
-		)
-		local reset = W.Button(parent, "Default", 80, 22, function()
-			M.Reset(kind)
-			refreshers[kind]()
-		end)
-		reset:SetPoint("TOPRIGHT", -10, y - 76)
-
+		example:SetMaxLines(2)
+		handles.example = example
 		local function Example()
 			local sample = ns.Preview.listings[kind == "invite" and #ns.Preview.listings or 1]
-			example:SetText("e.g. " .. M.Format(kind, sample, box:GetText()))
+			example:SetText("e.g. " .. M.Format(kind, sample, edit:GetText()))
 		end
-		box:HookScript("OnTextChanged", function(b, user)
+
+		edit:HookScript("OnTextChanged", function(e, user)
+			local text = e:GetText()
+			if text:find("[\r\n]") then
+				text = text:gsub("[\r\n]+", " ")
+				e:SetText(text)
+				if user then
+					M.Set(kind, text)
+				end
+				return
+			end
 			if user then
-				M.Set(kind, b:GetText())
+				M.Set(kind, text)
 			end
 			Example()
 		end)
-		refreshers[kind] = function()
-			local text, on = M.Get(kind)
-			box:SetText(text)
-			box:SetCursorPosition(0)
-			auto:SetChecked(on)
+		edit:HookScript("OnEditFocusLost", function(e)
+			local text = M.Normalize(e:GetText())
+			if text ~= e:GetText() then
+				e:SetText(text)
+			end
+			M.Set(kind, text)
+			Example()
+		end)
+
+		-- Key buttons: two rows (4 + 3), wrapping further only if a row would not fit.
+		local x, rowY = 0, -86
+		for i, k in ipairs(M.KEYS) do
+			local label = k.label or k.key
+			local b = W.Button(block, label, 60, 22, function()
+				if k.key == "{addon}" then
+					local text = edit:GetText()
+					if text:sub(1, #k.key) ~= k.key then
+						edit:SetText(M.Normalize(k.key .. " " .. text))
+						edit:SetCursorPosition(math.min(#k.key + 1, #edit:GetText()))
+					end
+				else
+					edit:Insert(k.key)
+				end
+				edit:SetFocus()
+				M.Set(kind, edit:GetText())
+				Example()
+			end)
+			b:SetNormalFontObject("GameFontNormalSmall")
+			b:SetDisabledFontObject("GameFontDisableSmall")
+			b:SetText(label)
+			local fs = b:GetFontString()
+			b:SetWidth((fs and fs:GetStringWidth() or 0) + 24)
+			if i == 5 or (x > 0 and x + b:GetWidth() > BOX_WIDTH) then
+				x, rowY = 0, rowY - 24
+			end
+			b:SetPoint("TOPLEFT", x, rowY)
+			x = x + b:GetWidth() + 4
+			W.Tooltip(b, label, k.tip, { gold = true })
+			handles.keys[#handles.keys + 1] = b
+		end
+
+		-- Auto-send, and (solo players only) Auto-invite, which needs Auto-send.
+		local auto, autoInvite, SyncAutoInvite
+		auto = W.Check(block, "Auto-send", function(b)
+			M.Set(kind, nil, b:GetChecked() and true or false)
+			if SyncAutoInvite then
+				SyncAutoInvite()
+			end
+		end)
+		auto:SetPoint("TOPLEFT", 0, -138)
+		W.Tooltip(
+			auto,
+			"Auto-send",
+			"On: the Whisper button sends the message at once. Off: it opens the whisper with the message and you press Enter.",
+			{ gold = true }
+		)
+		handles.auto = auto
+
+		if kind == "invite" then
+			autoInvite = W.Check(block, "Auto-invite", function(b)
+				M.Set("invite", nil, nil, b:GetChecked() and true or false)
+			end)
+			autoInvite:SetPoint("LEFT", auto.Label, "RIGHT", 16, 0)
+			if autoInvite.SetMotionScriptsWhileDisabled then
+				autoInvite:SetMotionScriptsWhileDisabled(true)
+			end
+			W.Tooltip(
+				autoInvite,
+				"Auto-invite",
+				"Also invites the player right after the message is sent. Works only when you can invite.",
+				{
+					gold = true,
+					note = function(self)
+						if not self:IsEnabled() then
+							return "Turn on Auto-send first."
+						end
+					end,
+				}
+			)
+			local normalFont = autoInvite.Label:GetFontObject() or "GameFontHighlightSmall"
+			function SyncAutoInvite()
+				local _, on = M.Get("invite")
+				if on then
+					autoInvite:Enable()
+					autoInvite.Label:SetFontObject(normalFont)
+					autoInvite:SetChecked(select(3, M.Get("invite")) and true or false)
+				else
+					autoInvite:SetChecked(false)
+					M.Set("invite", nil, nil, false)
+					autoInvite:Disable()
+					autoInvite.Label:SetFontObject("GameFontDisableSmall")
+				end
+			end
+			handles.autoInvite = autoInvite
+		end
+
+		local function ShowText()
+			edit:SetText((M.Get(kind)))
+			edit:SetCursorPosition(0)
 			Example()
 		end
-		y = y - 112
+		local reset = W.Button(block, "Default", 80, 22, function()
+			M.Reset(kind)
+			ShowText()
+		end)
+		reset:SetPoint("TOPRIGHT", -6, -140)
+		W.Tooltip(reset, "Default", "Restores the standard message.", { gold = true })
+		handles.reset = reset
+
+		refreshers[kind] = function()
+			local _, on = M.Get(kind)
+			ShowText()
+			auto:SetChecked(on)
+			if SyncAutoInvite then
+				SyncAutoInvite()
+			end
+		end
 	end
-	return function()
+
+	local function Refresh()
 		for _, kind in ipairs(M.KINDS) do
 			refreshers[kind]()
 		end
 	end
+	Refresh()
+	return Refresh
 end

@@ -263,7 +263,9 @@ function W.Line(parent)
 end
 
 -- title / body: a string, or a function of the frame (read when the tooltip opens).
-local function Tooltip(f, title, body)
+-- opts (optional): gold = gold title and white body; note = function of the frame giving a
+-- grey extra line (or nil).
+local function Tooltip(f, title, body, opts)
 	if not title then
 		return
 	end
@@ -274,9 +276,20 @@ local function Tooltip(f, title, body)
 		end
 		local b = type(body) == "function" and body(self) or body
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText(t, 1, 1, 1)
+		if opts and opts.gold then
+			local gold = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
+			GameTooltip:SetText(t, gold.r, gold.g, gold.b)
+		else
+			GameTooltip:SetText(t, 1, 1, 1)
+		end
 		if b then
-			GameTooltip:AddLine(b, nil, nil, nil, true)
+			local white = opts and opts.gold and (HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }) or nil
+			GameTooltip:AddLine(b, white and white.r, white and white.g, white and white.b, true)
+		end
+		local note = opts and opts.note and opts.note(self)
+		if note then
+			local gray = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
+			GameTooltip:AddLine(note, gray.r, gray.g, gray.b, true)
 		end
 		GameTooltip:Show()
 	end)
