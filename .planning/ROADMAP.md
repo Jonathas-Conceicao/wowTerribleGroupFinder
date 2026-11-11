@@ -86,10 +86,10 @@ Plans:
 **Plans**: 4 plans
 
 Plans:
-- [ ] 04-01-PLAN.md — Messages core: keys and `[TGF]` normalisation, new defaults with `{players}`, Auto-invite state, send-then-invite, 1 s lock, one-time migration (wave 1)
-- [ ] 04-02-PLAN.md — Contact lock on the table: guards on Whisper / Send Message / Group Invite, `W.SetPressed` pressed look on recycled rows (wave 2)
-- [ ] 04-03-PLAN.md — Messages panel: Who layers, multi-line boxes, key buttons, Auto-invite gating; one builder for game and preview (wave 3)
-- [ ] 04-04-PLAN.md — Messages side tab (UIP-01), CLAUDE.md, full regression, deploy (wave 4)
+- [x] 04-01-PLAN.md — Messages core: keys and `[TGF]` normalisation, new defaults with `{players}`, Auto-invite state, send-then-invite, 1 s lock, one-time migration (wave 1)
+- [x] 04-02-PLAN.md — Contact lock on the table: guards on Whisper / Send Message / Group Invite, `W.SetPressed` pressed look on recycled rows (wave 2)
+- [x] 04-03-PLAN.md — Messages panel: Who layers, multi-line boxes, key buttons, Auto-invite gating; one builder for game and preview (wave 3)
+- [x] 04-04-PLAN.md — Messages side tab (UIP-01), CLAUDE.md, full regression, deploy (wave 4)
 **UI hint**: yes
 
 ### Phase 5: Release Review
