@@ -3,15 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
 status: executing
-stopped_at: Completed 04-01-PLAN.md
-last_updated: "2026-11-11T19:07:47.053Z"
+stopped_at: Completed 04-02-PLAN.md
+last_updated: "2026-11-11T19:11:51.826Z"
 last_activity: 2026-11-11 -- Phase --phase execution started
 progress:
   total_phases: 6
   completed_phases: 3
   total_plans: 15
-  completed_plans: 12
-  percent: 80
+  completed_plans: 13
+  percent: 87
 ---
 
 # Project State
@@ -30,7 +30,7 @@ Plan: 1 of --name
 Status: Executing Phase --phase
 Last activity: 2026-11-11 -- Phase --phase execution started
 
-Progress: [████████░░] 80%
+Progress: [█████████░] 87%
 
 ## Performance Metrics
 
@@ -59,6 +59,7 @@ Progress: [████████░░] 80%
 | Phase 3 P01 | 25min | 3 tasks | 4 files |
 | Phase 3 P02 | 40min | 3 tasks | 4 files |
 | Phase 04 P01 | 40min | 2 tasks | 2 files |
+| Phase 04 P02 | 30min | 2 tasks | 2 files |
 
 ## Accumulated Context
 
@@ -79,6 +80,7 @@ Recent decisions affecting current work:
 - 03: tooltip = GameTooltip in Forever's stock order; extras after (playstyle green, spec/area, friends, listed age, hidden note); re-shown for the hovered row after every Refresh
 - 03: Needs my role reads `GetSearchResultMemberCounts` `*_REMAINING`; all-zero on a non-full group falls back to the composition estimate (in-game check)
 - 03: hide button = icon button (`W.IconButton`, 24x22, eye atlases, x/+ fallback); `row.message` is now a plain Whisper button (unlist path removed)
+- Phase 4 plan 02: pressed look derived from LockSource/LockID on every row fill; Group Invite never pressed, starts no lock
 
 ### Pending Todos
 
@@ -96,8 +98,8 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-11T19:07:47.046Z
-Stopped at: Completed 04-01-PLAN.md
+Last session: 2026-11-11T19:11:51.819Z
+Stopped at: Completed 04-02-PLAN.md
 Resume file: None
 
 **Planned Phase:** 4 (Messages and Contact) — 4 plans — 2026-11-11T19:01:27.307Z
