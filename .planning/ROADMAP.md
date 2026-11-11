@@ -14,6 +14,7 @@ v0.1 ships the first public release: Forever's own group finder, improved in pla
 - [x] **Phase 2: List Foundation** - ScrollBox list with stock-style section headers, selection, layout, row look and search states (completed 2026-11-11)
 - [x] **Phase 3: Rows, Tooltip and Own Listing** - Stock-faithful role icons, own-listing row, tooltip and row details (completed 2026-11-11)
 - [x] **Phase 4: Messages and Contact** - New presets, key buttons, Auto-send / Auto-invite, 1 s lock, Messages tab and panel (completed 2026-11-11)
+- [x] **Phase 04.1: Player location (INSERTED)** - Solo player's / leader's zone on each row, member zones in the group tooltip (completed 2026-11-11; in-game checks in 04.1-HUMAN-UAT.md)
 - [ ] **Phase 5: Release Review** - Code cleanup, version, changelog draft, author review
 
 ## Phase Details
@@ -122,12 +123,12 @@ Plans:
   2. The zone sits in the table without overlapping other cells at 620 px (own narrow column in stock grey, truncated; or a second line under Activity if a column does not fit), with the full name in the tooltip
   3. A group's tooltip lists each member's zone where known; missing zones are omitted cleanly
   4. Preview sample data carries zones so `/tgf preview` shows the feature; the smoke harness passes in all modes
-**Plans:** 2 plans
+**Plans:** 2/2 plans complete
 
 Plans:
 
-- [ ] 04.1-01-PLAN.md — Zone data: guarded `areaName` / `specName` in Listings.lua, member zones (`@Zone`) in the preview samples (wave 1)
-- [ ] 04.1-02-PLAN.md — Zone on line 2 of the Activity cell, member zones as tooltip right text, CLAUDE.md, regression, deploy (wave 2)
+- [x] 04.1-01-PLAN.md — Zone data: guarded `areaName` / `specName` in Listings.lua, member zones (`@Zone`) in the preview samples (wave 1)
+- [x] 04.1-02-PLAN.md — Zone on line 2 of the Activity cell, member zones as tooltip right text, CLAUDE.md, regression, deploy (wave 2)
 
 ### Phase 5: Release Review
 
@@ -156,6 +157,7 @@ Plans:
 | 2. List Foundation | 4/4 | Complete    | 2026-11-11 |
 | 3. Rows, Tooltip and Own Listing | 4/4 | Complete    | 2026-11-11 |
 | 4. Messages and Contact | 4/4 | Complete    | 2026-11-11 |
+| 04.1. Player location (INSERTED) | 2/2 | Complete    | 2026-11-11 |
 | 5. Release Review | 2/2 | Awaiting author review | - |
 
 ## Backlog

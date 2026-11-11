@@ -7,11 +7,11 @@ stopped_at: Phase 5 awaiting author review (plans executed, verification human_n
 last_updated: "2026-11-11T22:00:00.000Z"
 last_activity: 2026-11-11
 progress:
-  total_phases: 5
-  completed_phases: 4
-  total_plans: 17
-  completed_plans: 17
-  percent: 80
+  total_phases: 6
+  completed_phases: 5
+  total_plans: 19
+  completed_plans: 19
+  percent: 83
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 ## Current Position
 
-Phase: 04.1 (Player location, inserted) — executing; Phase 5 still awaits author review
-Plan: 0 of 2 executed (04.1-01 zone data + preview, 04.1-02 row zone + tooltip)
-Status: Phase 04.1 planned (context, UI-SPEC approved, research, 2 plans verified); Phase 5 awaiting author review — not complete; the author's review of README.md, the CHANGELOG v0.1.0 draft and the open decisions in `phases/05-release-review/05-HUMAN-UAT.md` closes it
-Last activity: 2026-11-11 — Phase 04.1 planned
+Phase: 5 (Release Review) — awaiting author review; inserted Phase 04.1 (Player location) complete
+Plan: 04.1: 2 of 2 executed; 5: 2 of 2 executed (05-01 cleanup, 05-02 changelog draft + author UAT)
+Status: Phase 5 awaiting author review — not complete; the author's review of README.md, the CHANGELOG v0.1.0 draft and the open decisions in `phases/05-release-review/05-HUMAN-UAT.md` closes it (now also covering player location: README suggestion, changelog bullet, 04.1 in-game checks)
+Last activity: 2026-11-11 — Phase 04.1 executed; code review 1 critical / 3 warnings / 2 info → 5 fixed, WR-03 skipped (accepted), re-review clean; verification human_needed (4/4, 7 in-game checks in 04.1-HUMAN-UAT.md); Release Review updated
 
 Progress: [████████░░] 80%
 
@@ -92,6 +92,7 @@ Recent decisions affecting current work:
 - 04: execution ran four single-plan waves sequentially on the main tree; REQUIREMENTS.md ticked by hand (SDK requirements command splits lines)
 - 05: version 0.1.0 / tag `v0.1.0` (TOC keeps `@project-version@`); `## v0.1.0` drafted above the untouched `## Unreleased`; README untouched (suggestions in 05-HUMAN-UAT.md); `.pkgmeta` unchanged (shipping LICENSE recommended to the author); preset migration and `Instance:Delist`'s `RemoveListing` kept as author questions; `ForEachFrame` kept, 02 IN-05 skipped
 - 05: REL-04 stays unchecked until the author confirms the review
+- 04.1 (inserted): zone on line 2 of the Activity cell (not a column: at 620 px Activity is ~130 px), grey, capped at min(100, 45% of the cell), comment after a 6 px gap; group tooltip member zones as the lines' grey right text; own listing shows no zones; secret/empty `areaName` / `specName` drop only that field; no zone sort (deferred); preview member strings take `@Zone`
 
 ### Pending Todos
 
@@ -107,6 +108,8 @@ None yet.
 - Phase 4 in-game checks pending (11 items in `phases/04-messages-and-contact/04-HUMAN-UAT.md`): live whisper + invite, 1 s pressed look (does `SetButtonState`/art swap hold through mouse-up), lockdown prefill, Auto-invite disabled look + tooltip, key-button widths (two rows under 410 px), 56 px boxes, Who layers, side-tab icon fill (Q4 `INV_Letter_15`), preset migration, taint log
 - Phase 4 advisory UI review (19/24, `04-UI-REVIEW.md`): key-row forced break at `i == 5` can start a third row over Auto-send (same as review IN-01); intro text near its 4-line cap; no feedback on locked clicks / lockdown prefill; disabled Auto-invite label font size; example line uses sample data in game. Candidates for Phase 5 cleanup
 - Phase 4 code review: open info items IN-01 (key-row wrap could start a third row with wide labels), IN-02 (example sample picked by position), IN-03 (newline strip moves the cursor) in `04-REVIEW.md` / `04-REVIEW.iter2.md`; hardcoded English labels remain (future localization item); Activity width at 620 (UAT Q1)
+- Phase 04.1 in-game checks pending (8 items in `phases/04.1-player-location/04.1-HUMAN-UAT.md`): zone layout at 620 px and in the 458 px stand-in, real `areaName`, scrolling, greyed / own rows, group tooltip zones, zone width / grey (author's call), taint
+- Phase 04.1 advisory UI review (20/24, `04.1-UI-REVIEW.md`): row/tooltip `area` reads check type only (safe today: `Listings.lua` drops secret zones upstream); 58 px zone cap at 620 px cuts longer names; zone grey darker than comment grey
 - Phase 5 inputs: README.md still mentions gear score (lines ~7, ~12); `.pkgmeta` excludes LICENSE from the release zip (author convention, review WR-01; GPL-3.0 may want it shipped); `CF_API_KEY` is the packager's deprecated name for `CF_API_TOKEN` (kept per author); whether CurseForge / Wago accept the `forever` game type is only known after the first tagged release; open review info items IN-01..IN-09 in `phases/02-list-foundation/02-REVIEW.md`
 
 ## Session Continuity

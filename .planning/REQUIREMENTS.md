@@ -50,8 +50,8 @@ reviews before the milestone closes.
 
 ### Player location (LOC) — added by the author 2026-11-11
 
-- [ ] **LOC-01**: Each row shows where the listed player is in the world: the solo player's zone, or the group leader's
-- [ ] **LOC-02**: Hovering a group shows each member's zone in the tooltip when the game provides it
+- [x] **LOC-01**: Each row shows where the listed player is in the world: the solo player's zone, or the group leader's
+- [x] **LOC-02**: Hovering a group shows each member's zone in the tooltip when the game provides it
 
 ### Release (REL)
 
@@ -112,8 +112,8 @@ reviews before the milestone closes.
 | LOCK-03 | Phase 4 | Complete |
 | UIP-01 | Phase 4 | Complete |
 | UIP-11 | Phase 4 | Complete |
-| LOC-01 | Phase 4.1 | Pending |
-| LOC-02 | Phase 4.1 | Pending |
+| LOC-01 | Phase 4.1 | Complete |
+| LOC-02 | Phase 4.1 | Complete |
 | REL-04 | Phase 5 | Pending |
 
 **Coverage:** 33/33 v0.1 requirements mapped, none duplicated.
