@@ -79,10 +79,28 @@ function M.Get(kind)
 	return d.text, d.auto, false
 end
 
+--- Cuts to MAX bytes without splitting a multi-byte UTF-8 character.
+function M.Clip(s)
+	if #s <= MAX then
+		return s
+	end
+	local cut = MAX
+	-- Back off while the first dropped byte is a continuation byte (0x80-0xBF).
+	while cut > 0 do
+		local b = s:byte(cut + 1)
+		if b and b >= 0x80 and b <= 0xBF then
+			cut = cut - 1
+		else
+			break
+		end
+	end
+	return s:sub(1, cut)
+end
+
 function M.Set(kind, text, auto, autoInvite)
 	local d = db[kind]
 	if text ~= nil then
-		d.text = text:sub(1, MAX)
+		d.text = M.Clip(text)
 	end
 	if auto ~= nil then
 		d.auto = auto
@@ -143,7 +161,7 @@ function M.Format(kind, l, text)
 	local out = raw:gsub("{(%a+)}", function(key)
 		return values[key]
 	end)
-	return out:sub(1, MAX)
+	return M.Clip(out)
 end
 
 -- Which preset a listing takes: solo players get the invite one, groups the request one.
@@ -213,20 +231,27 @@ function M.Send(l, preview, from)
 	-- Never send addon-side during chat messaging lockdown: fall back to prefilling the box.
 	local locked = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
 	if auto and not locked then
-		if C_ChatInfo and C_ChatInfo.SendChatMessage then
-			C_ChatInfo.SendChatMessage(text, "WHISPER", nil, target)
-		else
-			SendChatMessage(text, "WHISPER", nil, target)
+		-- Marked only when the call returned without error; a send the server later
+		-- rejects (offline, throttled) still counts as attempted.
+		local ok = pcall(function()
+			if C_ChatInfo and C_ChatInfo.SendChatMessage then
+				C_ChatInfo.SendChatMessage(text, "WHISPER", nil, target)
+			else
+				SendChatMessage(text, "WHISPER", nil, target)
+			end
+		end)
+		if ok then
+			ns.state.messaged[l.id] = true
 		end
-		ns.state.messaged[l.id] = true
-		if invite then
-			C_PartyInfo.InviteUnit(target)
+		if invite and pcall(C_PartyInfo.InviteUnit, target) then
 			ns.state.invited[l.id] = true
 		end
 		M.StartLock(l.id, from or "row")
 		return true
 	end
-	if ChatFrameUtil and ChatFrameUtil.SendTellWithMessage then
+	if preview then
+		ns.Print(string.format("preview: would open a whisper to %s with: %s", target, text))
+	elseif ChatFrameUtil and ChatFrameUtil.SendTellWithMessage then
 		ChatFrameUtil.SendTellWithMessage(target, text)
 	else
 		ns.Print(string.format("would open a whisper to %s with: %s", target, text))
