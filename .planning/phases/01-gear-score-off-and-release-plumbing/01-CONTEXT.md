@@ -96,8 +96,10 @@ properly in Phase 2, UIP-04), new message presets (Phase 4), README / CHANGELOG 
 
 ### Claude's Discretion
 - Exact placement of the switch comment, whether GearScore.lua's `Short` becomes a local alias
-  of `ns.Short`, the PNG decoder details (filter types 0-4, colour types 2/6, bit depth 8; fail
-  loudly otherwise), and the precise column-shift arithmetic in `UI/Table.lua`.
+  of `ns.Short`, the PNG decoder details (filter types 0-4, colour types 2/3/6 with PLTE + tRNS
+  alpha for type 3, bit depth 8, non-interlaced; fail loudly otherwise — research found
+  `baseicon.png` is palette type 3), and the precise column-shift arithmetic in `UI/Table.lua`.
+- `.gitattributes` gains `*.ase binary` (research suggestion; accepted).
 - Verification: a fengari smoke harness in the session scratchpad (`scratchpad/smoke/`) loads
   the TOC files with WoW API stubs, fires ADDON_LOADED, runs preview mode and builds the table,
   asserting no GS column / band / tooltip line / `{gs}` key and no event registration by the GS
