@@ -64,7 +64,13 @@ Plans:
   3. Hovering a row shows a tooltip in the stock order and wording, with playstyle and the comment in light grey, followed by our friends in group and hidden note; it refreshes when results update while hovered
   4. The hide button is a small stock-style button with an icon
   5. With Needs my role on, listings the server reports as having no slot for your role are greyed and moved to the end of their section
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 03-01-PLAN.md — Listing data (voiceMode, playstyle, counts, remaining) + Needs my role from server slots + harness stubs for the phase (wave 1)
+- [ ] 03-02-PLAN.md — Rows: micro role icons, Discord icon, own row with the stock delist button, icon hide button, light grey comment (wave 2)
+- [ ] 03-03-PLAN.md — Tooltip in stock order and wording with extras after (playstyle, friends, listed, hidden note) (wave 3)
+- [ ] 03-04-PLAN.md — Tooltip refresh on result updates + phase close (CLAUDE.md, regression, deploy) (wave 4)
 **UI hint**: yes
 
 ### Phase 4: Messages and Contact
@@ -97,7 +103,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Gear Score Off and Release Plumbing | 3/3 | Complete    | 2026-11-11 |
 | 2. List Foundation | 4/4 | Complete    | 2026-11-11 |
-| 3. Rows, Tooltip and Own Listing | 0/TBD | Not started | - |
+| 3. Rows, Tooltip and Own Listing | 0/4 | Planned | - |
 | 4. Messages and Contact | 0/TBD | Not started | - |
 | 5. Release Review | 0/TBD | Not started | - |
 
