@@ -44,15 +44,15 @@ reviews before the milestone closes.
 **: The list scrolls with Blizzard's ScrollBox and MinimalScrollBar, with separate header / row frames and their own heights
 - [x] **UIP-06
 **: Rows look like stock: mid2 background / hover / selected art, stock fonts and colours, greyed rows in stock grey with desaturated icons, leader icon on groups
-- [ ] **UIP-07**: Solo players show the stock micro role icons; voice chat icon and wording match stock
+- [x] **UIP-07**: Solo players show the stock micro role icons; voice chat icon and wording match stock
 - [x] **UIP-08**: Your own listing row has the stock delist button (leader / solo only) and "Your listing" in green
-- [ ] **UIP-09**: The row tooltip follows the stock order and wording, with our extras (friends in group, hidden note) after
+- [x] **UIP-09**: The row tooltip follows the stock order and wording, with our extras (friends in group, hidden note) after
 - [x] **UIP-10
 **: Searching shows the stock spinner; no results and search failed show the stock texts; filtering by our search box has its own text
 - [ ] **UIP-11**: The Messages panel uses the Who tab's frame layers, multi-line preset boxes, native checkboxes with sounds, and the Auto-invite disabled look
 - [x] **UIP-12
 **: Row select, hide and checkboxes play the stock sounds
-- [ ] **UIP-13**: Playstyle shows in the tooltip and the listing comment in light grey
+- [x] **UIP-13**: Playstyle shows in the tooltip and the listing comment in light grey
 - [x] **UIP-14**: The hide button is a stock-style small button with an icon
 - [x] **UIP-15**: Needs my role uses the server's remaining-slot counts when available
 - [ ] **UIP-16**: A hovered row's tooltip refreshes when results update
@@ -98,10 +98,10 @@ reviews before the milestone closes.
 | UIP-06 | Phase 2 | Complete |
 | UIP-10 | Phase 2 | Complete |
 | UIP-12 | Phase 2 | Complete |
-| UIP-07 | Phase 3 | Pending |
+| UIP-07 | Phase 3 | Complete |
 | UIP-08 | Phase 3 | Complete |
-| UIP-09 | Phase 3 | Pending |
-| UIP-13 | Phase 3 | Pending |
+| UIP-09 | Phase 3 | Complete |
+| UIP-13 | Phase 3 | Complete |
 | UIP-14 | Phase 3 | Complete |
 | UIP-15 | Phase 3 | Complete |
 | UIP-16 | Phase 3 | Pending |
