@@ -79,10 +79,10 @@ local source = {
 		return not (issecretvalue and issecretvalue(active)) and active == true
 	end,
 	searching = function()
-		return LFGBrowseFrame and LFGBrowseFrame.searching == true
+		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searching == true
 	end,
 	failed = function()
-		return LFGBrowseFrame and LFGBrowseFrame.searchFailed == true
+		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searchFailed == true
 	end,
 }
 

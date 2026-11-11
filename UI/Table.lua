@@ -5,8 +5,9 @@
 --  As Forever's list: your own listing first, then two collapsible sections, Solo players
 --  and Groups (groups first while you're solo, solo players first while you lead). Within
 --  each, rows sort by the clicked column: Roles (tank > healer > damage), Lvl, GS (a group's
---  best known; only while ns.GEAR_SCORE is on), Activity, Listed. Hidden players (X) and, with Needs my role, listings with
---  no slot for you are greyed and moved to the end of their section, never removed.
+--  best known; only while ns.GEAR_SCORE is on), Activity, Listed. Hidden players and, with
+--  Needs my role, listings with no slot for you are greyed and moved to the end of their
+--  section, never removed.
 --
 --  The list is Blizzard's own ScrollBox (WowScrollBoxList + MinimalScrollBar) with separate
 --  header and row frames; where the ScrollBox API or our templates (UI/Templates.xml) are
@@ -365,14 +366,19 @@ local function PlayerText(m, roles)
 	return text
 end
 
+local voiceLabels
+
 local function VoiceLabels()
-	local v = ns.VOICE
-	return {
-		[v.None] = VOICE_CHAT_MODE_NONE or "None",
-		[v.Legacy] = VOICE_CHAT_MODE_LEGACY or "In-game",
-		[v.Discord] = VOICE_CHAT_MODE_DISCORD or "Discord",
-		[v.Custom] = VOICE_CHAT_MODE_CUSTOM or "Custom",
-	}
+	if not voiceLabels then
+		local v = ns.VOICE
+		voiceLabels = {
+			[v.None] = VOICE_CHAT_MODE_NONE or "None",
+			[v.Legacy] = VOICE_CHAT_MODE_LEGACY or "In-game",
+			[v.Discord] = VOICE_CHAT_MODE_DISCORD or "Discord",
+			[v.Custom] = VOICE_CHAT_MODE_CUSTOM or "Custom",
+		}
+	end
+	return voiceLabels
 end
 
 local function IsSecret(v)
@@ -588,7 +594,7 @@ local function ExtrasTooltip(tip, l)
 	tip.blank()
 	tip.line("Listed " .. W.Age(l.age) .. " ago", W.GRAY)
 	if IsHidden(l) then
-		tip.line("Hidden until they make a new listing (use the eye button to show).", W.GRAY, true)
+		tip.line("Hidden until they make a new listing (use the hide button to show).", W.GRAY, true)
 	end
 end
 
@@ -1003,7 +1009,6 @@ local function MatchesActive(inst, l)
 end
 
 function Instance:FillRow(row, item)
-	row.item = item
 	local l = item
 	row.listing = l
 	local greyed = l.demoted == true
@@ -1191,7 +1196,7 @@ function Instance:Collect()
 	return #sections.solo, #sections.groups
 end
 
--- True when the shared tooltip is open on one of this table's row frames (D-19). Read before the
+-- True when the shared tooltip is open on one of this table's row frames. Read before the
 -- list is re-filled: the ScrollBox resetter hides the tooltip while it releases frames.
 function Instance:HoveredRow()
 	if not GameTooltip:IsShown() then
@@ -1236,10 +1241,10 @@ function Instance:RefreshTooltip(hovered)
 end
 
 function Instance:Refresh()
-	local hovered = self:HoveredRow()
 	if not self.band:IsVisible() then
 		return
 	end
+	local hovered = self:HoveredRow()
 	self.fits:SetChecked(view.fitsRoles)
 	local useArrow = W.HasAtlas(SORT_ARROW)
 	for _, col in ipairs(COLUMNS) do
@@ -1261,6 +1266,8 @@ function Instance:Refresh()
 		self.list:Clear()
 		self.spinner:Show()
 		self.stateText:SetText("")
+		self.status:SetText("")
+		wipe(self.shownIDs)
 		self:RefreshButtons()
 		self:RefreshTooltip(hovered)
 		return
@@ -1355,14 +1362,14 @@ function Instance:BuildList(back, placeStrip)
 		local box = W.Create("Frame", back, "WowScrollBoxList")
 		local bar = W.Create("EventFrame", back, "MinimalScrollBar")
 		if box.SetDataProvider and bar.Init then
-			local view = CreateScrollBoxListLinearView()
-			view:SetElementFactory(function(factory, item)
+			local scrollView = CreateScrollBoxListLinearView()
+			scrollView:SetElementFactory(function(factory, item)
 				factory(item.header and headerTemplate or ROW_TEMPLATE, Init)
 			end)
-			view:SetElementExtentCalculator(function(_, item)
+			scrollView:SetElementExtentCalculator(function(_, item)
 				return item.header and HEADER_H or ROW_H
 			end)
-			view:SetElementResetter(function(frame)
+			scrollView:SetElementResetter(function(frame)
 				if GameTooltip:GetOwner() == frame then
 					GameTooltip:Hide()
 				end
@@ -1371,7 +1378,7 @@ function Instance:BuildList(back, placeStrip)
 			box:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 2)
 			bar:SetPoint("TOPLEFT", box, "TOPRIGHT", 2, -4)
 			bar:SetPoint("BOTTOMLEFT", box, "BOTTOMRIGHT", 0, 2)
-			ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, view)
+			ScrollUtil.InitScrollBoxListWithScrollBar(box, bar, scrollView)
 			local topLeft = CreateAnchor("TOPLEFT", back, "TOPLEFT", 3, -6)
 			local withBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 2) }
 			local withoutBar = { topLeft, CreateAnchor("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 2) }

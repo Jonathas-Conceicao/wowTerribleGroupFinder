@@ -253,15 +253,6 @@ function W.Inset(parent)
 	return f
 end
 
-function W.Line(parent)
-	local t = parent:CreateTexture(nil, "ARTWORK")
-	if not W.Atlas(t, "groupfinder-ScrollLine") then
-		t:SetColorTexture(0.35, 0.3, 0.2, 0.8)
-	end
-	t:SetHeight(1)
-	return t
-end
-
 -- title / body: a string, or a function of the frame (read when the tooltip opens).
 -- opts (optional): gold = gold title and white body; note = function of the frame giving a
 -- grey extra line (or nil).
