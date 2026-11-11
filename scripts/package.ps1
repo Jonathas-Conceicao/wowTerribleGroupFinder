@@ -31,11 +31,43 @@ foreach ($entry in @($files)) {
         if ($files -notcontains $ref) { $files.Add($ref) }
     }
 }
-$texDir = Join-Path $source 'Media'
+$iconLine = $tocLines | Where-Object { $_ -match '^\s*##\s*IconTexture\s*:' } | Select-Object -First 1
+if ($iconLine) {
+    $iconValue = ($iconLine -replace '^\s*##\s*IconTexture\s*:\s*', '').Trim()
+    $iconRel = $iconValue -replace '(?i)^Interface\\AddOns\\TerribleGroupFinder\\', ''
+    $iconFile = $null
+    foreach ($ext in '.blp', '.tga') {
+        if (Test-Path -LiteralPath (Join-Path $source ($iconRel + $ext))) { $iconFile = $iconRel + $ext; break }
+    }
+    if (-not $iconFile) {
+        Write-Host "ERROR: IconTexture $iconValue names no .blp/.tga in $source"
+        exit 1
+    }
+    if ($files -notcontains $iconFile) { $files.Add($iconFile) }
+}
+# Only Media\Textures ships; Media\Source (art sources) never does.
+$texDir = Join-Path $source 'Media\Textures'
 if (Test-Path -LiteralPath $texDir) {
     foreach ($tex in Get-ChildItem -LiteralPath $texDir -File -Recurse | Where-Object { $_.Extension -in '.blp', '.tga' }) {
         $rel = $tex.FullName.Substring($source.Length).TrimStart('\')
         if ($files -notcontains $rel) { $files.Add($rel) }
+    }
+
+    # The packager ships only what git tracks. Skipped silently without git.
+    $gitOk = $false
+    try {
+        $trackedTex = @(& git -C $source ls-files -- 'Media/Textures' 2>$null)
+        $gitOk = ($LASTEXITCODE -eq 0)
+    } catch {
+        $gitOk = $false
+    }
+    if ($gitOk) {
+        $trackedTex = @($trackedTex | ForEach-Object { $_ -replace '/', '\' })
+        foreach ($f in $files) {
+            if ($f -like 'Media\Textures\*' -and $trackedTex -notcontains $f) {
+                Write-Host "WARNING: $f is not tracked by git - it will not be in a release"
+            }
+        }
     }
 }
 foreach ($f in $files) {

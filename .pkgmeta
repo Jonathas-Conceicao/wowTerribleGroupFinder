@@ -21,3 +21,7 @@ ignore:
   - tools
   - "*.png"
   - "*.org"
+  - Media/Source
+  - "*.ase"
+  - dist
+  - .release
