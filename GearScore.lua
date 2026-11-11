@@ -128,13 +128,35 @@ function GS.Of(member)
 	return gs, stale
 end
 
-local function StoreSelf()
+-- Stores your own score once your gear has loaded: up to ITEM_RETRIES more tries a second
+-- apart, one chain at a time (selfPending) however many events ask for it.
+local selfPending = false
+
+local function StoreSelf(tries)
 	local gs, complete = GS.Unit("player")
 	if complete then
-		GS.Store(UnitName("player"), gs, UnitLevel("player"))
-	else
-		C_Timer.After(1, StoreSelf)
+		selfPending = false
+		return GS.Store(UnitName("player"), gs, UnitLevel("player"))
 	end
+	if tries >= ITEM_RETRIES then
+		selfPending = false
+		return
+	end
+	selfPending = true
+	C_Timer.After(1, function()
+		StoreSelf(tries + 1)
+	end)
+end
+
+-- After an equipment change or a loading screen: one try a second later, unless a chain runs.
+local function QueueStoreSelf()
+	if selfPending then
+		return
+	end
+	selfPending = true
+	C_Timer.After(1, function()
+		StoreSelf(0)
+	end)
 end
 
 --- Your own score: worked out from your gear when it has loaded, else the last one kept.
@@ -209,7 +231,9 @@ end
 
 --- Queues an inspect of every group member whose score isn't fresh.
 function GS.ScanGroup()
-	StoreSelf()
+	if not selfPending then
+		StoreSelf(0)
+	end
 	for i = #queue, 1, -1 do
 		queue[i] = nil
 	end
@@ -250,7 +274,7 @@ function GS.Init(db)
 			elseif event == "READY_CHECK" then
 				GS.ScanGroup()
 			elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
-				C_Timer.After(1, StoreSelf)
+				QueueStoreSelf()
 			end
 		end)
 		frame:RegisterEvent("INSPECT_READY")
