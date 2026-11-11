@@ -61,6 +61,9 @@ if ns.GEAR_SCORE then
 	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 284, w = 44, justify = "CENTER" }
 end
 local ACTIVITY_X = ns.GEAR_SCORE and 334 or 284
+-- The zone on a row's second line: its width cap, its share of the Activity cell, and the gap
+-- before the comment.
+local ZONE_MAX, ZONE_FRAC, ZONE_GAP = 100, 0.45, 6
 local FIRST_DESC = { level = true, gs = ns.GEAR_SCORE or nil }
 -- Every cell of a row and of the header, in order.
 local CELL_KEYS = {}
@@ -794,6 +797,22 @@ local function Layout(owner, cells, rightAnchor, rightOffset)
 	cells.activity:SetPoint("RIGHT", cells.listed, "LEFT", -GAP, 0)
 end
 
+-- Sizes the zone to its text, capped by ZONE_MAX and a share of the Activity cell.
+local function FitZone(row)
+	local zone = row.zone
+	if not zone or not zone:IsShown() or (zone:GetText() or "") == "" then
+		return
+	end
+	zone:SetWidth(0)
+	local textWidth = zone:GetStringWidth() or 0
+	local cap = ZONE_MAX
+	local cellWidth = row.cells and row.cells.activity:GetWidth()
+	if type(cellWidth) == "number" and cellWidth > 0 then
+		cap = math.min(ZONE_MAX, math.floor(cellWidth * ZONE_FRAC))
+	end
+	zone:SetWidth(math.max(1, math.min(cap, textWidth)))
+end
+
 -- Builds a result row once, on a frame the list gave us.
 function Instance:BuildRow(row)
 	local inst = self
@@ -848,6 +867,16 @@ function Instance:BuildRow(row)
 	row.activity = W.Text(cells.activity, "GameFontHighlightSmall", 11)
 	row.activity:SetPoint("TOPLEFT", 0, -4)
 	row.activity:SetPoint("RIGHT", 0, 0)
+	row.zone = W.Text(cells.activity, "GameFontDisableSmall", 10)
+	row.zone:SetPoint("TOPLEFT", 0, -19)
+	if row.zone.SetMaxLines then
+		row.zone:SetMaxLines(1)
+	end
+	if cells.activity.HookScript then
+		cells.activity:HookScript("OnSizeChanged", function()
+			FitZone(row)
+		end)
+	end
 	row.comment = W.Text(cells.activity, "GameFontDisableSmall", 10)
 	row.comment:SetPoint("TOPLEFT", 0, -19)
 	row.comment:SetPoint("RIGHT", 0, 0)
@@ -1078,6 +1107,22 @@ function Instance:FillRow(row, item)
 	end
 	local activityText = l.mine and (LFG_SELF_LISTING or "Your listing") or ActivityText(l)
 	row.activity:SetText(greyed and Plain(activityText) or activityText)
+	local zone = not l.mine and who.area or nil
+	if type(zone) ~= "string" or zone == "" then
+		zone = nil
+	end
+	row.comment:ClearAllPoints()
+	if zone then
+		row.zone:SetText(zone)
+		row.zone:Show()
+		FitZone(row)
+		row.comment:SetPoint("TOPLEFT", row.zone, "TOPRIGHT", ZONE_GAP, 0)
+	else
+		row.zone:SetText("")
+		row.zone:Hide()
+		row.comment:SetPoint("TOPLEFT", 0, -19)
+	end
+	row.comment:SetPoint("RIGHT", 0, 0)
 	row.comment:SetText(l.comment or "")
 
 	local hidden = IsHidden(l)
@@ -1095,7 +1140,7 @@ function Instance:FillRow(row, item)
 
 	-- Colours, set on every fill: the frames are reused. Greyed rows take Forever's delisted
 	-- grey on all text (class-coloured name included) and desaturated icons.
-	local texts = { row.name, row.level, row.activity, row.sub, row.count, row.comment, row.listed, row.gs }
+	local texts = { row.name, row.level, row.activity, row.sub, row.count, row.comment, row.zone, row.listed, row.gs }
 	if greyed then
 		for _, fs in pairs(texts) do
 			W.SetColor(fs, W.DELISTED)
@@ -1106,6 +1151,7 @@ function Instance:FillRow(row, item)
 		W.SetColor(row.level, W.GRAY)
 		W.SetColor(row.activity, l.mine and W.LIGHTGREEN or (MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY))
 		W.SetColor(row.comment, W.LIGHTGRAY)
+		W.SetColor(row.zone, W.GRAY)
 		for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
 			local c = fs.__tgfColor
 			if c and c[1] then
