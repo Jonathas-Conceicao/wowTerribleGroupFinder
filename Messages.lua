@@ -32,17 +32,6 @@ M.KEYS = {
 	{ key = "{level}", tip = "Your level." },
 	{ key = "{role}", tip = "The roles you can play, for example Tank/Healer." },
 }
--- Earlier default presets: a saved copy of one is replaced by the current default (version 2 migration, once).
-local PREVIOUS = {
-	invite = { "Hi {name}! We're forming a group for {activity}, want to join?" },
-	request = {
-		"Hi {name}! Level {level} {class} here ({role}), could I join you for {activity}?",
-		-- An earlier request default that carried a gear score key; the key is spelled in two
-		-- pieces so it is never read as a key.
-		"Hi {name}! Level {level} {class} here ({role}, GS {g" .. "s}), could I join you for {activity}?",
-	},
-}
-local VERSION = 2
 local MAX = 255
 
 local ROLE_NAMES = { tank = "Tank", healer = "Healer", dps = "Damage" }
@@ -52,23 +41,15 @@ local db
 function M.Init(saved)
 	saved.messages = saved.messages or {}
 	db = saved.messages
-	local migrate = (db.version or 1) < VERSION
 	for _, kind in ipairs(M.KINDS) do
 		db[kind] = db[kind] or {}
 		if type(db[kind].text) ~= "string" then
 			db[kind].text = M.DEFAULTS[kind]
-		elseif migrate then
-			for _, old in ipairs(PREVIOUS[kind]) do
-				if db[kind].text == old then
-					db[kind].text = M.DEFAULTS[kind]
-				end
-			end
 		end
 		db[kind].auto = db[kind].auto == true
 	end
 	db.invite.autoInvite = db.invite.autoInvite == true and db.invite.auto
 	db.request.autoInvite = nil
-	db.version = VERSION
 end
 
 --- text, Auto-send, Auto-invite (only the invite preset has it, and only with Auto-send on).

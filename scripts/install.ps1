@@ -96,6 +96,9 @@ if (Test-Path -LiteralPath $texDir) {
     }
 }
 
+# The license ships with the addon (GPL-3.0), as in a release.
+if ($files -notcontains 'LICENSE') { $files.Add('LICENSE') }
+
 foreach ($f in $files) {
     if (-not (Test-Path -LiteralPath (Join-Path $source $f))) {
         Write-Host "ERROR: the file set includes $f, which does not exist in $source"
