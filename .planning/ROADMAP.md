@@ -104,8 +104,8 @@ Plans:
 **Plans**: 2 plans
 
 Plans:
-- [ ] 05-01-PLAN.md — Code cleanup (dead code, planning refs, cheap review items), CLAUDE.md accuracy edits, version check (wave 1)
-- [ ] 05-02-PLAN.md — `## v0.1.0` changelog draft and 05-HUMAN-UAT.md for the author's review (wave 2)
+- [x] 05-01-PLAN.md — Code cleanup (dead code, planning refs, cheap review items), CLAUDE.md accuracy edits, version check (wave 1)
+- [x] 05-02-PLAN.md — `## v0.1.0` changelog draft and 05-HUMAN-UAT.md for the author's review (wave 2)
 
 ## Progress
 
