@@ -11,7 +11,8 @@ reviews before the milestone closes.
 
 ### Gear score on hold (GS)
 
-- [ ] **GS-01**: The player sees no gear score anywhere (no GS column, no "Your GS", no GS in tooltips, no `{gs}` key) and no inspects run on ready checks; GearScore.lua stays in the repo behind a single disabled switch
+- [x] **GS-01
+**: The player sees no gear score anywhere (no GS column, no "Your GS", no GS in tooltips, no `{gs}` key) and no inspects run on ready checks; GearScore.lua stays in the repo behind a single disabled switch
 - [ ] **GS-02**: The gear score design notes (formula, slot weights, quality factors, cache, inspect queue, sharing idea) are kept in `.planning/research/GEARSCORE.md` and a backlog item records the choice: finish gear score or drop it
 
 ### Messages (MSG)
