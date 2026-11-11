@@ -739,6 +739,34 @@ function Instance:Invite(l)
 	T.RefreshAll()
 end
 
+-- Right-click on a row: Forever's own menu for that result (leader name, Send Message, Group
+-- Invite, Report Group, Report Advertisement), built by its finder. The preview and a client
+-- without that method get a copy, with the reports greyed.
+function Instance:ContextMenu(l)
+	W.PlayCheckbox(true)
+	local finder = LFGBrowseFrame
+	if not ns.UsingPreview() and finder and finder.CreateSearchEntryMenu then
+		finder:CreateSearchEntryMenu({ resultID = l.id })
+		return
+	end
+	if not (MenuUtil and MenuUtil.CreateContextMenu) then
+		return
+	end
+	local name = l.leader.name
+	MenuUtil.CreateContextMenu(nil, function(_, root)
+		root:CreateTitle(name)
+		root:CreateButton(SEND_MESSAGE or "Send Message", function()
+			ns.Print(format("preview: would open a whisper to %s.", name))
+		end)
+		local invite = root:CreateButton(GROUP_INVITE or "Group Invite", function()
+			ns.Print(format("preview: would invite %s (C_PartyInfo.InviteUnit).", name))
+		end)
+		invite:SetEnabled(l.solo == true and ns.CanInvite())
+		root:CreateButton(LFG_LIST_REPORT_GROUP_FOR or "Report Group"):SetEnabled(false)
+		root:CreateButton(REPORT_GROUP_FINDER_ADVERTISEMENT or "Report Advertisement"):SetEnabled(false)
+	end)
+end
+
 local function SetRoles(row, l)
 	for _, s in ipairs(row.slots) do
 		s:Hide()
@@ -960,10 +988,14 @@ function Instance:BuildRow(row)
 	row.message:SetPoint("RIGHT", row.hide, "LEFT", -3, 0)
 	Layout(row, cells, row.message, -GAP)
 
-	row:RegisterForClicks("LeftButtonUp")
-	row:SetScript("OnClick", function(r)
+	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
+	row:SetScript("OnClick", function(r, button)
 		local l = r.listing
 		if not l or l.mine or l.delisted then
+			return
+		end
+		if button == "RightButton" then
+			inst:ContextMenu(l)
 			return
 		end
 		if inst.selectedID == l.id then
