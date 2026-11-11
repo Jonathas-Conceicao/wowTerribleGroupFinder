@@ -250,18 +250,22 @@ local function BuildBrowse(parent)
 		border:SetPoint("TOPLEFT", 0, 2)
 		border:SetPoint("BOTTOMRIGHT", 0, 0)
 	end
-	local barTop = art:CreateTexture(nil, "OVERLAY")
-	if not W.Atlas(barTop, "groupfinder-ScrollLine") then
-		barTop:SetColorTexture(0.35, 0.3, 0.2, 0.8)
-		barTop:SetHeight(1)
+	-- At the atlas's own size (as stock's useAtlasSize): only LEFT/RIGHT are anchored, so
+	-- the height has to come from the atlas.
+	local function ScrollLine()
+		local line = art:CreateTexture(nil, "OVERLAY")
+		if line.SetAtlas and W.HasAtlas("groupfinder-ScrollLine") then
+			line:SetAtlas("groupfinder-ScrollLine", true)
+		else
+			line:SetColorTexture(0.35, 0.3, 0.2, 0.8)
+			line:SetHeight(1)
+		end
+		return line
 	end
+	local barTop = ScrollLine()
 	barTop:SetPoint("LEFT", art, "TOPLEFT", 0, -20)
 	barTop:SetPoint("RIGHT", art, "TOPRIGHT", 0, -20)
-	local barMiddle = art:CreateTexture(nil, "OVERLAY")
-	if not W.Atlas(barMiddle, "groupfinder-ScrollLine") then
-		barMiddle:SetColorTexture(0.35, 0.3, 0.2, 0.8)
-		barMiddle:SetHeight(1)
-	end
+	local barMiddle = ScrollLine()
 	barMiddle:SetPoint("LEFT", panel, "BOTTOMLEFT", 0, 61)
 	barMiddle:SetPoint("RIGHT", panel, "BOTTOMRIGHT", 0, 61)
 
