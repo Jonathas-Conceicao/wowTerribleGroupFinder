@@ -100,16 +100,19 @@ function M.Send(l, preview)
 	-- Forever lists only your own mega-realm: whisper by plain character name.
 	local target = l.leader.name
 	local _, auto = M.Get(kind)
-	if auto then
+	if auto and preview then
 		ns.state.messaged[l.id] = true
-		if preview then
-			return ns.Print(string.format("preview: whispered %s: %s", target, text))
-		end
+		return ns.Print(string.format("preview: whispered %s: %s", target, text))
+	end
+	-- Never send addon-side during chat messaging lockdown: fall back to prefilling the box.
+	local locked = C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown()
+	if auto and not locked then
 		if C_ChatInfo and C_ChatInfo.SendChatMessage then
 			C_ChatInfo.SendChatMessage(text, "WHISPER", nil, target)
 		else
 			SendChatMessage(text, "WHISPER", nil, target)
 		end
+		ns.state.messaged[l.id] = true
 		return
 	end
 	if ChatFrameUtil and ChatFrameUtil.SendTellWithMessage then
