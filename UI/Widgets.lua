@@ -57,6 +57,11 @@ end
 W.GRAY = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
 W.BRIGHTBLUE = BRIGHTBLUE_FONT_COLOR or { r = 0.4, g = 0.73, b = 1 }
 W.DELISTED = { r = 0.3, g = 0.3, b = 0.3 }
+W.LIGHTGREEN = LIGHTGREEN_FONT_COLOR or { r = 0.25, g = 0.75, b = 0.25 }
+W.LIGHTGRAY = LIGHTGRAY_FONT_COLOR or { r = 0.753, g = 0.753, b = 0.753 }
+W.GREEN = GREEN_FONT_COLOR or { r = 0.1, g = 1, b = 0.1 }
+W.NORMAL = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
+W.RED = RED_FONT_COLOR or { r = 1, g = 0.1, b = 0.1 }
 
 function W.SetColor(fs, c)
 	fs:SetTextColor(c.r, c.g, c.b)
@@ -228,15 +233,21 @@ function W.Line(parent)
 	return t
 end
 
+-- title / body: a string, or a function of the frame (read when the tooltip opens).
 local function Tooltip(f, title, body)
 	if not title then
 		return
 	end
 	f:HookScript("OnEnter", function(self)
+		local t = type(title) == "function" and title(self) or title
+		if not t then
+			return
+		end
+		local b = type(body) == "function" and body(self) or body
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText(title, 1, 1, 1)
-		if body then
-			GameTooltip:AddLine(body, nil, nil, nil, true)
+		GameTooltip:SetText(t, 1, 1, 1)
+		if b then
+			GameTooltip:AddLine(b, nil, nil, nil, true)
 		end
 		GameTooltip:Show()
 	end)
@@ -269,6 +280,26 @@ function W.Button(parent, text, width, height, onClick)
 	if onClick then
 		b:SetScript("OnClick", onClick)
 	end
+	return b
+end
+
+-- A small icon button: UIMenuButtonStretchTemplate (the look of Forever's own delist button),
+-- or a plain panel button where the template is missing. b.Icon is the centred icon texture;
+-- b.styled says whether the template took (without it the caller shows text instead).
+function W.IconButton(parent, w, h)
+	local b = Create("Button", parent, "UIMenuButtonStretchTemplate")
+	local styled = b.MiddleMiddle ~= nil
+	if not styled then
+		b = W.Button(parent, "", w, h)
+	end
+	b:SetSize(w, h)
+	b.Icon = b:CreateTexture(nil, "ARTWORK")
+	b.Icon:SetPoint("CENTER", 0, 0)
+	local hl = b:CreateTexture(nil, "HIGHLIGHT")
+	hl:SetAllPoints()
+	hl:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+	hl:SetBlendMode("ADD")
+	b.styled = styled
 	return b
 end
 
@@ -337,6 +368,7 @@ end
 local ROLE_ATLAS = { TANK = "tank", HEALER = "heal", DAMAGER = "dps" }
 local ROLE_COLOR = { TANK = { 0.2, 0.45, 0.9 }, HEALER = { 0.2, 0.75, 0.3 }, DAMAGER = { 0.8, 0.25, 0.2 } }
 local ROLE_LETTER = { TANK = "T", HEALER = "H", DAMAGER = "D" }
+local MICRO = 18
 W.ROLE_NAME = { TANK = "Tank", HEALER = "Healer", DAMAGER = "Damage" }
 
 function W.RoleIcon(parent, size)
@@ -346,12 +378,21 @@ function W.RoleIcon(parent, size)
 	f.tex:SetAllPoints()
 	f.letter = W.Text(f, "GameFontHighlightSmall", 10, "CENTER")
 	f.letter:SetPoint("CENTER", 0, 0)
-	function f:SetRole(role)
+	-- micro: Forever's solo-player icon (18 px); otherwise the large one (the creation size).
+	function f:SetRole(role, micro)
 		self.letter:SetText("")
+		self:SetSize(size, size)
 		if not role then
 			if not W.Atlas(self.tex, "groupfinder-icon-emptyslot") then
 				self.tex:SetColorTexture(0.2, 0.2, 0.2, 0.8)
 			end
+			return
+		end
+		local microAtlas = "groupfinder-icon-role-micro-" .. ROLE_ATLAS[role]
+		if micro and W.HasAtlas(microAtlas) then
+			self:SetSize(MICRO, MICRO)
+			self.tex:SetAtlas(microAtlas, false)
+			self.tex:SetVertexColor(1, 1, 1, 1)
 			return
 		end
 		if not W.Atlas(self.tex, "groupfinder-icon-role-large-" .. ROLE_ATLAS[role]) then

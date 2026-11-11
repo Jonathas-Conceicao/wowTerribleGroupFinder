@@ -37,6 +37,7 @@ local GAP = 6
 local HIDE_W, MSG_W = 20, 66
 local ACTIONS_W = HIDE_W + 3 + MSG_W + 2 -- the buttons at a row's right edge
 local LISTED_W = 44
+local NAME_W, DISCORD = 130, 16 -- the name text's width (the cell's less the class icon), the Discord icon
 local ROLES = { "TANK", "HEALER", "DAMAGER" }
 local ROLE_KEY = { TANK = "tank", HEALER = "healer", DAMAGER = "dps" }
 local ROLE_SHORT = { TANK = "T", HEALER = "H", DAMAGER = "D" }
@@ -503,16 +504,25 @@ local function SetRoles(row, l)
 		s:Hide()
 	end
 	row.count:SetText("")
+	-- Solo players: Forever's micro icons, 18 px, a 20 px step. Groups: the large icons at 14 px,
+	-- a 15 px step. Every fill sets both, as the frames are reused between the two.
 	if l.solo then
 		local n = 0
 		for _, role in ipairs(ROLES) do
 			if l.leader.roles and l.leader.roles[ROLE_KEY[role]] then
 				n = n + 1
-				row.slots[n]:SetRole(role)
-				row.slots[n]:Show()
+				local slot = row.slots[n]
+				slot:SetRole(role, true)
+				slot:ClearAllPoints()
+				slot:SetPoint("LEFT", (n - 1) * 20, 0)
+				slot:Show()
 			end
 		end
 		return
+	end
+	for i, slot in ipairs(row.slots) do
+		slot:ClearAllPoints()
+		slot:SetPoint("LEFT", (i - 1) * 15, 0)
 	end
 	RoleCounts(l)
 	local size = Size(l)
@@ -526,10 +536,21 @@ local function SetRoles(row, l)
 				end
 			end
 		end
-		for j = i + 1, size do
+		-- The open slots: the server's remaining ones when it told us, else the estimate.
+		local total = size
+		local remaining = 0
+		if type(l.remaining) == "table" then
+			for _, role in ipairs(ROLES) do
+				remaining = remaining + (tonumber(l.remaining[role]) or 0)
+			end
+		end
+		if remaining > 0 then
+			total = min(SLOTS, i + remaining)
+		end
+		for j = i + 1, total do
 			row.slots[j]:SetRole(nil)
 		end
-		for j = 1, size do
+		for j = 1, total do
 			row.slots[j]:Show()
 		end
 	else
@@ -588,7 +609,10 @@ function Instance:BuildRow(row)
 	row.icon:SetPoint("TOPLEFT", 0, -3)
 	row.name = W.Text(cells.name, "GameFontNormal", 12)
 	row.name:SetPoint("TOPLEFT", 20, -4)
-	row.name:SetPoint("RIGHT", 0, 0)
+	row.name:SetWidth(NAME_W) -- FillRow narrows it to make room for the Discord icon
+	row.discord = cells.name:CreateTexture(nil, "ARTWORK")
+	row.discord:SetSize(DISCORD, DISCORD)
+	row.discord:Hide()
 	row.sub = W.Text(cells.name, "GameFontDisableSmall", 10)
 	row.sub:SetPoint("TOPLEFT", 0, -19)
 	row.sub:SetPoint("RIGHT", 0, 0)
@@ -615,7 +639,7 @@ function Instance:BuildRow(row)
 	row.listed = W.Text(cells.listed, "GameFontDisableSmall", 10, "RIGHT")
 	row.listed:SetAllPoints()
 	-- What these texts look like on a normal row, put back on every fill.
-	for _, fs in ipairs({ row.sub, row.count, row.comment, row.listed, row.gs or row.count }) do
+	for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
 		fs.__tgfColor = { fs:GetTextColor() }
 	end
 
@@ -777,14 +801,30 @@ function Instance:FillRow(row, item)
 	if l.newPlayerFriendly then
 		tags = tags .. " " .. W.Icon("newPlayer")
 	end
-	if l.voice then
+	-- Discord: Forever's icon after the name; where the atlas is missing, the text tag instead.
+	local discord = l.voiceMode ~= nil and l.voiceMode == ns.VOICE.Discord
+	local discordIcon = discord and W.Atlas(row.discord, "UI-ChatIcon-Discord")
+	if discord and not discordIcon then
 		tags = tags .. " " .. W.Icon("voice")
 	end
 	if not l.solo and FriendsLine(l) and not (who.bnet or who.friend or who.recent) then
 		tags = tags .. " " .. W.Icon("friendsIn")
 	end
-	local nameText = who.name .. W.Marks(who) .. (l.mine and " |cff33ff33(you)|r" or "") .. tags
+	local nameText = who.name .. W.Marks(who) .. tags
 	row.name:SetText(greyed and Plain(nameText) or nameText)
+	if discordIcon then
+		local maxW = NAME_W - DISCORD - 4
+		row.name:SetWidth(maxW)
+		row.discord:ClearAllPoints()
+		row.discord:SetPoint("TOPLEFT", 20 + min(row.name:GetStringWidth(), maxW) + 4, -3)
+		row.discord:SetSize(DISCORD, DISCORD)
+		row.discord:SetDesaturated(greyed)
+		row.discord:SetAlpha(greyed and 0.5 or 1)
+		row.discord:Show()
+	else
+		row.name:SetWidth(NAME_W)
+		row.discord:Hide()
+	end
 	if l.solo then
 		row.sub:SetText(who.spec or W.ClassName(who.class))
 	else
@@ -829,7 +869,8 @@ function Instance:FillRow(row, item)
 		row.name:SetTextColor(r, g, b)
 		W.SetColor(row.level, W.GRAY)
 		W.SetColor(row.activity, MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY)
-		for _, fs in ipairs({ row.sub, row.count, row.comment, row.listed, row.gs or row.count }) do
+		W.SetColor(row.comment, W.LIGHTGRAY)
+		for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
 			local c = fs.__tgfColor
 			if c and c[1] then
 				fs:SetTextColor(c[1], c[2], c[3])
