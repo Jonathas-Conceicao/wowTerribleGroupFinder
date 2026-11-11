@@ -1,8 +1,9 @@
 ---
 phase: 02-list-foundation
-reviewed: 2026-11-11T00:00:00Z
+reviewed: 2026-11-11T17:32:19Z
 depth: standard
-files_reviewed: 7
+iteration: 2
+files_reviewed: 9
 files_reviewed_list:
   - UI/Table.lua
   - UI/Widgets.lua
@@ -11,281 +12,174 @@ files_reviewed_list:
   - UI/Listing.lua
   - UI/Templates.xml
   - TerribleGroupFinder.toc
+  - Listings.lua
+  - Messages.lua
 findings:
   critical: 0
-  warning: 12
-  info: 5
-  total: 17
-status: issues_found
+  warning: 1
+  info: 9
+  total: 10
+  warning_resolved: 1
+status: issues_found # info items only remain open; the one warning is resolved (acf7199)
 ---
 
-# Phase 2: Code Review Report
+# Phase 2: Code Review Report (iteration 2)
 
-**Reviewed:** 2026-11-11
+**Reviewed:** 2026-11-11T17:32:19Z
 **Depth:** standard
-**Files Reviewed:** 7
+**Files Reviewed:** 9
 **Status:** issues_found
 
 ## Narrative Findings (AI reviewer)
 
 ## Summary
 
-I reviewed the phase-2 diff (`80e2737..HEAD`) for `UI/` and the TOC against CLAUDE.md, `02-CONTEXT.md`, and Blizzard's source (branch `forever`, read only).
+I re-reviewed the phase after the fix commits `f701163..b60696e` (diff `2bba090..HEAD`). I read every file in scope in full. Blizzard's source (branch `forever`, read only) was the reference.
 
-**What checks out:**
-- **Taint:** no taint path found.
-  - `LFGBrowseSearchEntryGroupingTemplate` has no scripts and no mixin (`Mainline/Blizzard_LFGVanilla_Browse.xml:277`).
-  - `ColumnDisplayButtonShortTemplate` has no scripts.
-  - Blizzard's frames are only read (`searching`, `searchFailed`, `RefreshButton`) or used as anchors.
-  - `LFGBrowse_DoSearch` sets `searching = true` before the hook runs, so the spinner shows correctly.
-- **ScrollBox calls:** all exist on this branch and are used correctly: `SetElementResetter`, `SetElementExtentCalculator`, `RetainScrollPosition`, `RemoveDataProvider`, `ReinitializeFrames`, and the `OnVisibilityChanged` payload `(owner, visible)`.
-- **Factory purity:** the factory is pure (one `Init` closure, chosen by item kind).
-- **Extents:** the extents match the template sizes.
-- **Pooled frames:** these are reset on every fill: icon size, desaturation, slots, cell alpha and colours.
-- **Sort arrow:** the texcoords match D-15 and AuctionHouse.
+**Iteration-1 fixes, checked one by one:**
 
-**Issues:**
-- **Selection lifecycle:**
-  - A dropped selection still draws as selected (WR-01).
-  - The selection can act on a row you can't see (WR-03).
-- **Failed-search state:** the list keeps its old rows under the failure text (WR-02).
-- **Preview and fallback layout:** BarTop/BarMiddle are invisible (WR-04), and the fallback list doesn't line up with the header (WR-06).
-- **Header alignment:** the Listed label sits 4 px too far right (WR-05).
-- **Greyed text:** some text keeps its colour codes (WR-08).
-- **Pre-existing code** that this phase touches or depends on: WR-09 to WR-12.
+| ID | Verdict | Notes |
+|----|---------|-------|
+| WR-01 | Fixed | `ValidateSelection()` now runs after `Collect()` and before `SetItems()` (`Table.lua:933-936`), so no row draws a dropped selection. |
+| WR-02 | Fixed | The failed branch clears the list, the selection and the status, then returns (`Table.lua:924-931`). This matches stock `UpdateResults` (`Blizzard_LFGVanilla_Browse.lua:193-195`). |
+| WR-03 | Fixed | `shownIDs` is filled only for rows that are emitted (`Table.lua:884-886`). The bottom buttons enable from `ShownSelection`, and act on it. Folding a section or filtering the row out disables them, and expanding or clearing the filter brings the selection back. |
+| WR-04 | Fixed | `ScrollLine()` uses `SetAtlas(..., true)`. The fallback keeps a 1 px colour line. |
+| WR-05 | Fixed on the template path | The RIGHT-justified label is now inset -4 and its arrow sits before the text. The non-template path still has the problem (IN-07). |
+| WR-06 | Fixed | The fallback list ends at area -14 (list -6 plus W.List -8), and so does the header. The right-side columns line up on both: -97 = `ACTIONS_W + GAP`. |
+| WR-07 | Fixed | The status has one RIGHT anchor. `myGS` takes the room after Needs my role. |
+| WR-08 | Fixed | The greyed name and activity go through `Plain()`. The `|A` and `|T` markup is kept on purpose, as the fix report says. |
+| WR-09 | Fixed | The `searchIcon` parentKey guard is correct for `SearchBoxTemplate`. |
+| WR-10 | Fixed | `lower()` and `find()` both run inside the pcall'd closure. |
+| WR-11 | Partly fixed | The Unlist gating now matches stock's rule (`Blizzard_LFGVanilla_Browse.lua:916`), and `Message()` checks it again. The direct `RemoveListing` call without `PENDING_LISTING_UPDATE` was deferred to Phase 3 (IN-06). |
+| WR-12 | Fixed | Invite uses `l.leader.name`, which is `ns.Short(p.name)`. The follow-up `b60696e` does the same for whispers. |
 
-No findings are Critical. Nothing found crashes, taints Blizzard's frames, or loses data with the current flags. I did not test whether `C_LFGList.RemoveListing` is restricted when called from addon code (WR-11).
+**Regressions from the fixes:** none found.
+- Selection: the click → `RefreshButtons` → `Reinitialize` path still works.
+- `ValidateSelection` running twice in one refresh is harmless.
+- Factory purity and pooled-frame resets are unchanged.
+- No new writes to Blizzard frames.
+- The searching and failed branches still reach `RefreshButtons`.
+
+**Open issues:**
+- One warning, in `Messages.lua`. It predates this loop, but the file is now in scope because of the `b60696e` follow-up.
+- The iteration-1 Info items are all still open, carried as IN-01 to IN-05.
+- Four new Info notes: IN-06 to IN-09.
 
 ## Warnings
 
-### WR-01: A dropped selection still draws as selected (rows filled before `RefreshButtons` clears the ID)
+### WR-01: Auto-send whispers during chat messaging lockdown, and marks the row "sent" before sending
 
-**File:** `UI/Table.lua:892` (SetItems), `UI/Table.lua:913` (RefreshButtons), `UI/Table.lua:811`, `UI/Table.lua:918-925`
-**Issue:** `Refresh()` calls `self.list:SetItems(self.items)` first, so `FillRow` runs `row.selected:SetShown(IsSelected(self, l))` against the old `selectedID`. `RefreshButtons()` runs only afterwards, and that is where the selection is dropped when the listing is gone or delisted (D-10).
+**RESOLVED** in `acf7199` (fix loop iteration 2, see `02-REVIEW-FIX.md`).
 
-When the selected listing turns delisted after a read:
-- the greyed, unclickable row keeps the gold `mid2-selected` overlay;
-- Send Message / Group Invite are already disabled.
-
-The overlay stays until something else re-fills the frames. The row and the buttons disagree, and the user sees a selected row they can't act on or deselect, because `OnClick` returns early for delisted rows.
-**Fix:** validate the selection before filling the rows:
-```lua
-local solo, groups = self:Collect()
-local sel = FindByID(self, self.selectedID)
-if self.selectedID and (not sel or sel.delisted) then
-	self.selectedID = nil
-end
-self.list:SetItems(self.items)
-...
-self:RefreshButtons()
-```
-Or split `RefreshButtons` into `ValidateSelection()` (called before `SetItems`) and the enable logic.
-
-### WR-02: A failed search keeps the old rows under the "Search failed." text
-
-**File:** `UI/Table.lua:889-907`
-**Issue:** When `source.failed()` is true, `Refresh` still runs `Collect()` and `SetItems(self.items)`, then writes `LFG_LIST_SEARCH_FAILED` into `stateText`. `stateText` sits at art TOP -40, on top of the first row.
-
-Stock behaves differently. `LFGBrowseMixin:UpdateResults` (`Blizzard_LFGVanilla_Browse.lua:186-196`) calls `RemoveDataProvider()` and shows only `NoResultsFound` when `searchFailed`.
-
-Whatever `GetFilteredSearchResults()` still returns after a failure (the previous search's results, or a re-read of them) is drawn under the failure text. Those rows can still be selected, and whispered or invited.
-**Fix:**
-```lua
-if self.source.failed and self.source.failed() then
-	self.list:Clear()
-	self.selectedID = nil
-	self.stateText:SetText(LFG_LIST_SEARCH_FAILED or "Search failed.")
-	self.status:SetText("")
-	self:RefreshButtons()
-	return
-end
-```
-
-### WR-03: Send Message / Group Invite can act on a listing you can't see
-
-**File:** `UI/Table.lua:415-418`, `UI/Table.lua:826-829`, `UI/Table.lua:1180-1186`
-**Issue:** `byID` is filled from every listing, before `Matches()` and before the collapse check. Its comment says so: "folded away or filtered out ones too". `RefreshButtons` keeps the selection as long as the ID exists.
-
-So you can:
-1. select a row;
-2. type in the search box so it no longer matches, or fold its section;
-3. press Send Message (whispers that player) or Group Invite (invites them).
-
-The listing being acted on is not on screen, and nothing tells you a selection still exists. D-09 says the selection survives re-sorts, hides and re-reads. It does not say it survives being filtered out of view.
-**Fix:** only index listings that `Collect` puts into `items`. Or have `RefreshButtons` also require the listing to be visible:
-```lua
--- in Collect, after deciding to emit l:
-self.visibleIDs[l.id] = true
--- in RefreshButtons:
-if self.selectedID and (not sel or sel.delisted or not self.visibleIDs[self.selectedID]) then
-```
-If keeping hidden selections is intended, at least disable the buttons while the selected row is not shown.
-
-### WR-04: The stand-in's BarTop / BarMiddle lines have zero height wherever the atlas exists
-
-**File:** `UI/MainFrame.lua:253-266`
-**Issue:** `W.Atlas` calls `tex:SetAtlas(atlas)` without `useAtlasSize`. `SetHeight(1)` runs only in the fallback branch.
-
-When `groupfinder-ScrollLine` exists, the texture has only LEFT/RIGHT anchors and no height, so it is 0 px tall and invisible. Stock uses `useAtlasSize="true"` (`Mainline/Blizzard_LFGVanilla_Browse.xml` BarTop/BarMiddle). The preview, with atlases, therefore loses both lines that D-13 says it must mirror.
-**Fix:**
-```lua
-local barTop = art:CreateTexture(nil, "OVERLAY")
-if W.HasAtlas("groupfinder-ScrollLine") then
-	barTop:SetAtlas("groupfinder-ScrollLine", true)
-else
-	barTop:SetColorTexture(0.35, 0.3, 0.2, 0.8)
-	barTop:SetHeight(1)
-end
-```
-Do the same for `barMiddle`.
-
-### WR-05: The "Listed" header label is pushed 4 px outside its button, and its sort arrow lands past the column
-
-**File:** `UI/Table.lua:1126`, `UI/Table.lua:1138-1139`
-**Issue:** The x offset is `justify[key] == "CENTER" and 0 or 4`, so RIGHT-justified text gets **+4**:
-- `SetPoint("RIGHT", b, "RIGHT", 4, 0)` puts the label 4 px past the button's right edge, out of line with the rows' `listed` text, which ends at the cell edge.
-- The arrow is anchored to `text` RIGHT +3, so it lands about 7 to 17 px outside the Listed cell, over the buttons' column.
-
-This breaks the "every cell width-bound" rule in CLAUDE.md for the header.
-**Fix:**
-```lua
-local j = justify[key] or "LEFT"
-local x = (j == "CENTER" and 0) or (j == "RIGHT" and -4) or 4
-text:SetPoint(j, b, j, x, 0)
-```
-For RIGHT-justified columns, put the arrow on the text's LEFT (`arrow:SetPoint("RIGHT", text, "LEFT", -3, 0)`) so it stays inside the cell.
-
-### WR-06: The fallback W.List rows don't line up with the header strip (right-side columns 8 px off)
-
-**File:** `UI/Table.lua:1039-1040`, `UI/Widgets.lua:545`, `UI/Table.lua:1113-1118`
-**Issue:** In the fallback path:
-- The list's BOTTOMRIGHT is `back` -6, and `W.List` anchors every frame at `RIGHT, list, RIGHT, -8`, so rows end 14 px in from the area's right edge.
-- The header strip is placed with `PlaceStrip(false)` at -6 and is never moved, because there is no visibility callback in this path.
-
-Listed and Activity's right edge in the header are therefore 8 px right of the rows' cells. D-18 requires header and rows to stay aligned.
-**Fix:** call `placeStrip` for the fallback with the offset it really uses. For example, return the list and call `PlaceStrip` with a custom inset (`-14`):
-```lua
-local function PlaceStrip(barShown, inset)
-	header:SetPoint("TOPRIGHT", area, "TOPRIGHT", inset or (barShown and -22 or -6), 0)
-end
--- fallback:
-placeStrip(false, -14)
-```
-Alternatively, make W.List's frame inset (`-8`) a parameter and pass 0 here.
-
-### WR-07: "Your GS" is anchored over the Needs my role label (latent; shows when `ns.GEAR_SCORE` is on)
-
-**File:** `UI/Table.lua:1189-1194`
-**Issue:** `status` spans from `fits.Label` RIGHT to `invite` LEFT, and its text is right-justified inside that span. `myGS` is anchored `RIGHT` to `status` **LEFT** -12, so it ends 12 px left of the end of the "Needs my role" label and is drawn over it.
-
-This is hidden today only because `ns.GEAR_SCORE = false` (`Core.lua:17`). It was introduced this phase: before, `myGS` was at `RIGHT -4` of the host.
-**Fix:** give `status` a single RIGHT anchor and anchor `myGS` to the visible text's left. Alternatively, anchor `myGS` LEFT to `fits.Label` RIGHT +8 and `status` LEFT to `myGS` RIGHT +12:
-```lua
-self.status:SetPoint("RIGHT", self.invite, "LEFT", -8, 0)
-if self.myGS then
-	self.myGS:SetPoint("LEFT", self.fits.Label, "RIGHT", 12, 0)
-	self.status:SetPoint("LEFT", self.myGS, "RIGHT", 8, 0)
-else
-	self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
-end
-```
-
-### WR-08: Greyed rows keep coloured fragments (activity "+N", name tags), against D-22
-
-**File:** `UI/Table.lua:262-264`, `UI/Table.lua:752`, `UI/Table.lua:768`
-**Issue:** D-22 says all of a greyed row's text is drawn in `{0.3,0.3,0.3}`. `Plain()` is applied to GS and count only.
-
-These keep their colour codes on greyed rows:
-- `ActivityText` embeds `|cff999999+N|r` in the activity cell, so on a greyed row "+N" is brighter than the text around it.
-- The name line's fallback tags (`W.Icon` / `W.Marks`: `|cff66ccffnew|r`, `|cff96ff82friend|r`, …) stay coloured.
-- With atlases, the inline `|A` icons are not desaturated.
-
-So "greyed" rows show bright fragments.
-**Fix:** `row.activity:SetText(greyed and Plain(ActivityText(l)) or ActivityText(l))`. Build the name line, then `row.name:SetText(greyed and Plain(nameText) or nameText)`.
-
-### WR-09: The search box's text insets cover SearchBoxTemplate's magnifier and clear button (pre-existing)
-
-**File:** `UI/Widgets.lua:327` (used by `UI/Table.lua:1076`)
-**Issue:** `W.EditBox` always calls `e:SetTextInsets(2, 2, 0, 0)`. `SearchBoxTemplate` sets `<TextInsets left="16" right="20"/>` (`InputBoxTemplates.xml:247`), so the magnifier and the clear button have room.
-
-Overriding the insets draws typed text and the "Name, activity or note" instructions on top of the magnifier icon. Long input also runs under the clear (x) button. This code predates the phase, but D-14 relies on it for the native look.
-**Fix:** only set insets on the fallback / `InputBoxTemplate` path:
-```lua
-if template ~= "SearchBoxTemplate" or not e.searchIcon then
-	e:SetTextInsets(2, 2, 0, 0)
-end
-```
-
-### WR-10: The `pcall` around the comment search does not cover `lower()` (pre-existing)
-
-**File:** `UI/Table.lua:179-184`
-**Issue:** In `pcall(find, lower(l.comment), text, 1, true)`, `lower(l.comment)` is evaluated **before** `pcall` is entered, so the guard protects only `find`.
-
-`Listings.lua:150` says "The comment … may not support string work, so it is not searched", yet `Table.Matches` does search it. If `lower` raises on such a value:
-- `Refresh` throws on every keystroke in the search box while any listing has a comment;
-- the table stops updating.
-**Fix:** either honour Listings' decision and drop the comment from `Matches`, or move the whole operation inside the guard:
-```lua
-local ok, hit = pcall(function(c) return find(lower(c), text, 1, true) end, l.comment)
-```
-
-### WR-11: Unlist calls `C_LFGList.RemoveListing()` directly, for any listing that contains you (pre-existing)
-
-**File:** `UI/Table.lua:440-446`, `UI/Table.lua:814` (Unlist button label/enable); origin `Listings.lua:155`
+**File:** `Messages.lua:103-113`
 **Issue:**
-- **Taint / stock state.** CLAUDE.md says "Listing (create/update/unlist) stays Blizzard's own tab". Stock delists through `LFGListingFrame:RemoveListing()`, which first sets `PENDING_LISTING_UPDATE = true` (`Blizzard_LFGVanilla_Listing.lua:330-333`). The stock Browse delist button also re-searches and switches tabs (`Blizzard_LFGVanilla_Browse.lua:1295-1301`). Our call skips the pending flag, so Blizzard's Listing tab can miss the change.
-- **Wrong rows.** `l.mine` is `info.hasSelf`, which is true for every member of a listed group. A non-leader therefore gets an enabled "Unlist" button that calls `RemoveListing`. Stock shows its delist button only when `not IsInGroup() or UnitIsGroupLeader("player")` (`Blizzard_LFGVanilla_Browse.lua:916`).
-**Fix:** enable Unlist only when `not IsInGroup() or UnitIsGroupLeader("player")`. Route the unlist through Blizzard's own UI: open the Listing tab, or click its existing control. Do not call the API directly from our table. If the direct call stays, confirm in game that it is not blocked and that the Listing tab refreshes afterwards.
+- **No lockdown check.** With Auto-send on, `M.Send` calls `C_ChatInfo.SendChatMessage` / `SendChatMessage` without checking `C_ChatInfo.InChatMessagingLockdown()`. CLAUDE.md requires that check before an addon sends a message ("never send addon messages during `C_ChatInfo.InChatMessagingLockdown()`"). `Listings.Read` already applies the same guard (`Listings.lua:171`).
+- **"sent" is set first.** `ns.state.messaged[l.id] = true` is set before the send, and whether or not the send happens. During lockdown the whisper is blocked or dropped, but the row's Listed cell still turns to "sent" (`Table.lua:802-803`). Nothing tells the user it didn't go out.
 
-### WR-12: Group Invite uses `fullName`, against the plain-name rule in CLAUDE.md (pre-existing)
-
-**File:** `UI/Table.lua:462`
-**Issue:** `C_PartyInfo.InviteUnit(l.leader.fullName or l.leader.name)`. CLAUDE.md says: "whisper and invite by plain character name, without a realm suffix". `Listings.lua:32-33` stores `name` as `shortName` (or the full name) and keeps the raw `info.fullName` separately. Wherever `fullName` carries a realm suffix, this invite violates the project's realm rule.
-**Fix:** `C_PartyInfo.InviteUnit(l.leader.name)`.
+**Fix:** check for lockdown first, and record "sent" only after a send was attempted:
+```lua
+if auto then
+	if preview then
+		ns.state.messaged[l.id] = true
+		return ns.Print(string.format("preview: whispered %s: %s", target, text))
+	end
+	if C_ChatInfo and C_ChatInfo.InChatMessagingLockdown and C_ChatInfo.InChatMessagingLockdown() then
+		-- Can't send now: fall through to the prefilled whisper box (sent with Enter).
+	else
+		if C_ChatInfo and C_ChatInfo.SendChatMessage then
+			C_ChatInfo.SendChatMessage(text, "WHISPER", nil, target)
+		else
+			SendChatMessage(text, "WHISPER", nil, target)
+		end
+		ns.state.messaged[l.id] = true
+		return
+	end
+end
+```
 
 ## Info
 
-### IN-01: `local view` in `BuildList` shadows the module's sort/filter state `view`
+### IN-01: `local view` in `BuildList` shadows the module's sort/filter state `view` (carried over)
 
-**File:** `UI/Table.lua:961`
-**Issue:** Inside the ScrollBox branch, `view` now means the ScrollBox view. Nothing in that block reads `view.collapsed`, `view.sort` and so on today, but a later edit that does would silently hit the wrong table.
-**Fix:** rename it to `scrollView` (or rename the module state to `state`).
+**File:** `UI/Table.lua:1009`
+**Issue:** This is still present. Inside the ScrollBox branch, `view` is the ScrollBox view, not the shared filter and sort state (`Table.lua:86`).
+**Fix:** rename it to `scrollView`.
 
-### IN-02: Dead or duplicate code
+### IN-02: Dead or duplicate code (carried over)
 
-**File:** `UI/Table.lua:1004-1006`, `UI/Widgets.lua:575-579`, `UI/Widgets.lua:222-229`, `UI/Table.lua:717-719`
+**File:** `UI/Table.lua:1052-1054`, `UI/Widgets.lua:578-582`, `UI/Widgets.lua:222-229`, `UI/Table.lua:740-742`
 **Issue:**
 - `host:ForEachFrame` and `list:ForEachFrame` have no callers.
-- `W.Line` has no callers since the per-row line was removed.
+- `W.Line` has no callers.
 - `row.item` and `row.listing` hold the same table.
+
 **Fix:** remove the unused helpers, and keep one field on the row.
 
-### IN-03: Showing Browse runs Refresh three times
+### IN-03: Showing Browse runs Refresh three times (carried over)
 
-**File:** `UI/InPlace.lua:177-181`, `UI/InPlace.lua:200-205`, `UI/Table.lua:1210-1212`, `UI/MainFrame.lua:93-98`
+**File:** `UI/InPlace.lua:177-181`, `UI/InPlace.lua:200-205`, `UI/Table.lua:1270-1272`, `UI/MainFrame.lua:93-98`
 **Issue:**
-- On show: `ClearSelection()` triggers `RefreshAll()`, then `Read()` triggers `Refresh()`, and the band's `OnShow` triggers `Refresh()` again.
-- On `RESULTS_RECEIVED`: an immediate refresh on stale data, then another after `ReadSoon`.
+- On show: `ClearSelection()` refreshes, then `Read()` refreshes, then the band's `OnShow` refreshes again.
+- On `RESULTS_RECEIVED`: one refresh runs on the previous read, and another runs after `ReadSoon`.
 
-Each refresh rebuilds the data provider. The result is correct, but the work is wasted.
 **Fix:** have `ClearSelection` only clear the IDs (or take a `noRefresh` flag) when a refresh follows anyway.
 
-### IN-04: The status line is stale while searching; the empty-search text overlaps your own row
+### IN-04: The searching branch leaves the status and button state from the previous results (carried over, extended)
 
-**File:** `UI/Table.lua:882-888`, `UI/Table.lua:1201`
+**File:** `UI/Table.lua:915-921`, `UI/Table.lua:1261`
 **Issue:**
-- The searching branch returns before `self.status` is updated, so "N solo players, M groups" from the previous results stays next to the spinner.
-- The "No listings match your search." text (art TOP -40) is drawn over your own listing row, which still shows at about -26 to -66. D-27 accepts the text with the own row present, but not the overlap.
-**Fix:** clear `self.status` in the searching branch. When `items[1]` is your own listing, move `stateText` below that row.
+- **Stale status.** The searching branch returns without clearing `self.status`, so "N solo players, M groups" stays next to the spinner. The failed branch now clears it (`Table.lua:928`), so the two branches no longer match.
+- **Stale buttons.** The branch also calls `RefreshButtons()` against the previous `byID` and `shownIDs`, while the list has been cleared. In game, the `LFGBrowse_DoSearch` hook clears the selection first, so the stale state never reaches Send Message / Group Invite. Only that ordering keeps it safe.
+- **Overlap.** The "No listings match your search." text (art TOP -40) still overlaps your own listing's row.
 
-### IN-05: Header labels on the template path aren't width-bound
+**Fix:** in the searching branch, add `self.status:SetText("")` and `wipe(self.shownIDs)` before `RefreshButtons()`. When `items[1]` is your own listing, move `stateText` below that row.
 
-**File:** `UI/Table.lua:1125-1127`
-**Issue:** With `ColumnDisplayButtonShortTemplate`, `text` gets one anchor and no width, so a longer localised label would spill past its column. This goes against the CLAUDE.md layout guard ("every cell width-bound").
-**Fix:** anchor the text on both sides (`SetPoint("LEFT", 4, 0)` plus `SetPoint("RIGHT", -4, 0)`) and keep `SetJustifyH`.
+### IN-05: Header labels on the template path aren't width-bound (carried over)
+
+**File:** `UI/Table.lua:1177-1181`
+**Issue:** With `ColumnDisplayButtonShortTemplate`, the label still has a single anchor and no width. A longer localised label would spill past its column, against the CLAUDE.md layout guard. The CENTER `Lvl` column (30 px) is the tightest: its arrow at text RIGHT +3 already reaches into the 4 px gap before Roles.
+**Fix:** anchor the text on both sides (LEFT +4 and RIGHT -4) and keep `SetJustifyH`.
+
+### IN-06: Unlist still calls `C_LFGList.RemoveListing()` directly (WR-11 remainder, deferred to Phase 3 / UIP-08)
+
+**File:** `UI/Table.lua:463-468`, `UI/Table.lua:445-450`
+**Issue:**
+- **Pending flag.** The enable rule is fixed. Two things are still left over, and both were deferred on purpose:
+  - the call skips stock's `PENDING_LISTING_UPDATE = true` (`Blizzard_LFGVanilla_Listing.lua:330-333`);
+  - it goes against CLAUDE.md's "Listing (create/update/unlist) stays Blizzard's own tab".
+- **Duplicated check.** `CanUnlist` re-implements a group-role question in the table. By the architecture notes, `Core.lua` answers those (`ns.IsLeader` and `ns.CanInvite` sit there).
+
+**Fix:** in Phase 3, route the unlist through `LFGListingFrame:RemoveListing()` or the stock delist control. Move the rule to `Core.lua`, as `ns.CanUnlist()`.
+
+### IN-07: The fallback header path (no `ColumnDisplayButtonShortTemplate`) still draws the Listed arrow over its label
+
+**File:** `UI/Table.lua:1182-1184`, `UI/Table.lua:1197-1198`
+**Issue:** WR-05 was fixed for the template path only.
+- Without `b.Text`, the label fills the button (`SetAllPoints`), and Listed's text is right-justified to the edge.
+- The arrow is anchored at `b` RIGHT -2, so on the Listed column it sits on top of the label's last letters.
+
+This happens only with the atlas but without the template, an unlikely combination on Forever.
+**Fix:** on the fallback path, inset the label (`SetPoint("LEFT", 4, 0)` and `SetPoint("RIGHT", -14, 0)`) whenever an arrow is created. Or anchor the arrow to the button's LEFT for RIGHT-justified columns.
+
+### IN-08: In game with preview data on, Blizzard's searching/failed flags still blank the table
+
+**File:** `UI/InPlace.lua:70-75`, `UI/Table.lua:915`, `UI/Table.lua:924`
+**Issue:** `source.listings()` and `source.preview()` switch to sample data when `ns.UsingPreview()` is true. `searching()` and `failed()` do not switch, and keep reading `LFGBrowseFrame`. After a failed real search, `searchFailed` stays true until the next `LFGBrowse_DoSearch`, so the sample listings are replaced by "Search failed." and the selection is dropped.
+**Fix:** return `false` from `searching()` and `failed()` while `ns.UsingPreview()` is true.
+
+### IN-09: During chat messaging lockdown the table reads no listings at all
+
+**File:** `Listings.lua:171-173`
+**Issue:** While `InChatMessagingLockdown()` is true:
+- `L.Read()` wipes `items` and returns an empty list.
+- The table then shows "No results found." over Blizzard's hidden list, which still holds real results.
+- Your own listing row disappears too.
+
+The values that are actually secret are already skipped per field (the `Secret()` checks), so the blanket return hides more than it needs to.
+**Fix:** drop the blanket early return and rely on the per-value `Secret()` guards. Or keep it, and give `Refresh` a distinct state text ("Listings unavailable right now") instead of reporting no results.
 
 ---
 
-_Reviewed: 2026-11-11_
+_Reviewed: 2026-11-11T17:32:19Z_
 _Reviewer: Claude (gsd-code-reviewer)_
 _Depth: standard_
