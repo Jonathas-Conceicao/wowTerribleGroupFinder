@@ -2,7 +2,7 @@
 phase: 03-rows-tooltip-and-own-listing
 reviewed: 2026-11-11T00:00:00Z
 depth: standard
-files_reviewed: 8
+files_reviewed: 7
 files_reviewed_list:
   - Core.lua
   - Listings.lua
@@ -11,87 +11,79 @@ files_reviewed_list:
   - UI/MainFrame.lua
   - UI/Table.lua
   - UI/Widgets.lua
-  - CLAUDE.md
 findings:
   critical: 0
-  warning: 3
+  warning: 1
   info: 3
-  total: 6
+  total: 4
 status: issues_found
 ---
 
-# Phase 3: Code Review Report
+# Phase 3: Code Review Report (re-review)
 
 **Reviewed:** 2026-11-11
 **Depth:** standard
-**Files Reviewed:** 8
+**Files Reviewed:** 7 (CLAUDE.md is documentation and was only read for conventions)
 **Status:** issues_found
 
 ## Summary
 
-The phase 3 diff (`a346c10..HEAD`) was read in full and checked against the forever branch of the Blizzard source. No blockers.
+Re-review of `git diff a346c10..HEAD` after the iteration-1 fixes (commits a0d6483, 650d3f4, 27dcd5e).
 
-- **Taint:** nothing writes to Blizzard frames. The delist calls `C_LFGList.RemoveListing()`, which Forever's minimap menu also calls directly. It does not call `LFGListingFrame:RemoveListing`, `LFGBrowse_DoSearch`, `LFGParentFrameTab1_OnClick` or the stock tooltip functions.
-- **Secret values:** the new `C_LFGList` reads (`GetSearchResultMemberCounts`, `GetSearchResultEncounterInfo`, `GetActivityGroupInfo`) are wrapped in `pcall` and checked for secrets. Number and string results are validated.
-- **Format strings:** the user comment is only ever the argument to `format(LFG_LIST_COMMENT_FORMAT, ...)`, never the format.
-- **Frame reuse:** every `FillRow` resets the new state (Discord icon and name width, slot positions and sizes, message/hide/delist visibility, comment colour).
-- **Blizzard names:** `TANK_REMAINING`, `LFG_LIST_INDENT`, `VOICE_CHAT_MODE_FORMAT`, `LFG_LIST_TOOLTIP_MEMBERS` and `LFG_SELF_LISTING` match Blizzard's usage.
+Verification of the previous findings:
 
-The remaining items are robustness and quality.
+- WR-01 (orphan button in `W.IconButton`): fixed. The unstyled button is hidden and detached before `W.Button` replaces it. A frame can never be released in WoW, so the orphan still exists, but it is invisible and no longer a child of the row (see IN-01).
+- WR-02 (hide button tooltip with no listing): fixed. `RowHidden` is nil-safe and both callbacks use it. `W.Tooltip` handles function titles and bodies correctly, and a nil title returns before `SetOwner`.
+- WR-03 (`Delist` re-check): fixed. The preview branch comes first, then `CanUnlist`, then the API presence and secret-value checks, then `C_LFGList.RemoveListing()`. The fix introduced no regression. The delist button is hidden whenever `CanUnlist` is false, so the early return is only a safety net.
+
+Taint audit: nothing in the changed files calls `LFGBrowse_DoSearch`, `LFGParentFrameTab1_OnClick`, `LFGListingFrame:RemoveListing` or `LFGBrowseSearchEntryTooltip_UpdateAndShow`. The only references are the existing `hooksecurefunc("LFGBrowse_DoSearch", ...)` in `UI/InPlace.lua:203` and the preview print strings. No fields are written on Blizzard frames. `GameTooltip` is only owned by our own frames. The tooltip now reads `GetSearchResultMemberCounts`, `GetSearchResultEncounterInfo` and `GetActivityGroupInfo`. All three are `pcall`ed and checked with `type()` and `issecretvalue`.
+
+Frame reuse, secret values and format strings looked sound:
+
+- Frame reuse: `FillRow` resets size, atlas, colour, alpha and desaturation on every fill. `RoleIcon:SetRole` restores its size on every call. The discord, delist and hide parts are reset on every fill.
+- Secret values: `Num()` and `Secret()` guard every new `Listings.lua` read.
+- Format strings: every `format` call passes the user-controlled text (activity names, comments, player names) as an argument, never as the pattern.
+
+One new issue was found (WR-01) plus three minor ones.
 
 ## Warnings
 
-### WR-01: `W.IconButton` leaks an orphan button when the template loads but is unstyled
+### WR-01: `BossNames` queries the real API with a preview listing's id
 
-**File:** `UI/Widgets.lua:318-322`
-**Issue:** `Create(...)` can succeed, for example via the no-template fallback inside `Create`. If `b.MiddleMiddle` is then nil, `b` is replaced by `W.Button(...)` and the first button stays parented to `parent` forever. In a pooled row that is one stray frame per row frame.
-**Fix:** Hide and detach the discarded frame before replacing it:
+**File:** `UI/Table.lua:447-462` (called from `StockTooltip` at line 553)
+**Issue:** `BossNames(l)` calls `C_LFGList.GetSearchResultEncounterInfo(l.id)` without checking whether the table is showing preview data. Preview listings have ids 1..n (`Preview.lua`, `Add`), and your own preview row has id 0. When the preview runs inside the real client (`ns.UsingPreview()` true with the game's API present, as `UI/InPlace.lua` allows), those small ids can collide with real search results. The tooltip then lists another listing's defeated bosses under a sample group, and a stale id can make the API throw. The `pcall` hides the throw, but the result is still wrong. The sample data never intends to show bosses.
+**Fix:** Skip the lookup for preview data and for your own row, and pass the instance in:
 ```lua
-if not styled then
-	b:Hide()
-	b:SetParent(nil)
-	b = W.Button(parent, "", w, h)
+local function BossNames(l, inst)
+	if l.mine or (inst and inst.source.preview()) or #l.acts ~= 1
+		or not (C_LFGList and C_LFGList.GetSearchResultEncounterInfo) then
+		return nil
+	end
+	-- unchanged below
 end
+-- StockTooltip(tip, l, ids, inst): local bosses = BossNames(l, inst)
 ```
-
-### WR-02: Hide button tooltip callbacks assume the parent row always has a listing
-
-**File:** `UI/Table.lua:884-891`
-**Issue:** The title and body callbacks call `IsHidden(b:GetParent().listing)`. `IsHidden` (line 208) dereferences `l.leader.name`, so a row frame whose `listing` is nil (a pooled frame that was never filled, or one released mid-update) throws a Lua error on `OnEnter`. `ShowTooltip` guards `row.listing` for this reason, so the callbacks are inconsistent with it.
-**Fix:**
-```lua
-local function RowHidden(b)
-	local l = b:GetParent().listing
-	return l ~= nil and IsHidden(l)
-end
-```
-Use `RowHidden(b)` in both callbacks.
-
-### WR-03: `Instance:Delist` does not re-check that the player may unlist
-
-**File:** `UI/Table.lua:668-684`
-**Issue:** The button is only shown when `CanUnlist(self)` is true (`FillRow`), but the handler itself only checks `HasActiveEntryInfo`. A grouped non-leader can reach it if the button state is stale: group roster changes do not necessarily trigger a refill before a click. `RemoveListing` would then be attempted for a listing the player does not own.
-**Fix:** Add `if not CanUnlist(self) then return end` after the preview branch, before the `C_LFGList` calls.
+(`ShowTooltip` already has `inst`; pass it through to `StockTooltip`.)
 
 ## Info
 
-### IN-01: Hide tooltip text names a button that may not be shown
+### IN-01: `W.IconButton` creates a template button only to discard it
 
-**File:** `UI/Table.lua:1092-1100`, `UI/Table.lua:~1620` (hint line in `ExtrasTooltip`)
-**Issue:** The row tooltip says "use the eye button to show", but when the atlases or the template are missing the button reads "+" or "x". `socialqueuing-icon-eye` also does not appear in the Blizzard source tree, so the fallback may be the common case.
-**Fix:** Word the hint without naming the icon, for example "Hidden until they make a new listing (use the hide button to show)."
+**File:** `UI/Widgets.lua:319-325`
+**Issue:** The WR-01 fix hides and detaches the unstyled button, but the frame can never be freed and exists once per call. Each row creates two icon buttons, so the cost repeats for every pooled row on a client where the template is unstyled.
+**Fix:** Probe once before creating, as `TemplateKnown` does in `Table.lua`. For example, cache the result of the first `Create(...).MiddleMiddle ~= nil` check in a module-level `local styledTemplate`, and skip the template path when it is false.
 
-### IN-02: `VoiceLabels()` rebuilds a table on every tooltip
+### IN-02: Local `view` shadows the module-level `view` table
 
-**File:** `UI/Table.lua:372-380`
-**Issue:** A fresh four-entry table is built per `StockTooltip` call, and again on every refresh while a tooltip is hovered. This is harmless but unnecessary. The globals could be missing at file load but exist at call time, so build it lazily once.
-**Fix:** Cache the table in an upvalue on first use.
+**File:** `UI/Table.lua:1348`
+**Issue:** Inside `BuildList`, `local view = CreateScrollBoxListLinearView()` shadows the shared filter and sort table `view` (line 87). It is harmless today because the block never reads `view.collapsed` or `view.sort`. A later edit to that block that uses `view.search` would read the scroll view instead.
+**Fix:** Rename it to `scrollView`.
 
-### IN-03: `Refresh` computes `HoveredRow()` before the visibility early-return
+### IN-03: `Delist` plays the click sound before it checks whether it will act
 
-**File:** `UI/Table.lua:1222-1225`
-**Issue:** `hovered` is computed (iterating all frames) before the `band:IsVisible()` check, which returns without using it.
-**Fix:** Move the `HoveredRow()` call below the visibility guard. The ScrollBox has not been re-filled at that point, so the value is still valid.
+**File:** `UI/Table.lua:665-675`
+**Issue:** `W.PlayCheckbox(true)` runs first, so the early returns for `not CanUnlist`, a missing API and a secret value still play a sound for a click that does nothing. The delist button is hidden when the player cannot unlist, so this is rarely reachable.
+**Fix:** Move `W.PlayCheckbox(true)` just before `C_LFGList.RemoveListing()` and into the preview branch.
 
 ---
 
