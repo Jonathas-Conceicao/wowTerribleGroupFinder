@@ -64,6 +64,14 @@ follows Forever's order and wording with our extras after (playstyle, spec / are
 age, hidden note) and refreshes while hovered; the hide button is a small icon button; Needs my
 role reads the server's remaining-slot counts. In-game checks pending (Phase 3 HUMAN-UAT).
 
+Phase 4 complete (2026-11-11) — new default presets with the `[TGF]` key (`[TGF] Level 23 Warrior,
+for The Deadmines`; `[TGF] Group for <activity> with <n> players`), one button per key under each
+preset box (`[TGF]` always first, once), Auto-send then Auto-invite on the invite preset (Auto-invite
+only with Auto-send), a 1 s contact lock with a pressed "sending" look after any auto-send, a one-time
+migration of saved old defaults, the Messages side tab made stock-correct and its panel rebuilt with
+the Who tab's layers and multi-line boxes (one builder for game and preview). In-game checks pending
+(Phase 4 HUMAN-UAT).
+
 ## Requirements
 
 ### Validated
@@ -90,6 +98,8 @@ Validated in Phase 2 (List Foundation): UIP-02, UIP-03, UIP-04, UIP-05, UIP-06, 
 (in-game checks pending).
 Validated in Phase 3 (Rows, Tooltip and Own Listing): UIP-07, UIP-08, UIP-09, UIP-13, UIP-14,
 UIP-15, UIP-16 (in-game checks pending).
+Validated in Phase 4 (Messages and Contact): MSG-01..MSG-06, LOCK-01..LOCK-03, UIP-01, UIP-11
+(in-game checks pending).
 
 ### Deferred (next-milestone candidates)
 
@@ -128,7 +138,8 @@ UIP-15, UIP-16 (in-game checks pending).
 | Follow Forever's model: solo players or groups, no applications | That is how Forever's finder works; "apply" is a retail concept | ✓ Good |
 | Never remove rows: hidden / no-slot listings greyed at the end | Players keep the whole picture while focusing on what fits | ✓ Good |
 | Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | — On hold (switched off in v0.1) |
-| Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | — Pending |
+| Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Built in Phase 4 (in-game check pending) |
+| Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Built in Phase 4 |
 | Whisper presets with Auto-send off by default | Prefill keeps the player in control; Auto-send is opt-in | ✓ Good |
 | License GPL-3.0 | Open source, share-alike | ✓ Good |
 
@@ -197,4 +208,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after Phase 3 of milestone v0.1 Initial Release*
+*Last updated: 2026-11-11 after Phase 4 of milestone v0.1 Initial Release*
