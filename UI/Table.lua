@@ -479,7 +479,7 @@ end
 local function RightText(m, gs)
 	local zone
 	if type(m.area) == "string" and m.area ~= "" then
-		zone = ColorCode(W.GRAY) .. m.area .. "|r"
+		zone = ColorCode(W.GRAY) .. m.area:gsub("|", "||") .. "|r"
 	end
 	if zone and gs then
 		return zone .. "  " .. gs
