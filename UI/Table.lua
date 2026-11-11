@@ -5,10 +5,10 @@
 --  As Forever's list: your own listing first, then two collapsible sections, Solo players
 --  and Groups (groups first while you're solo, solo players first while you lead). Within
 --  each, rows sort by the clicked column: Roles (tank > healer > damage), Lvl, GS (a group's
---  best known), Activity, Listed. Hidden players (X) and, with Needs my role, listings with
+--  best known; only while ns.GEAR_SCORE is on), Activity, Listed. Hidden players (X) and, with Needs my role, listings with
 --  no slot for you are greyed and moved to the end of their section, never removed.
 --
---  Columns can't overlap: Name, Lvl, Roles and GS have fixed widths from the left, Listed
+--  Columns can't overlap: Name, Lvl, Roles (and GS, while ns.GEAR_SCORE is on) have fixed widths from the left, Listed
 --  and the row's buttons are anchored to the right, and Activity takes what is left
 --  between them; every cell is width-bound, so long text is cut, not drawn over a neighbour.
 -------------------------------------------------------------------------------
@@ -46,10 +46,19 @@ local LEFT = {
 	{ key = "name", label = "Name", x = 4, w = 150 },
 	{ key = "level", label = "Lvl", x = 156, w = 30, justify = "CENTER" },
 	{ key = "role", label = "Roles", x = 190, w = 76 },
-	{ key = "gs", label = "GS", x = 268, w = 44, justify = "CENTER" },
 }
-local ACTIVITY_X = 318
-local FIRST_DESC = { level = true, gs = true }
+if ns.GEAR_SCORE then
+	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 268, w = 44, justify = "CENTER" }
+end
+local ACTIVITY_X = ns.GEAR_SCORE and 318 or 268
+local FIRST_DESC = { level = true, gs = ns.GEAR_SCORE or nil }
+-- Every cell of a row and of the header, in order.
+local CELL_KEYS = {}
+for _, col in ipairs(LEFT) do
+	CELL_KEYS[#CELL_KEYS + 1] = col.key
+end
+CELL_KEYS[#CELL_KEYS + 1] = "activity"
+CELL_KEYS[#CELL_KEYS + 1] = "listed"
 
 local SECTION_LABEL = {
 	solo = LFG_LIST_CATEGORY_SOLO_PLAYERS or "Solo players",
@@ -187,9 +196,6 @@ local VALUES = {
 		end
 		return (FitsMyRoles(l) and 0 or 100) - #l.members
 	end,
-	gs = function(l)
-		return (ListingGS(l))
-	end,
 	activity = function(l)
 		return l.acts[1] and lower(l.acts[1].name) or ""
 	end,
@@ -197,6 +203,11 @@ local VALUES = {
 		return l.age
 	end,
 }
+if ns.GEAR_SCORE then
+	VALUES.gs = function(l)
+		return (ListingGS(l))
+	end
+end
 
 local function Compare(a, b)
 	if a.demoted ~= b.demoted then
@@ -299,10 +310,14 @@ local function ShowTooltip(row)
 	GameTooltip:AddLine(" ")
 	if l.solo then
 		local who = l.leader
-		GameTooltip:AddDoubleLine(
-			W.Colored(who.class, who.name) .. W.Marks(who) .. format("  level %d %s", who.level, W.ClassName(who.class)),
-			"GS " .. GSLine(who)
-		)
+		local left = W.Colored(who.class, who.name)
+			.. W.Marks(who)
+			.. format("  level %d %s", who.level, W.ClassName(who.class))
+		if ns.GEAR_SCORE then
+			GameTooltip:AddDoubleLine(left, "GS " .. GSLine(who))
+		else
+			GameTooltip:AddLine(left)
+		end
 		local where = (who.spec and (who.spec .. (who.area and ", " or "")) or "") .. (who.area or "")
 		if where ~= "" then
 			GameTooltip:AddLine(where, 0.8, 0.8, 0.8)
@@ -320,13 +335,15 @@ local function ShowTooltip(row)
 		local limit = min(#l.members, 12)
 		for i = 1, limit do
 			local m = l.members[i]
-			GameTooltip:AddDoubleLine(
-				(m.leader and "* " or "  ")
-					.. W.Colored(m.class, m.name)
-					.. W.Marks(m)
-					.. format(" |cff999999%d %s|r", m.level, W.ROLE_NAME[m.role]),
-				GSLine(m)
-			)
+			local left = (m.leader and "* " or "  ")
+				.. W.Colored(m.class, m.name)
+				.. W.Marks(m)
+				.. format(" |cff999999%d %s|r", m.level, W.ROLE_NAME[m.role])
+			if ns.GEAR_SCORE then
+				GameTooltip:AddDoubleLine(left, GSLine(m))
+			else
+				GameTooltip:AddLine(left)
+			end
 		end
 		if #l.members > limit then
 			GameTooltip:AddLine(format("  ... and %d more", #l.members - limit), 0.6, 0.6, 0.6)
@@ -495,7 +512,7 @@ function Instance:MakeRow(parent)
 
 	-- Each cell holds its texts; Layout anchors the cells.
 	local cells = {}
-	for _, key in ipairs({ "name", "level", "role", "gs", "activity", "listed" }) do
+	for _, key in ipairs(CELL_KEYS) do
 		local cell = CreateFrame("Frame", nil, row)
 		cell:SetHeight(ROW_HEIGHT)
 		cells[key] = cell
@@ -519,8 +536,10 @@ function Instance:MakeRow(parent)
 	end
 	row.count = W.Text(cells.role, "GameFontHighlightSmall", 11)
 	row.count:SetAllPoints()
-	row.gs = W.Text(cells.gs, "GameFontHighlight", 12, "CENTER")
-	row.gs:SetAllPoints()
+	if cells.gs then
+		row.gs = W.Text(cells.gs, "GameFontHighlight", 12, "CENTER")
+		row.gs:SetAllPoints()
+	end
 	row.activity = W.Text(cells.activity, "GameFontHighlightSmall", 11)
 	row.activity:SetPoint("TOPLEFT", 0, -4)
 	row.activity:SetPoint("RIGHT", 0, 0)
@@ -612,8 +631,10 @@ function Instance:FillRow(row, item)
 	else
 		row.sub:SetText(format("%d/%d members", #l.members, Size(l)))
 	end
-	local gs, stale = ListingGS(l)
-	row.gs:SetText(W.GS(gs, who.level, stale))
+	if row.gs then
+		local gs, stale = ListingGS(l)
+		row.gs:SetText(W.GS(gs, who.level, stale))
+	end
 	row.level:SetText(who.level)
 	SetRoles(row, l)
 	row.activity:SetText("|cffffd100" .. ActivityText(l) .. "|r")
@@ -694,8 +715,10 @@ function Instance:Refresh()
 		or "Nothing listed here. Pick activities and search, or clear the search box."
 	self.list:SetItems(self.items, empty)
 	self.status:SetText(format("%d solo players, %d groups", solo, groups))
-	local gs, stale = ns.GS.Of(ns.Me())
-	self.myGS:SetText("Your GS " .. W.GS(gs, ns.PlayerLevel(), stale))
+	if self.myGS then
+		local gs, stale = ns.GS.Of(ns.Me())
+		self.myGS:SetText("Your GS " .. W.GS(gs, ns.PlayerLevel(), stale))
+	end
 	local sel = self.selected
 	if sel and not sel.leader then
 		sel = nil
@@ -741,16 +764,18 @@ function T.Attach(host, area, source)
 		view.search = lower(b:GetText() or "")
 		T.RefreshAll()
 	end)
-	self.myGS = W.Text(band, "GameFontNormal", 12, "RIGHT")
-	self.myGS:SetPoint("RIGHT", -4, 0)
-	local gsHover = CreateFrame("Frame", nil, band)
-	gsHover:SetAllPoints(self.myGS)
-	gsHover:EnableMouse(true)
-	W.Tooltip(
-		gsHover,
-		"Your gear score",
-		"Item level of your gear, adjusted for quality, on the same scale as the GS column."
-	)
+	if ns.GEAR_SCORE then
+		self.myGS = W.Text(band, "GameFontNormal", 12, "RIGHT")
+		self.myGS:SetPoint("RIGHT", -4, 0)
+		local gsHover = CreateFrame("Frame", nil, band)
+		gsHover:SetAllPoints(self.myGS)
+		gsHover:EnableMouse(true)
+		W.Tooltip(
+			gsHover,
+			"Your gear score",
+			"Item level of your gear, adjusted for quality, on the same scale as the GS column."
+		)
+	end
 
 	-- A dark backing so nothing of the frame's own list shows or takes the mouse through.
 	local back = CreateFrame("Frame", nil, host)
@@ -768,7 +793,7 @@ function T.Attach(host, area, source)
 	headLine:SetPoint("BOTTOMLEFT", 0, 0)
 	headLine:SetPoint("BOTTOMRIGHT", 0, 0)
 	local justify = { level = "CENTER", gs = "CENTER", listed = "RIGHT" }
-	for _, key in ipairs({ "name", "level", "role", "gs", "activity", "listed" }) do
+	for _, key in ipairs(CELL_KEYS) do
 		local b = CreateFrame("Button", nil, header)
 		b:SetHeight(18)
 		local text = W.Text(b, "GameFontNormalSmall", 11, justify[key])
@@ -796,13 +821,15 @@ function T.Attach(host, area, source)
 		"Roles",
 		"Solo players: tank, then healer, then damage. Groups: open slots for your roles first."
 	)
-	W.Tooltip(
-		header.gs,
-		"Gear score",
-		"Item level of the gear, adjusted for quality. Groups show their best known. "
-			.. W.GS_OUTDATED
-			.. "This colour|r: known from an earlier session; a ready check refreshes your group's."
-	)
+	if header.gs then
+		W.Tooltip(
+			header.gs,
+			"Gear score",
+			"Item level of the gear, adjusted for quality. Groups show their best known. "
+				.. W.GS_OUTDATED
+				.. "This colour|r: known from an earlier session; a ready check refreshes your group's."
+		)
+	end
 	self.header = header
 
 	self.list = W.List(back, ROW_HEIGHT, function(parent)
