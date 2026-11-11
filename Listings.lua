@@ -53,7 +53,7 @@ local function Member(id, i)
 		return nil
 	end
 	local m = {
-		name = ns.GS.Short(p.name),
+		name = ns.Short(p.name),
 		fullName = p.name,
 		class = p.classFilename or "WARRIOR",
 		level = p.level or 0,
@@ -78,7 +78,7 @@ local function Names(list, set)
 	end
 	for _, name in ipairs(type(list) == "table" and list or {}) do
 		if type(name) == "string" and not Secret(name) then
-			set[ns.GS.Short(name)] = true
+			set[ns.Short(name)] = true
 		end
 	end
 	return set

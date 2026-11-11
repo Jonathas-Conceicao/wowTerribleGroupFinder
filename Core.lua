@@ -10,6 +10,16 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
+-- Gear score is switched off for v0.1. Setting this to true brings back the GS column, "Your
+-- GS", the tooltip lines, the {gs} message key and the ready-check inspects. See
+-- .planning/research/GEARSCORE.md.
+ns.GEAR_SCORE = false
+
+--- A character name without its realm suffix.
+function ns.Short(name)
+	return name and (name:match("^([^%-]+)") or name)
+end
+
 local DEFAULTS = {
 	schema = 1,
 }
@@ -91,10 +101,12 @@ function ns.Me()
 		roles = { tank = roles.tank, healer = roles.healer, dps = roles.dps },
 		leader = true,
 	}
-	if ns.UsingPreview() then
-		me.gs = me.level + 1.5
-	else
-		me.gs = ns.GS.Mine()
+	if ns.GEAR_SCORE then
+		if ns.UsingPreview() then
+			me.gs = me.level + 1.5
+		else
+			me.gs = ns.GS.Mine()
+		end
 	end
 	return me
 end

@@ -60,10 +60,7 @@ local GetItemLevel = C_Item and C_Item.GetDetailedItemLevelInfo or GetDetailedIt
 local cache -- name -> { gs, level, at }
 local fresh = {} -- name -> true once learned this session
 
-local function Short(name)
-	return name and (name:match("^([^%-]+)") or name)
-end
-GS.Short = Short
+local Short = ns.Short
 
 -- An item link's level, its quality's factor (nil while not loaded), and two-handed.
 local function Item(link)
@@ -228,21 +225,13 @@ function GS.ScanGroup()
 	Next()
 end
 
-local frame = CreateFrame("Frame")
-frame:SetScript("OnEvent", function(_, event, arg)
-	if event == "INSPECT_READY" then
-		if current and arg == current.guid then
-			Read(0)
-		end
-	elseif event == "READY_CHECK" then
-		GS.ScanGroup()
-	elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
-		C_Timer.After(1, StoreSelf)
-	end
-end)
+local frame
 
---- Called once the saved variables are loaded.
+--- Called once the saved variables are loaded. Does nothing while gear score is switched off.
 function GS.Init(db)
+	if not ns.GEAR_SCORE then
+		return
+	end
 	db.gs = db.gs or {}
 	cache = db.gs
 	local cutoff = time() - KEEP_DAYS * 86400
@@ -252,6 +241,18 @@ function GS.Init(db)
 		end
 	end
 	if C_Timer and NotifyInspect then
+		frame = CreateFrame("Frame")
+		frame:SetScript("OnEvent", function(_, event, arg)
+			if event == "INSPECT_READY" then
+				if current and arg == current.guid then
+					Read(0)
+				end
+			elseif event == "READY_CHECK" then
+				GS.ScanGroup()
+			elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+				C_Timer.After(1, StoreSelf)
+			end
+		end)
 		frame:RegisterEvent("INSPECT_READY")
 		frame:RegisterEvent("READY_CHECK")
 		frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")

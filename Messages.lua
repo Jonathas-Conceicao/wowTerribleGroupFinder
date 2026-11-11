@@ -13,9 +13,11 @@ ns.Messages = M
 M.KINDS = { "invite", "request" }
 M.DEFAULTS = {
 	invite = "Hi {name}! We're forming a group for {activity}, want to join?",
-	request = "Hi {name}! Level {level} {class} here ({role}, GS {gs}), could I join you for {activity}?",
+	request = "Hi {name}! Level {level} {class} here ({role}), could I join you for {activity}?",
 }
-M.TOKENS = "{name} {activity} {role} {class} {level} {gs}"
+M.TOKENS = "{name} {activity} {role} {class} {level}" .. (ns.GEAR_SCORE and " {gs}" or "")
+-- The request preset before gear score was switched off; a saved copy of it is replaced.
+local OLD_REQUEST = "Hi {name}! Level {level} {class} here ({role}, GS {gs}), could I join you for {activity}?"
 local MAX = 255
 
 local ROLE_NAMES = { tank = "Tank", healer = "Healer", dps = "Damage" }
@@ -31,6 +33,9 @@ function M.Init(saved)
 			db[kind].text = M.DEFAULTS[kind]
 		end
 		db[kind].auto = db[kind].auto == true
+	end
+	if not ns.GEAR_SCORE and db.request.text == OLD_REQUEST then
+		db.request.text = M.DEFAULTS.request
 	end
 end
 
@@ -74,8 +79,10 @@ function M.Format(kind, l, text)
 		role = MyRoleText(),
 		class = ns.W.ClassName(ns.PlayerClass()),
 		level = tostring(ns.PlayerLevel()),
-		gs = MyGS(),
 	}
+	if ns.GEAR_SCORE then
+		values.gs = MyGS()
+	end
 	return ((text or db[kind].text):gsub("{(%a+)}", function(key)
 		return values[key]
 	end))
@@ -193,7 +200,7 @@ function M.BuildPanel(parent)
 	tokens:SetText(
 		"Placeholders: "
 			.. M.TOKENS
-			.. ". {name} is who you whisper, {activity} their listing's; the rest are you (your roles, class, level, gear score)."
+			.. ". {name} is who you whisper, {activity} their listing's; the rest are you (your roles, class, level)."
 	)
 	return function()
 		for _, kind in ipairs(M.KINDS) do
