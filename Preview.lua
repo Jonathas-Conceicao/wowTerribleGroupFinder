@@ -79,7 +79,7 @@ local function Members(list)
 	local out = {}
 	for i, spec in ipairs(list) do
 		local name, class, level, role, gs, rest = spec:match("^([^:]+):(%u+):(%d+):(%u+):?(~?[%d%.]*)(.*)$")
-		local zone = rest:match("^@(.+)$")
+		local zone = rest and rest:match("^@(.+)$")
 		local value, stale = GS(gs)
 		out[i] = {
 			name = name,
