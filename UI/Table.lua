@@ -391,11 +391,22 @@ local function Hide(l)
 	else
 		hidden[l.leader.name] = l.listedAt
 	end
+	W.PlayCheckbox(true)
 	T.RefreshAll()
 end
 
 local Instance = {}
 Instance.__index = Instance
+
+-- Selection is the listing's id, never a table: it survives re-sorts and re-reads.
+local function IsSelected(inst, item)
+	return inst.selectedID ~= nil and item.id == inst.selectedID
+end
+
+-- The read's listing with this id (folded away or filtered out ones too), else nil.
+local function FindByID(inst, id)
+	return id ~= nil and inst.byID[id] or nil
+end
 
 local function TemplateKnown(name)
 	return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
@@ -566,14 +577,20 @@ function Instance:BuildRow(row)
 	row.message:SetPoint("RIGHT", row.hide, "LEFT", -3, 0)
 	Layout(row, cells, row.message, -GAP)
 
+	row:RegisterForClicks("LeftButtonUp")
 	row:SetScript("OnClick", function(r)
-		inst.selected = r.listing
-		inst:Refresh()
-	end)
-	row:SetScript("OnDoubleClick", function(r)
-		if r.listing then
-			inst:Message(r.listing)
+		local l = r.listing
+		if not l or l.mine or l.delisted then
+			return
 		end
+		if inst.selectedID == l.id then
+			inst.selectedID = nil
+		else
+			inst.selectedID = l.id
+		end
+		W.PlayCheckbox(true)
+		inst:RefreshButtons()
+		inst.list:Reinitialize()
 	end)
 	row:SetScript("OnEnter", ShowTooltip)
 	row:SetScript("OnLeave", function()
@@ -675,7 +692,7 @@ function Instance:FillRow(row, item)
 	else
 		row.listed:SetText(W.Age(l.age))
 	end
-	row.selected:SetShown(self.selected == l)
+	row.selected:SetShown(IsSelected(self, l))
 	row.hide:SetShown(not l.mine)
 	row.hide:SetText(hidden and "+" or "x")
 	row.message:SetText(l.mine and "Unlist" or "Whisper")
@@ -693,7 +710,11 @@ function Instance:Collect()
 	wipe(sections.solo)
 	wipe(sections.groups)
 	local mine
+	wipe(self.byID)
 	for _, l in ipairs(self.source.listings()) do
+		if l.id ~= nil and not l.mine then
+			self.byID[l.id] = l
+		end
 		if l.mine then
 			mine = l
 		elseif Matches(l) then
@@ -744,12 +765,18 @@ function Instance:Refresh()
 		local gs, stale = ns.GS.Of(ns.Me())
 		self.myGS:SetText("Your GS " .. W.GS(gs, ns.PlayerLevel(), stale))
 	end
-	local sel = self.selected
-	if sel and not sel.leader then
-		sel = nil
+	self:RefreshButtons()
+end
+
+-- The bottom buttons act on the listing the selected id resolves to; a selection whose
+-- listing is gone or delisted is dropped.
+function Instance:RefreshButtons()
+	local sel = FindByID(self, self.selectedID)
+	if self.selectedID and (not sel or sel.delisted) then
+		self.selectedID, sel = nil, nil
 	end
-	self.send:SetEnabled(sel ~= nil and not sel.mine)
-	self.invite:SetEnabled(sel ~= nil and sel.solo and not sel.mine and ns.CanInvite())
+	self.send:SetEnabled(sel ~= nil)
+	self.invite:SetEnabled(sel ~= nil and sel.solo == true and ns.CanInvite())
 end
 
 -- The list host: Blizzard's ScrollBox (our scriptless templates keep header and row frames in
@@ -880,6 +907,7 @@ function T.Attach(host, area, source)
 		host = host,
 		source = source,
 		items = {},
+		byID = {},
 		headers = { solo = { header = true, key = "solo" }, groups = { header = true, key = "groups" } },
 	}, Instance)
 
@@ -981,11 +1009,11 @@ function T.Attach(host, area, source)
 
 	-- Forever's own bottom buttons sit at these spots.
 	self.send = W.Button(host, SEND_MESSAGE or "Send Message", 111, 28, function()
-		self:Message(self.selected)
+		self:Message(FindByID(self, self.selectedID))
 	end)
 	self.send:SetPoint("BOTTOMLEFT", 21, 16)
 	self.invite = W.Button(host, GROUP_INVITE or "Group Invite", 109, 28, function()
-		self:Invite(self.selected)
+		self:Invite(FindByID(self, self.selectedID))
 	end)
 	self.invite:SetPoint("BOTTOMRIGHT", -21, 16)
 	self.status = W.Text(host, "GameFontHighlightSmall", 11, "CENTER")
@@ -996,6 +1024,14 @@ function T.Attach(host, area, source)
 	end)
 	T.instances[#T.instances + 1] = self
 	return self
+end
+
+--- Drops every table's selection (new results, a new search, Browse shown again) and redraws.
+function T.ClearSelection()
+	for _, inst in ipairs(T.instances) do
+		inst.selectedID = nil
+	end
+	T.RefreshAll()
 end
 
 function T.RefreshAll()

@@ -90,6 +90,9 @@ local function Select(index)
 	end
 	UI.current = p.key
 	SetTitle(LFG_TITLE or "Group Finder")
+	if p.key == "browse" then
+		ns.Table.ClearSelection() -- as Forever clears it whenever Browse is shown
+	end
 	if p.refresh then
 		p.refresh(p.frame)
 	end
@@ -286,6 +289,7 @@ local function BuildBrowse(parent)
 
 	local refresh = W.Button(panel, "", 26, 22, function()
 		ns.Table.RelistOneHidden(ns.state.listings)
+		ns.Table.ClearSelection()
 		ns.Print("preview: in game this is Forever's own refresh button, which searches again.")
 		RefreshBrowse()
 	end)

@@ -172,6 +172,7 @@ local function Attach()
 	end
 	f:HookScript("OnShow", function()
 		LFGParentFrame:SetWidth(WIDE)
+		ns.Table.ClearSelection()
 		Read()
 	end)
 	f:HookScript("OnHide", function()
@@ -185,16 +186,19 @@ local function Attach()
 	end
 	if LFGBrowse_DoSearch then
 		hooksecurefunc("LFGBrowse_DoSearch", function()
-			if tbl then
-				tbl:Refresh()
-			end
+			ns.Table.ClearSelection()
 		end)
 	end
 	local events = CreateFrame("Frame")
 	for _, event in ipairs(EVENTS) do
 		events:RegisterEvent(event)
 	end
-	events:SetScript("OnEvent", ReadSoon)
+	events:SetScript("OnEvent", function(_, event)
+		if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" or event == "LFG_LIST_SEARCH_FAILED" then
+			ns.Table.ClearSelection()
+		end
+		ReadSoon()
+	end)
 	Read()
 end
 
