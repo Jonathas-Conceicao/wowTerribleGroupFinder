@@ -1064,6 +1064,9 @@ function Instance:BuildList(back, placeStrip)
 	end)
 	list:SetPoint("TOPLEFT", back, "TOPLEFT", 3, -6)
 	list:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -6, 2)
+	-- W.List's frames end 8 px in from its right edge (room for its thumb): the header strip
+	-- ends there too.
+	placeStrip(false, -14)
 	return list
 end
 
@@ -1134,13 +1137,13 @@ function T.Attach(host, area, source)
 	back:EnableMouse(true)
 
 	-- The column header strip: the 20 px from the art top down to BarTop. Its right edge
-	-- follows the ScrollBox's (-22 with the scroll bar, -6 without).
+	-- follows the rows' (-22 with the scroll bar, -6 without; the fallback list passes its own).
 	local header = CreateFrame("Frame", nil, host)
 	header:SetHeight(20)
-	local function PlaceStrip(barShown)
+	local function PlaceStrip(barShown, inset)
 		header:ClearAllPoints()
 		header:SetPoint("TOPLEFT", area, "TOPLEFT", 3, 0)
-		header:SetPoint("TOPRIGHT", area, "TOPRIGHT", barShown and -22 or -6, 0)
+		header:SetPoint("TOPRIGHT", area, "TOPRIGHT", inset or (barShown and -22 or -6), 0)
 	end
 	PlaceStrip(false)
 	local justify = { level = "CENTER", gs = "CENTER", listed = "RIGHT" }
