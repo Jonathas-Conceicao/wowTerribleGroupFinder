@@ -417,6 +417,13 @@ local function FindByID(inst, id)
 	return id ~= nil and inst.byID[id] or nil
 end
 
+-- The selected listing while its row is shown, else nil: a selection folded away or
+-- filtered out is kept, but nothing acts on a listing you can't see.
+local function ShownSelection(inst)
+	local id = inst.selectedID
+	return id ~= nil and inst.shownIDs[id] and FindByID(inst, id) or nil
+end
+
 local function TemplateKnown(name)
 	return C_XMLUtil ~= nil and C_XMLUtil.GetTemplateInfo ~= nil and C_XMLUtil.GetTemplateInfo(name) ~= nil
 end
@@ -823,6 +830,7 @@ function Instance:Collect()
 	wipe(sections.groups)
 	local mine
 	wipe(self.byID)
+	wipe(self.shownIDs)
 	for _, l in ipairs(self.source.listings()) do
 		if l.id ~= nil and not l.mine then
 			self.byID[l.id] = l
@@ -851,6 +859,9 @@ function Instance:Collect()
 			if not view.collapsed[key] then
 				for _, l in ipairs(list) do
 					items[#items + 1] = l
+					if l.id ~= nil then
+						self.shownIDs[l.id] = true
+					end
 				end
 			end
 		end
@@ -931,9 +942,10 @@ function Instance:ValidateSelection()
 	return sel
 end
 
--- The bottom buttons act on the listing the selected id resolves to.
+-- The bottom buttons act on the listing the selected id resolves to, while its row is shown.
 function Instance:RefreshButtons()
-	local sel = self:ValidateSelection()
+	self:ValidateSelection()
+	local sel = ShownSelection(self)
 	self.send:SetEnabled(sel ~= nil)
 	self.invite:SetEnabled(sel ~= nil and sel.solo == true and ns.CanInvite())
 end
@@ -1064,6 +1076,7 @@ function T.Attach(host, area, source)
 		source = source,
 		items = {},
 		byID = {},
+		shownIDs = {},
 		headers = { solo = { header = true, key = "solo" }, groups = { header = true, key = "groups" } },
 	}, Instance)
 
@@ -1192,11 +1205,11 @@ function T.Attach(host, area, source)
 
 	-- Forever's own bottom buttons sit at these spots.
 	self.send = W.Button(host, SEND_MESSAGE or "Send Message", 111, 28, function()
-		self:Message(FindByID(self, self.selectedID))
+		self:Message(ShownSelection(self))
 	end)
 	self.send:SetPoint("BOTTOMLEFT", 21, 16)
 	self.invite = W.Button(host, GROUP_INVITE or "Group Invite", 109, 28, function()
-		self:Invite(FindByID(self, self.selectedID))
+		self:Invite(ShownSelection(self))
 	end)
 	self.invite:SetPoint("BOTTOMRIGHT", -21, 16)
 	self.fits:SetPoint("LEFT", self.send, "RIGHT", 8, 0)
