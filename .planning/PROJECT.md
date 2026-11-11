@@ -57,6 +57,13 @@ search box in the stone band, stock column headers above BarTop, Needs my role a
 bottom bar; stock row art, fonts, colours and greyed rows; stock spinner and search-state texts;
 stock sounds. In-game checks pending (Phase 2 HUMAN-UAT).
 
+Phase 3 complete (2026-11-11) — solo players show the stock micro role icons and groups take open
+slots from the server's remaining counts; Discord icon and voice wording as stock; your own row
+shows "Your listing" in green with the stock delist button (solo / leader only); the row tooltip
+follows Forever's order and wording with our extras after (playstyle, spec / area, friends, listed
+age, hidden note) and refreshes while hovered; the hide button is a small icon button; Needs my
+role reads the server's remaining-slot counts. In-game checks pending (Phase 3 HUMAN-UAT).
+
 ## Requirements
 
 ### Validated
@@ -81,6 +88,8 @@ See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release). Validat
 (Gear Score Off and Release Plumbing): GS-01, GS-02, REL-01, REL-02, REL-03 (in-game checks pending).
 Validated in Phase 2 (List Foundation): UIP-02, UIP-03, UIP-04, UIP-05, UIP-06, UIP-10, UIP-12
 (in-game checks pending).
+Validated in Phase 3 (Rows, Tooltip and Own Listing): UIP-07, UIP-08, UIP-09, UIP-13, UIP-14,
+UIP-15, UIP-16 (in-game checks pending).
 
 ### Deferred (next-milestone candidates)
 
@@ -188,4 +197,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after Phase 2 of milestone v0.1 Initial Release*
+*Last updated: 2026-11-11 after Phase 3 of milestone v0.1 Initial Release*
