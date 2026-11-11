@@ -528,12 +528,11 @@ local function StockTooltip(tip, l, ids, inst)
 		for _, m in ipairs(l.members) do
 			if m ~= who and not m.leader then
 				local memberGS = ns.GEAR_SCORE and GSLine(m) or nil
-				tip.line(
-					"   " .. PlayerText(m, RoleMarkup(m.role)),
-					WHITE,
-					false,
-					l.mine and memberGS or RightText(m, memberGS)
-				)
+				local right = memberGS
+				if not l.mine then
+					right = RightText(m, memberGS)
+				end
+				tip.line("   " .. PlayerText(m, RoleMarkup(m.role)), WHITE, false, right)
 			end
 		end
 	end
