@@ -70,7 +70,7 @@ Plans:
 - [x] 03-01-PLAN.md — Listing data (voiceMode, playstyle, counts, remaining) + Needs my role from server slots + harness stubs for the phase (wave 1)
 - [x] 03-02-PLAN.md — Rows: micro role icons, Discord icon, own row with the stock delist button, icon hide button, light grey comment (wave 2)
 - [x] 03-03-PLAN.md — Tooltip in stock order and wording with extras after (playstyle, friends, listed, hidden note) (wave 3)
-- [ ] 03-04-PLAN.md — Tooltip refresh on result updates + phase close (CLAUDE.md, regression, deploy) (wave 4)
+- [x] 03-04-PLAN.md — Tooltip refresh on result updates + phase close (CLAUDE.md, regression, deploy) (wave 4)
 **UI hint**: yes
 
 ### Phase 4: Messages and Contact

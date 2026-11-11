@@ -55,7 +55,7 @@ reviews before the milestone closes.
 - [x] **UIP-13**: Playstyle shows in the tooltip and the listing comment in light grey
 - [x] **UIP-14**: The hide button is a stock-style small button with an icon
 - [x] **UIP-15**: Needs my role uses the server's remaining-slot counts when available
-- [ ] **UIP-16**: A hovered row's tooltip refreshes when results update
+- [x] **UIP-16**: A hovered row's tooltip refreshes when results update
 
 ### Release (REL)
 
@@ -104,7 +104,7 @@ reviews before the milestone closes.
 | UIP-13 | Phase 3 | Complete |
 | UIP-14 | Phase 3 | Complete |
 | UIP-15 | Phase 3 | Complete |
-| UIP-16 | Phase 3 | Pending |
+| UIP-16 | Phase 3 | Complete |
 | MSG-01 | Phase 4 | Pending |
 | MSG-02 | Phase 4 | Pending |
 | MSG-03 | Phase 4 | Pending |
