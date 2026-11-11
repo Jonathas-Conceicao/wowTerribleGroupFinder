@@ -352,16 +352,7 @@ local refreshMessages
 
 local function BuildMessages(parent)
 	local panel = CreateFrame("Frame", nil, parent)
-	local back = panel:CreateTexture(nil, "BACKGROUND")
-	back:SetPoint("TOPLEFT", 4, -60)
-	back:SetPoint("BOTTOMRIGHT", -4, 3)
-	if not W.Atlas(back, "groupfinder-background") then
-		back:SetColorTexture(0.05, 0.05, 0.05, 0.6)
-	end
-	local content = CreateFrame("Frame", nil, panel)
-	content:SetPoint("TOPLEFT", 16, -70)
-	content:SetPoint("BOTTOMRIGHT", -16, 16)
-	refreshMessages = ns.Messages.BuildPanel(content)
+	refreshMessages = ns.Messages.BuildPanel(panel)
 	return panel
 end
 

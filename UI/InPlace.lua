@@ -135,16 +135,7 @@ local function AddMessagesTab()
 	if messages.SetTitle then
 		messages:SetTitle(LFG_TITLE or "Group Finder")
 	end
-	local stone = messages:CreateTexture(nil, "BACKGROUND", nil, 1)
-	stone:SetPoint("TOPLEFT", 2, -21)
-	stone:SetPoint("BOTTOMRIGHT", -2, 3)
-	if not W.Atlas(stone, "groupfinder-background") then
-		stone:SetColorTexture(0.05, 0.05, 0.05, 0.8)
-	end
-	local content = CreateFrame("Frame", nil, messages)
-	content:SetPoint("TOPLEFT", 16, -70)
-	content:SetPoint("BOTTOMRIGHT", -16, 16)
-	refreshMessages = ns.Messages.BuildPanel(content)
+	refreshMessages = ns.Messages.BuildPanel(messages)
 	messages:Hide()
 
 	local below = LFGParentFrame.WhoListingTab or LFGParentFrame.BrowsingTab
