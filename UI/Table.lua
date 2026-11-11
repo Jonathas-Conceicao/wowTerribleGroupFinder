@@ -176,8 +176,11 @@ local function Matches(l)
 			return true
 		end
 	end
+	-- The comment may not support string work (Listings.lua): lower() runs inside the guard too.
 	if l.comment and type(l.comment) == "string" then
-		local ok, hit = pcall(find, lower(l.comment), text, 1, true)
+		local ok, hit = pcall(function(c)
+			return find(lower(c), text, 1, true)
+		end, l.comment)
 		if ok and hit then
 			return true
 		end

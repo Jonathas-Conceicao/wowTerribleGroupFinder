@@ -147,7 +147,8 @@ local function Read(id, now)
 	if l.solo then
 		l.leader.roles = l.leader.roles or { tank = false, healer = false, dps = true }
 	end
-	-- The comment is shown as is; it may not support string work, so it is not searched.
+	-- The comment is shown as is; it may not support string work, so the table's search
+	-- reads it only inside a pcall.
 	l.comment = not Secret(info.comment) and info.comment or nil
 	l.age = info.age or 0
 	l.listedAt = now - l.age
