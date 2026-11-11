@@ -33,6 +33,10 @@ local STOCK_HEADER = "LFGBrowseSearchEntryGroupingTemplate"
 local HEADER_H, ROW_H = 36, 40 -- the finder's section header and result row heights
 local CELL_H = 32 -- a cell's height, centred in the row
 local SLOTS = 5
+-- Role icons: a group's slots (the large icons) side by side across the 100 px Roles cell, and
+-- a solo player's micro icons (W.RoleIcon's micro size) with a little space between.
+local SLOT_SIZE, SLOT_STEP = 19, 20
+local MICRO_STEP = 25
 local RELIST_SLACK = 30 -- seconds: a listing read again later keeps its time within this
 local GAP = 6
 local HIDE_W, MSG_W = 24, 66
@@ -55,12 +59,12 @@ local COMPOSITION = {
 local LEFT = {
 	{ key = "name", label = "Name", x = 4, w = 150 },
 	{ key = "level", label = "Lvl", x = 156, w = 30, justify = "CENTER" },
-	{ key = "role", label = "Roles", x = 190, w = 92 },
+	{ key = "role", label = "Roles", x = 190, w = 100 },
 }
 if ns.GEAR_SCORE then
-	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 284, w = 44, justify = "CENTER" }
+	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 292, w = 44, justify = "CENTER" }
 end
-local ACTIVITY_X = ns.GEAR_SCORE and 334 or 284
+local ACTIVITY_X = ns.GEAR_SCORE and 342 or 292
 -- The zone on a row's second line: its width cap, its share of the Activity cell, and the gap
 -- before the comment.
 local ZONE_MAX, ZONE_FRAC, ZONE_GAP = 100, 0.45, 6
@@ -740,8 +744,8 @@ local function SetRoles(row, l)
 		s:Hide()
 	end
 	row.count:SetText("")
-	-- Solo players: Forever's micro icons, 18 px, a 20 px step. Groups: the large icons at 14 px,
-	-- a 15 px step. Every fill sets both, as the frames are reused between the two.
+	-- Solo players: Forever's micro icons, a MICRO_STEP step. Groups: the large icons at SLOT_SIZE,
+	-- a SLOT_STEP step. Every fill sets both, as the frames are reused between the two.
 	if l.solo then
 		local n = 0
 		for _, role in ipairs(ROLES) do
@@ -750,7 +754,7 @@ local function SetRoles(row, l)
 				local slot = row.slots[n]
 				slot:SetRole(role, true)
 				slot:ClearAllPoints()
-				slot:SetPoint("LEFT", (n - 1) * 20, 0)
+				slot:SetPoint("LEFT", (n - 1) * MICRO_STEP, 0)
 				slot:Show()
 			end
 		end
@@ -758,7 +762,7 @@ local function SetRoles(row, l)
 	end
 	for i, slot in ipairs(row.slots) do
 		slot:ClearAllPoints()
-		slot:SetPoint("LEFT", (i - 1) * 15, 0)
+		slot:SetPoint("LEFT", (i - 1) * SLOT_STEP, 0)
 	end
 	RoleCounts(l)
 	local size = Size(l)
@@ -873,8 +877,8 @@ function Instance:BuildRow(row)
 	row.level:SetAllPoints()
 	row.slots = {}
 	for i = 1, SLOTS do
-		local slot = W.RoleIcon(cells.role, 14)
-		slot:SetPoint("LEFT", (i - 1) * 15, 0)
+		local slot = W.RoleIcon(cells.role, SLOT_SIZE)
+		slot:SetPoint("LEFT", (i - 1) * SLOT_STEP, 0)
 		row.slots[i] = slot
 	end
 	row.count = W.Text(cells.role, "GameFontHighlightSmall", 11)
@@ -1556,7 +1560,10 @@ function T.Attach(host, area, source)
 		search:SetPoint("TOPRIGHT", host, "TOPRIGHT", -48, -38)
 	end
 	if search.Instructions then
-		search.Instructions:SetText("Name, activity or note")
+		-- One line inside the box: the template's hint wraps past its border when it runs long.
+		search.Instructions:SetText("Name, activity, note")
+		search.Instructions:SetWordWrap(false)
+		search.Instructions:SetMaxLines(1)
 	end
 	search:HookScript("OnTextChanged", function(b)
 		view.search = lower(b:GetText() or "")

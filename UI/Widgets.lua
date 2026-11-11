@@ -453,7 +453,7 @@ end
 local ROLE_ATLAS = { TANK = "tank", HEALER = "heal", DAMAGER = "dps" }
 local ROLE_COLOR = { TANK = { 0.2, 0.45, 0.9 }, HEALER = { 0.2, 0.75, 0.3 }, DAMAGER = { 0.8, 0.25, 0.2 } }
 local ROLE_LETTER = { TANK = "T", HEALER = "H", DAMAGER = "D" }
-local MICRO = 18
+local MICRO = 22
 W.ROLE_NAME = { TANK = "Tank", HEALER = "Healer", DAMAGER = "Damage" }
 
 function W.RoleIcon(parent, size)
@@ -463,7 +463,7 @@ function W.RoleIcon(parent, size)
 	f.tex:SetAllPoints()
 	f.letter = W.Text(f, "GameFontHighlightSmall", 10, "CENTER")
 	f.letter:SetPoint("CENTER", 0, 0)
-	-- micro: Forever's solo-player icon (18 px); otherwise the large one (the creation size).
+	-- micro: Forever's solo-player icon (MICRO px); otherwise the large one (the creation size).
 	function f:SetRole(role, micro)
 		self.letter:SetText("")
 		self:SetSize(size, size)
