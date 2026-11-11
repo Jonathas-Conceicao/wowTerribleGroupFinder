@@ -115,7 +115,7 @@ Plans:
 | 2. List Foundation | 4/4 | Complete    | 2026-11-11 |
 | 3. Rows, Tooltip and Own Listing | 4/4 | Complete    | 2026-11-11 |
 | 4. Messages and Contact | 4/4 | Complete    | 2026-11-11 |
-| 5. Release Review | 0/TBD | Not started | - |
+| 5. Release Review | 2/2 | Awaiting author review | - |
 
 ## Backlog
 

@@ -2,15 +2,15 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: ready_to_plan
-stopped_at: Phase 4 complete (verification human_needed; in-game checks in 04-HUMAN-UAT.md)
-last_updated: "2026-11-11T19:50:00.000Z"
+status: awaiting_author_review
+stopped_at: Phase 5 awaiting author review (plans executed, verification human_needed; review items in 05-HUMAN-UAT.md)
+last_updated: "2026-11-11T22:00:00.000Z"
 last_activity: 2026-11-11
 progress:
   total_phases: 5
   completed_phases: 4
-  total_plans: 15
-  completed_plans: 15
+  total_plans: 17
+  completed_plans: 17
   percent: 80
 ---
 
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 ## Current Position
 
-Phase: 5
-Plan: Not started
-Status: Ready to plan
-Last activity: 2026-11-11
+Phase: 5 (Release Review)
+Plan: 2 of 2 executed (05-01 cleanup, 05-02 changelog draft + author UAT)
+Status: Phase 5 awaiting author review — not complete; the author's review of README.md, the CHANGELOG v0.1.0 draft and the open decisions in `phases/05-release-review/05-HUMAN-UAT.md` closes it
+Last activity: 2026-11-11 — Phase 5 executed; code review clean (2 info); verification human_needed (3/4, SC4 = author review)
 
 Progress: [████████░░] 80%
 
@@ -90,6 +90,8 @@ Recent decisions affecting current work:
 - 04: one-time preset migration keyed on `messages.version` (old defaults → new, custom kept); rendered text clipped to 255 bytes on a UTF-8 boundary
 - 04: one `M.BuildPanel` for game and preview (Who-tab layers, InputScrollFrameTemplate boxes, two key-button rows)
 - 04: execution ran four single-plan waves sequentially on the main tree; REQUIREMENTS.md ticked by hand (SDK requirements command splits lines)
+- 05: version 0.1.0 / tag `v0.1.0` (TOC keeps `@project-version@`); `## v0.1.0` drafted above the untouched `## Unreleased`; README untouched (suggestions in 05-HUMAN-UAT.md); `.pkgmeta` unchanged (shipping LICENSE recommended to the author); preset migration and `Instance:Delist`'s `RemoveListing` kept as author questions; `ForEachFrame` kept, 02 IN-05 skipped
+- 05: REL-04 stays unchecked until the author confirms the review
 
 ### Pending Todos
 
@@ -109,6 +111,6 @@ None yet.
 
 ## Session Continuity
 
-Last session: 2026-11-11T19:50:00.000Z
-Stopped at: Phase 4 complete
-Resume file: None
+Last session: 2026-11-11T22:00:00.000Z
+Stopped at: Phase 5 awaiting author review (do not run gsd-complete-milestone until the author confirms 05-HUMAN-UAT.md)
+Resume file: .planning/phases/05-release-review/05-HUMAN-UAT.md
