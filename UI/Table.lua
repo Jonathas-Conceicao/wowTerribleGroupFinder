@@ -1175,7 +1175,52 @@ function Instance:Collect()
 	return #sections.solo, #sections.groups
 end
 
+-- True when the shared tooltip is open on one of this table's row frames (D-19). Read before the
+-- list is re-filled: the ScrollBox resetter hides the tooltip while it releases frames.
+function Instance:HoveredRow()
+	if not GameTooltip:IsShown() then
+		return nil
+	end
+	local owner = GameTooltip:GetOwner()
+	if not owner then
+		return nil
+	end
+	local found
+	self.list:ForEachFrame(function(frame, item)
+		if frame == owner and not (item and item.header) then
+			found = true
+		end
+	end)
+	return found
+end
+
+-- After a results update, shows the tooltip for the listing now under the mouse, or hides it.
+function Instance:RefreshTooltip(hovered)
+	if not hovered then
+		return
+	end
+	local under
+	self.list:ForEachFrame(function(frame, item)
+		if under or (item and item.header) or not frame.listing or not frame:IsMouseOver() then
+			return
+		end
+		for _, key in ipairs({ "hide", "message", "delist" }) do
+			local part = frame[key]
+			if part and part.IsMouseOver and part:IsMouseOver() then
+				return
+			end
+		end
+		under = frame
+	end)
+	if under then
+		ShowTooltip(under, self)
+	else
+		GameTooltip:Hide()
+	end
+end
+
 function Instance:Refresh()
+	local hovered = self:HoveredRow()
 	if not self.band:IsVisible() then
 		return
 	end
@@ -1201,6 +1246,7 @@ function Instance:Refresh()
 		self.spinner:Show()
 		self.stateText:SetText("")
 		self:RefreshButtons()
+		self:RefreshTooltip(hovered)
 		return
 	end
 	self.spinner:Hide()
@@ -1211,6 +1257,7 @@ function Instance:Refresh()
 		self.stateText:SetText(LFG_LIST_SEARCH_FAILED or "Search failed.")
 		self.status:SetText("")
 		self:RefreshButtons()
+		self:RefreshTooltip(hovered)
 		return
 	end
 	self.activeIDs = ActiveActivityIDs(self)
@@ -1237,6 +1284,7 @@ function Instance:Refresh()
 		self.myGS:SetText("Your GS " .. W.GS(gs, ns.PlayerLevel(), stale))
 	end
 	self:RefreshButtons()
+	self:RefreshTooltip(hovered)
 end
 
 -- Drops a selection whose listing is gone or delisted; returns the selected listing, if any.
