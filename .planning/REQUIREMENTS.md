@@ -48,6 +48,11 @@ reviews before the milestone closes.
 - [x] **UIP-15**: Needs my role uses the server's remaining-slot counts when available
 - [x] **UIP-16**: A hovered row's tooltip refreshes when results update
 
+### Player location (LOC) — added by the author 2026-11-11
+
+- [ ] **LOC-01**: Each row shows where the listed player is in the world: the solo player's zone, or the group leader's
+- [ ] **LOC-02**: Hovering a group shows each member's zone in the tooltip when the game provides it
+
 ### Release (REL)
 
 - [x] **REL-01**: The TOC carries `X-Curse-Project-ID: 1798577` and `X-Wago-ID: Q6aqvA6W`; the release workflow enables the CurseForge / Wago upload keys
@@ -107,6 +112,8 @@ reviews before the milestone closes.
 | LOCK-03 | Phase 4 | Complete |
 | UIP-01 | Phase 4 | Complete |
 | UIP-11 | Phase 4 | Complete |
+| LOC-01 | Phase 4.1 | Pending |
+| LOC-02 | Phase 4.1 | Pending |
 | REL-04 | Phase 5 | Pending |
 
-**Coverage:** 31/31 v0.1 requirements mapped, none duplicated.
+**Coverage:** 33/33 v0.1 requirements mapped, none duplicated.
