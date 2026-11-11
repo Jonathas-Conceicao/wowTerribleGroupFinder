@@ -135,6 +135,8 @@ Not in this phase: localization of the hardcoded English labels, a better side-t
 
 ### Claude's Discretion
 - Exact offsets, box height and spacing (UI-SPEC).
+- D-06 layout: seven key buttons don't fit one 410 px row, so the UI-SPEC puts them in two rows
+  (`[TGF] {name} {activity} {players}` / `{class} {level} {role}`); every key still has its button.
 - Whether the lock helper lives in Messages.lua or a small block in Table.lua (default: Messages.lua).
 - Key-button tooltip wording.
 - Discuss step did not chain into plan-phase automatically: the orchestrating run executes

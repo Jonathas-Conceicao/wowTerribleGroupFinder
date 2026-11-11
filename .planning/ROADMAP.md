@@ -83,7 +83,13 @@ Plans:
   3. The invite preset has Auto-send and then Auto-invite; Auto-invite is greyed unless Auto-send is checked and unchecks with it; with both on, one click on a solo player whispers and then sends the group invite
   4. After an auto-send, the clicked button stays pressed for 1 s and every whisper / invite button, including the bottom Send Message, ignores clicks until it ends
   5. The Messages side tab starts unchecked, never shows checked with another tab, fills its icon like Forever's tabs and has a stock-style tooltip; its panel uses the Who tab's frame layers, multi-line preset boxes and native checkboxes with sounds
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+- [ ] 04-01-PLAN.md — Messages core: keys and `[TGF]` normalisation, new defaults with `{players}`, Auto-invite state, send-then-invite, 1 s lock, one-time migration (wave 1)
+- [ ] 04-02-PLAN.md — Contact lock on the table: guards on Whisper / Send Message / Group Invite, `W.SetPressed` pressed look on recycled rows (wave 2)
+- [ ] 04-03-PLAN.md — Messages panel: Who layers, multi-line boxes, key buttons, Auto-invite gating; one builder for game and preview (wave 3)
+- [ ] 04-04-PLAN.md — Messages side tab (UIP-01), CLAUDE.md, full regression, deploy (wave 4)
 **UI hint**: yes
 
 ### Phase 5: Release Review
@@ -104,7 +110,7 @@ Plans:
 | 1. Gear Score Off and Release Plumbing | 3/3 | Complete    | 2026-11-11 |
 | 2. List Foundation | 4/4 | Complete    | 2026-11-11 |
 | 3. Rows, Tooltip and Own Listing | 4/4 | Complete    | 2026-11-11 |
-| 4. Messages and Contact | 0/TBD | Not started | - |
+| 4. Messages and Contact | 0/4 | Planned | - |
 | 5. Release Review | 0/TBD | Not started | - |
 
 ## Backlog
