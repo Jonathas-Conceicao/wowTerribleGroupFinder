@@ -122,11 +122,12 @@ Plans:
   2. The zone sits in the table without overlapping other cells at 620 px (own narrow column in stock grey, truncated; or a second line under Activity if a column does not fit), with the full name in the tooltip
   3. A group's tooltip lists each member's zone where known; missing zones are omitted cleanly
   4. Preview sample data carries zones so `/tgf preview` shows the feature; the smoke harness passes in all modes
-**Plans:** 0 plans
+**Plans:** 2 plans
 
 Plans:
 
-- [ ] TBD (run /gsd-plan-phase 04.1 to break down)
+- [ ] 04.1-01-PLAN.md — Zone data: guarded `areaName` / `specName` in Listings.lua, member zones (`@Zone`) in the preview samples (wave 1)
+- [ ] 04.1-02-PLAN.md — Zone on line 2 of the Activity cell, member zones as tooltip right text, CLAUDE.md, regression, deploy (wave 2)
 
 ### Phase 5: Release Review
 

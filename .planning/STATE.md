@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 ## Current Position
 
-Phase: 5 (Release Review)
-Plan: 2 of 2 executed (05-01 cleanup, 05-02 changelog draft + author UAT)
-Status: Phase 5 awaiting author review — not complete; the author's review of README.md, the CHANGELOG v0.1.0 draft and the open decisions in `phases/05-release-review/05-HUMAN-UAT.md` closes it
-Last activity: 2026-11-11 — Phase 5 executed; code review clean (2 info); verification human_needed (3/4, SC4 = author review)
+Phase: 04.1 (Player location, inserted) — executing; Phase 5 still awaits author review
+Plan: 0 of 2 executed (04.1-01 zone data + preview, 04.1-02 row zone + tooltip)
+Status: Phase 04.1 planned (context, UI-SPEC approved, research, 2 plans verified); Phase 5 awaiting author review — not complete; the author's review of README.md, the CHANGELOG v0.1.0 draft and the open decisions in `phases/05-release-review/05-HUMAN-UAT.md` closes it
+Last activity: 2026-11-11 — Phase 04.1 planned
 
 Progress: [████████░░] 80%
 
