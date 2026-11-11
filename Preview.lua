@@ -74,11 +74,12 @@ local function GS(text)
 	return tonumber(stale and text:sub(2) or text), stale or nil
 end
 
--- Members: "Name:CLASS:level:ROLE[:gs]", the first one leads.
+-- Members: "Name:CLASS:level:ROLE[:gs][@Zone]", the first one leads.
 local function Members(list)
 	local out = {}
 	for i, spec in ipairs(list) do
-		local name, class, level, role, gs = spec:match("^([^:]+):(%u+):(%d+):(%u+):?(~?[%d%.]*)$")
+		local name, class, level, role, gs, rest = spec:match("^([^:]+):(%u+):(%d+):(%u+):?(~?[%d%.]*)(.*)$")
+		local zone = rest:match("^@(.+)$")
 		local value, stale = GS(gs)
 		out[i] = {
 			name = name,
@@ -87,6 +88,7 @@ local function Members(list)
 			role = role,
 			gs = value,
 			gsStale = stale,
+			area = zone,
 			leader = i == 1,
 		}
 	end
@@ -149,19 +151,17 @@ local function Solo(keys, who, roles, spec, area, comment, minutes, extra)
 	return Add(l, minutes)
 end
 
-Group(
-	"DM",
-	{ "Brannoc:WARRIOR:21:TANK:22.4", "Elsiwyn:PRIEST:20:HEALER:~21.0", "Tobbin:ROGUE:22:DAMAGER:23.1" },
-	"Need 2 dps, VanCleef quest run",
-	4
-)
+Group("DM", {
+	"Brannoc:WARRIOR:21:TANK:22.4@Westfall",
+	"Elsiwyn:PRIEST:20:HEALER:~21.0@Westfall",
+	"Tobbin:ROGUE:22:DAMAGER:23.1@Elwynn Forest",
+}, "Need 2 dps, VanCleef quest run", 4)
 -- Three damage dealers: "Needs my role" keeps this only for players who can tank or heal.
-Group(
-	"DM",
-	{ "Corvin:ROGUE:22:DAMAGER:23.5", "Ellery:MAGE:21:DAMAGER:~20.9", "Haskel:WARLOCK:22:DAMAGER" },
-	"3 dps here, LF tank + healer",
-	5
-)
+Group("DM", {
+	"Corvin:ROGUE:22:DAMAGER:23.5@Westfall",
+	"Ellery:MAGE:21:DAMAGER:~20.9",
+	"Haskel:WARLOCK:22:DAMAGER@Stormwind City",
+}, "3 dps here, LF tank + healer", 5)
 Group(
 	{ "SMGY", "SMLIB" },
 	{ "Kaelthorn:PALADIN:34:TANK:36.2", "Mirabelle:MAGE:33:DAMAGER:~31.8" },
@@ -174,20 +174,19 @@ Group(
 		remaining = { TANK = 0, HEALER = 1, DAMAGER = 2 },
 	}
 )
-Group(
-	"WC",
-	{ "Durgash:SHAMAN:19:HEALER", "Pip:HUNTER:18:DAMAGER", "Nyx:WARLOCK:20:DAMAGER:19.8", "Halvard:WARRIOR:19:DAMAGER" },
-	"LF tank, we have all quests",
-	2,
-	{ newPlayerFriendly = true }
-)
+Group("WC", {
+	"Durgash:SHAMAN:19:HEALER@The Barrens",
+	"Pip:HUNTER:18:DAMAGER@The Barrens",
+	"Nyx:WARLOCK:20:DAMAGER:19.8",
+	"Halvard:WARRIOR:19:DAMAGER@Orgrimmar",
+}, "LF tank, we have all quests", 2, { newPlayerFriendly = true })
 Group(
 	"BRD",
 	{
-		"Grimtusk:WARRIOR:58:TANK:61.5",
-		"Solenne:PRIEST:57:HEALER:57.9",
-		"Varok:HUNTER:56:DAMAGER:~55.4",
-		"Isolde:MAGE:58:DAMAGER:59.2",
+		"Grimtusk:WARRIOR:58:TANK:61.5@Blackrock Mountain",
+		"Solenne:PRIEST:57:HEALER:57.9@Blackrock Mountain",
+		"Varok:HUNTER:56:DAMAGER:~55.4@Blackrock Mountain",
+		"Isolde:MAGE:58:DAMAGER:59.2@Searing Gorge",
 	},
 	"Arena + Emperor, 1 dps",
 	7,
@@ -199,18 +198,23 @@ Group(
 )
 Group(
 	"STRAT",
-	{ "Aldric:PALADIN:60:HEALER:66.0", "Morwen:WARLOCK:60:DAMAGER:63.4" },
+	{ "Aldric:PALADIN:60:HEALER:66.0@Eastern Plaguelands", "Morwen:WARLOCK:60:DAMAGER:63.4@Eastern Plaguelands" },
 	"UD strat, LF tank and 2 dps, know the route",
 	23
 )
 Group("SFK", {
-	"Ferris:DRUID:25:TANK",
+	"Ferris:DRUID:25:TANK@Silverpine Forest",
 	"Lunelle:PRIEST:24:HEALER",
 	"Kord:WARRIOR:26:DAMAGER",
 	"Sable:ROGUE:24:DAMAGER",
 	"Quill:MAGE:25:DAMAGER",
 }, "Full, thanks!", 31, { delisted = true })
-Group("ZF", { "Rhazgul:SHAMAN:45:DAMAGER:44.7", "Zul:HUNTER:44:DAMAGER" }, "Need tank, healer + 1, carrot run", 1)
+Group(
+	"ZF",
+	{ "Rhazgul:SHAMAN:45:DAMAGER:44.7@The Temple of Atal'Hakkar", "Zul:HUNTER:44:DAMAGER" },
+	"Need tank, healer + 1, carrot run",
+	1
+)
 Group(
 	"RFK",
 	{ "Tamsin:DRUID:31:HEALER:~33.0", "Bram:WARRIOR:30:TANK:29.6" },
@@ -227,9 +231,9 @@ Group("UBRS", {
 	"Rook:HUNTER:60:DAMAGER:62.2",
 }, "Have key, LF healer + dps", 9)
 Group("MC", {
-	"Aethelred:WARRIOR:60:TANK:72.3",
-	"Corwin:WARRIOR:60:TANK:70.1",
-	"Ysolde:PRIEST:60:HEALER:69.4",
+	"Aethelred:WARRIOR:60:TANK:72.3@Blackrock Mountain",
+	"Corwin:WARRIOR:60:TANK:70.1@Blackrock Mountain",
+	"Ysolde:PRIEST:60:HEALER:69.4@Orgrimmar",
 	"Bryn:PRIEST:60:HEALER",
 	"Faelan:DRUID:60:HEALER:66.8",
 	"Hollis:PALADIN:60:HEALER",
@@ -244,7 +248,7 @@ Group("MC", {
 }, "Pug MC, SR +1, need fire res healers", 38, { voiceMode = ns.VOICE.Discord })
 Group(
 	"ONY",
-	{ "Pellam:WARRIOR:60:TANK:69.9", "Quenna:PRIEST:60:HEALER", "Rivka:MAGE:60:DAMAGER" },
+	{ "Pellam:WARRIOR:60:TANK:69.9@Dustwallow Marsh", "Quenna:PRIEST:60:HEALER@Orgrimmar", "Rivka:MAGE:60:DAMAGER" },
 	"Ony pug, Discord required",
 	19,
 	{
@@ -255,7 +259,12 @@ Group(
 	}
 )
 Group("EPL", { "Stellan:PALADIN:55:DAMAGER", "Torva:HUNTER:54:DAMAGER:53.0" }, "Questing Tyr's Hand, anyone welcome", 6)
-Group("STV", { "Ulric:ROGUE:38:DAMAGER", "Maren:PRIEST:37:HEALER:~36.1" }, "Kill quests in STV, any class", 3)
+Group(
+	"STV",
+	{ "Ulric:ROGUE:38:DAMAGER@Stranglethorn Vale", "Maren:PRIEST:37:HEALER:~36.1@Stranglethorn Vale" },
+	"Kill quests in STV, any class",
+	3
+)
 Group("WSG", { "Wren:DRUID:29:HEALER", "Xander:WARRIOR:29:DAMAGER", "Yara:ROGUE:28:DAMAGER" }, "19 bracket premade", 12)
 Group("CUSTOM", { "Zephyr:MAGE:60:DAMAGER", "Sorrel:MAGE:60:DAMAGER" }, "Two mages selling portals", 45)
 
