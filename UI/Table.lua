@@ -828,7 +828,8 @@ local function FitZone(row)
 	if type(cellWidth) == "number" and cellWidth > 0 then
 		cap = math.min(ZONE_MAX, math.floor(cellWidth * ZONE_FRAC))
 	end
-	zone:SetWidth(math.max(1, math.min(cap, textWidth)))
+	-- One pixel of slack: a width equal to the text can still cut it with an ellipsis.
+	zone:SetWidth(math.max(1, math.min(cap, math.ceil(textWidth) + 1)))
 end
 
 -- Builds a result row once, on a frame the list gave us.
