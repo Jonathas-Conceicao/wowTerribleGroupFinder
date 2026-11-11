@@ -880,10 +880,14 @@ function Instance:BuildRow(row)
 	row:SetScript("OnLeave", function()
 		GameTooltip:Hide()
 	end)
+	local function RowHidden(b)
+		local l = b:GetParent().listing
+		return l ~= nil and IsHidden(l)
+	end
 	W.Tooltip(row.hide, function(b)
-		return IsHidden(b:GetParent().listing) and "Show" or "Hide"
+		return RowHidden(b) and "Show" or "Hide"
 	end, function(b)
-		if IsHidden(b:GetParent().listing) then
+		if RowHidden(b) then
 			return "Brings this player back to the normal order."
 		end
 		return "Greys this player and moves them to the end until they make a new listing."
