@@ -670,6 +670,9 @@ function Instance:Delist()
 		T.RefreshAll()
 		return
 	end
+	if not CanUnlist(self) then
+		return
+	end
 	if not (C_LFGList and C_LFGList.HasActiveEntryInfo and C_LFGList.RemoveListing) then
 		return
 	end
