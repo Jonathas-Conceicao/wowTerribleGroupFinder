@@ -299,6 +299,10 @@ function W.Button(parent, text, width, height, onClick)
 		hl:SetAllPoints()
 		hl:SetColorTexture(1, 1, 1, 0.15)
 		b:SetHighlightTexture(hl)
+		local pushed = b:CreateTexture(nil, "ARTWORK")
+		pushed:SetAllPoints()
+		pushed:SetColorTexture(0.25, 0.04, 0.02, 1)
+		b:SetPushedTexture(pushed)
 	end
 	if not b:GetFontString() then
 		b:SetFontString(W.Text(b, "GameFontNormal", 12, "CENTER"))
@@ -310,6 +314,52 @@ function W.Button(parent, text, width, height, onClick)
 		b:SetScript("OnClick", onClick)
 	end
 	return b
+end
+
+local PANEL_UP = "Interface\\Buttons\\UI-Panel-Button-Up"
+local PANEL_DOWN = "Interface\\Buttons\\UI-Panel-Button-Down"
+
+-- The template swaps its Left/Middle/Right art on mouse up, show and enable: re-apply ours.
+local function ApplyPressed(b)
+	if not b:IsEnabled() then
+		return
+	end
+	local path = b.tgfPressed and PANEL_DOWN or PANEL_UP
+	for _, k in ipairs({ "Left", "Middle", "Right" }) do
+		local part = b[k]
+		if part and part.SetTexture then
+			part:SetTexture(path)
+		end
+	end
+end
+
+-- Show a button of ours as pressed (the 1 s "sending" look) or normal again.
+function W.SetPressed(b, on)
+	on = on and true or false
+	if not on and b.tgfPressed ~= true then
+		return
+	end
+	if not b.tgfHooked then
+		b.tgfHooked = true
+		for _, name in ipairs({ "OnMouseUp", "OnShow", "OnEnable" }) do
+			if b:HasScript(name) then
+				b:HookScript(name, function()
+					if b.tgfPressed then
+						ApplyPressed(b)
+					end
+				end)
+			end
+		end
+	end
+	b.tgfPressed = on
+	if on then
+		b:SetButtonState("PUSHED", true)
+	else
+		b:SetButtonState("NORMAL", false)
+	end
+	if b.Left then
+		ApplyPressed(b)
+	end
 end
 
 -- A small icon button: UIMenuButtonStretchTemplate (the look of Forever's own delist button),

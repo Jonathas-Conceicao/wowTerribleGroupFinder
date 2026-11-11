@@ -658,11 +658,11 @@ local function CanUnlist(inst)
 end
 
 -- The row's message button: whisper the player or the group's leader (Messages.lua).
-function Instance:Message(l)
-	if not l or l.mine then
+function Instance:Message(l, from)
+	if not l or l.mine or ns.Messages.Locked() then
 		return
 	end
-	ns.Messages.Send(l, self.source.preview())
+	ns.Messages.Send(l, self.source.preview(), from)
 	T.RefreshAll()
 end
 
@@ -692,6 +692,9 @@ end
 
 -- Forever's Group Invite: solo players only.
 function Instance:Invite(l)
+	if ns.Messages.Locked() then
+		return
+	end
 	if not (l and l.solo and not l.mine) then
 		return
 	end
@@ -862,7 +865,7 @@ function Instance:BuildRow(row)
 	end)
 	row.delist:Hide()
 	row.message = W.Button(row, "Whisper", MSG_W, 20, function(b)
-		inst:Message(b:GetParent().listing)
+		inst:Message(b:GetParent().listing, "row")
 	end)
 	row.message:SetPoint("RIGHT", row.hide, "LEFT", -3, 0)
 	Layout(row, cells, row.message, -GAP)
@@ -1117,6 +1120,7 @@ function Instance:FillRow(row, item)
 	row.message:SetShown(not l.mine)
 	row.message:SetText("Whisper")
 	row.message:SetEnabled(not l.delisted)
+	W.SetPressed(row.message, ns.Messages.LockSource() == "row" and ns.Messages.LockID() == l.id)
 	row.hide:SetShown(not l.mine)
 	if row.hide.styled and W.HasAtlas("transmog-icon-hidden") and W.HasAtlas("socialqueuing-icon-eye") then
 		row.hide:SetText("")
@@ -1314,6 +1318,7 @@ function Instance:RefreshButtons()
 	local sel = ShownSelection(self)
 	self.send:SetEnabled(sel ~= nil)
 	self.invite:SetEnabled(sel ~= nil and sel.solo == true and ns.CanInvite())
+	W.SetPressed(self.send, ns.Messages.LockSource() == "send")
 end
 
 -- The list host: Blizzard's ScrollBox (our scriptless templates keep header and row frames in
@@ -1579,7 +1584,7 @@ function T.Attach(host, area, source)
 
 	-- Forever's own bottom buttons sit at these spots.
 	self.send = W.Button(host, SEND_MESSAGE or "Send Message", 111, 28, function()
-		self:Message(ShownSelection(self))
+		self:Message(ShownSelection(self), "send")
 	end)
 	self.send:SetPoint("BOTTOMLEFT", 21, 16)
 	self.invite = W.Button(host, GROUP_INVITE or "Group Invite", 109, 28, function()
