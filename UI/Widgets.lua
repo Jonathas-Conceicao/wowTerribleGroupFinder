@@ -441,10 +441,27 @@ function W.Dropdown(parent, width, getItems, onPick)
 	return d
 end
 
--- A pooled, mouse-wheel scrolled list of fixed-height rows.
-function W.List(parent, rowHeight, makeRow, fillRow)
+-- A pooled, mouse-wheel scrolled list: the fallback where the ScrollBox API or our
+-- templates are missing. Two forms:
+--   W.List(parent, rowHeight, makeRow, fillRow)         one kind of fixed-height row
+--   W.List(parent, kinds, kindOf, fillItem)             several kinds, one pool each
+--     kinds   = { header = { height = 36, make = fn(list) -> frame }, row = { ... } }
+--     kindOf  = fn(item) -> kind;  fillItem = fn(frame, item)
+-- list.pools[kind] holds that kind's frames (and its height); the wheel scrolls one item.
+function W.List(parent, kinds, kindOf, fillItem)
+	if type(kinds) == "number" then
+		local makeRow, fillRow = kindOf, fillItem
+		kinds = { row = { height = kinds, make = makeRow } }
+		kindOf = function()
+			return "row"
+		end
+		fillItem = fillRow
+	end
 	local list = CreateFrame("Frame", nil, parent)
-	list.rows, list.items, list.offset = {}, {}, 0
+	list.items, list.offset, list.pools, list.shown = {}, 0, {}, {}
+	for kind, def in pairs(kinds) do
+		list.pools[kind] = { height = def.height }
+	end
 	list:EnableMouseWheel(true)
 	local track = list:CreateTexture(nil, "BACKGROUND")
 	track:SetPoint("TOPRIGHT", 0, 0)
@@ -457,8 +474,8 @@ function W.List(parent, rowHeight, makeRow, fillRow)
 	list.empty = W.Text(list, "GameFontDisable", 12, "CENTER")
 	list.empty:SetPoint("CENTER")
 
-	function list:Visible()
-		return max(1, floor((self:GetHeight() or 0) / rowHeight))
+	local function Height(item)
+		return kinds[kindOf(item)].height
 	end
 
 	function list:SetItems(items, emptyText)
@@ -468,41 +485,78 @@ function W.List(parent, rowHeight, makeRow, fillRow)
 	end
 
 	function list:Refresh()
-		local visible = self:Visible()
-		local total = #self.items
-		self.offset = max(0, min(self.offset, total - visible))
-		for i = 1, visible do
-			local row = self.rows[i]
-			if not row then
-				row = makeRow(self)
-				row:SetPoint("TOPLEFT", 0, -(i - 1) * rowHeight)
-				row:SetPoint("RIGHT", self, "RIGHT", -8, 0)
-				row:SetHeight(rowHeight)
-				self.rows[i] = row
+		local items, total = self.items, #self.items
+		local room = self:GetHeight() or 0
+		-- The furthest offset that still fills the list (no empty gap below the last item).
+		local first, used = total, 0
+		while first > 0 do
+			local h = Height(items[first])
+			if used + h > room then
+				break
 			end
-			local item = self.items[self.offset + i]
-			if item then
-				fillRow(row, item)
-				row:Show()
-			else
-				row:Hide()
+			used, first = used + h, first - 1
+		end
+		self.offset = max(0, min(self.offset, first))
+
+		local taken, shown = {}, self.shown
+		for i = #shown, 1, -1 do
+			shown[i] = nil
+		end
+		local y, count = 0, 0
+		for i = self.offset + 1, total do
+			local item = items[i]
+			local kind = kindOf(item)
+			local pool = self.pools[kind]
+			local h = pool.height
+			if count > 0 and y + h > room then
+				break
+			end
+			taken[kind] = (taken[kind] or 0) + 1
+			local frame = pool[taken[kind]]
+			if not frame then
+				frame = kinds[kind].make(self)
+				pool[taken[kind]] = frame
+			end
+			frame:ClearAllPoints()
+			frame:SetPoint("TOPLEFT", 0, -y)
+			frame:SetPoint("RIGHT", self, "RIGHT", -8, 0)
+			frame:SetHeight(h)
+			fillItem(frame, item)
+			frame:Show()
+			shown[#shown + 1] = { frame, item }
+			y, count = y + h, count + 1
+		end
+		for kind, pool in pairs(self.pools) do
+			for i = (taken[kind] or 0) + 1, #pool do
+				pool[i]:Hide()
 			end
 		end
-		for i = visible + 1, #self.rows do
-			self.rows[i]:Hide()
-		end
-		if total > visible then
-			local h = self:GetHeight()
-			local size = max(20, h * visible / total)
+		if total > count then
+			local size = max(20, room * count / total)
 			thumb:SetHeight(size)
 			thumb:ClearAllPoints()
-			thumb:SetPoint("TOPRIGHT", 0, -(h - size) * self.offset / (total - visible))
+			thumb:SetPoint("TOPRIGHT", 0, -(room - size) * self.offset / max(1, total - count))
 			thumb:Show()
 			track:Show()
 		else
 			thumb:Hide()
 			track:Hide()
 		end
+	end
+
+	-- Refills the shown frames (the ScrollBox's ReinitializeFrames).
+	function list:Reinitialize()
+		self:Refresh()
+	end
+
+	function list:ForEachFrame(fn)
+		for _, entry in ipairs(self.shown) do
+			fn(entry[1], entry[2])
+		end
+	end
+
+	function list:Clear()
+		self:SetItems({}, "")
 	end
 
 	list:SetScript("OnMouseWheel", function(self, delta)
