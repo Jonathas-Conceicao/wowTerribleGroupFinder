@@ -324,7 +324,10 @@ function W.EditBox(parent, width, template)
 		bg:SetPoint("BOTTOMRIGHT", 4, -2)
 		bg:SetColorTexture(0, 0, 0, 0.6)
 	end
-	e:SetTextInsets(2, 2, 0, 0)
+	-- SearchBoxTemplate keeps its own insets: they leave room for its magnifier and clear button.
+	if not e.searchIcon then
+		e:SetTextInsets(2, 2, 0, 0)
+	end
 	e:SetScript("OnEscapePressed", e.ClearFocus)
 	e:SetScript("OnEnterPressed", e.ClearFocus)
 	return e
