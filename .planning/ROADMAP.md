@@ -31,8 +31,8 @@ v0.1 ships the first public release: Forever's own group finder, improved in pla
 **Plans**: 3 plans
 
 Plans:
-- [ ] 01-01-PLAN.md — Gear score off behind `ns.GEAR_SCORE` (Core, GearScore, Messages, Listings, Table) + smoke harness checks (wave 1)
-- [ ] 01-02-PLAN.md — `.planning/research/GEARSCORE.md` design notes and backlog 999.1 check (wave 1)
+- [x] 01-01-PLAN.md — Gear score off behind `ns.GEAR_SCORE` (Core, GearScore, Messages, Listings, Table) + smoke harness checks (wave 1)
+- [x] 01-02-PLAN.md — `.planning/research/GEARSCORE.md` design notes and backlog 999.1 check (wave 1)
 - [ ] 01-03-PLAN.md — Store IDs, upload keys, icon (Media/Source, png2tga, TGA), packaging / install fixes and checks (wave 2)
 
 ### Phase 2: List Foundation
@@ -89,7 +89,7 @@ Plans:
 
 | Phase | Plans Complete | Status | Completed |
 |-------|----------------|--------|-----------|
-| 1. Gear Score Off and Release Plumbing | 0/3 | Planned | - |
+| 1. Gear Score Off and Release Plumbing | 2/3 | In Progress | - |
 | 2. List Foundation | 0/TBD | Not started | - |
 | 3. Rows, Tooltip and Own Listing | 0/TBD | Not started | - |
 | 4. Messages and Contact | 0/TBD | Not started | - |
