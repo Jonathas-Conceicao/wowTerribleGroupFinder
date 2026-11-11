@@ -481,7 +481,8 @@ function Instance:Invite(l)
 	if self.source.preview() then
 		ns.Print(format("preview: would invite %s (C_PartyInfo.InviteUnit).", l.leader.name))
 	else
-		C_PartyInfo.InviteUnit(l.leader.fullName or l.leader.name)
+		-- One mega-realm per ruleset: invite by plain character name, no realm suffix.
+		C_PartyInfo.InviteUnit(l.leader.name)
 	end
 	T.RefreshAll()
 end
