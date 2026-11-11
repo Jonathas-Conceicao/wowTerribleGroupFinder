@@ -36,7 +36,8 @@ reviews before the milestone closes.
 - [ ] **UIP-01**: The Messages side tab starts unchecked, fills its icon like Forever's tabs, never shows checked together with another tab, and has a stock-style tooltip
 - [x] **UIP-02
 **: Section headers look and hover like Forever's own grouping header (collapse/expand atlas, plus/minus), not the row highlight (fixes the header hover bug)
-- [ ] **UIP-03**: Selection works like stock: by result ID, click again to clear, not on delisted / own rows, cleared on new results, with the click sound; no double-click whisper
+- [x] **UIP-03
+**: Selection works like stock: by result ID, click again to clear, not on delisted / own rows, cleared on new results, with the click sound; no double-click whisper
 - [ ] **UIP-04**: Layout: no second inset/border; search box in the stone band; column headers in the strip above `BarTop`; Needs my role and status in the bottom bar; the freed GS width goes to Roles / Activity
 - [x] **UIP-05
 **: The list scrolls with Blizzard's ScrollBox and MinimalScrollBar, with separate header / row frames and their own heights
@@ -46,7 +47,8 @@ reviews before the milestone closes.
 - [ ] **UIP-09**: The row tooltip follows the stock order and wording, with our extras (friends in group, hidden note) after
 - [ ] **UIP-10**: Searching shows the stock spinner; no results and search failed show the stock texts; filtering by our search box has its own text
 - [ ] **UIP-11**: The Messages panel uses the Who tab's frame layers, multi-line preset boxes, native checkboxes with sounds, and the Auto-invite disabled look
-- [ ] **UIP-12**: Row select, hide and checkboxes play the stock sounds
+- [x] **UIP-12
+**: Row select, hide and checkboxes play the stock sounds
 - [ ] **UIP-13**: Playstyle shows in the tooltip and the listing comment in light grey
 - [ ] **UIP-14**: The hide button is a stock-style small button with an icon
 - [ ] **UIP-15**: Needs my role uses the server's remaining-slot counts when available
