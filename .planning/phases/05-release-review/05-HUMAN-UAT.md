@@ -30,7 +30,7 @@ result: [pending]
 
 ### 5. Preset migration
 expected: Messages.lua keeps `PREVIOUS` / `VERSION` (migration of earlier default presets). For a first release it only affects the author's own saved presets: keep or drop it later.
-result: [pending]
+result: pass — author: no compatibility with the dev build needed; migration dropped (saved texts are kept as saved, missing ones get the defaults)
 
 ### 6. Delist behaviour
 expected: `Instance:Delist` (UI/Table.lua) calls `C_LFGList.RemoveListing()` directly, while CLAUDE.md says create/update/unlist stays Blizzard's own tab. Accept for v0.1.0, or change later (and adjust CLAUDE.md).
@@ -38,11 +38,11 @@ result: [pending]
 
 ### 7. LICENSE shipping
 expected: `.pkgmeta` excludes `LICENSE`, and install/package scripts do not copy it. Recommendation: ship it (the TOC declares GPL-3.0): drop `LICENSE` from the `.pkgmeta` ignore list and add it to the file set of `scripts/install.ps1` and `scripts/package.ps1`. `.pkgmeta` is unchanged for now.
-result: [pending]
+result: pass — author: ship it; dropped from the `.pkgmeta` ignore list and added to the install / package file set (test zip now 14 entries, LICENSE included)
 
 ### 8. Branch names
 expected: The current branch is `milestone/v0.1-milestone`; the intended name was `milestone/v0.1-initial-release`. A stray local branch `milestone/v1.0-milestone` also exists. Rename / delete as you decide before the squash-merge to main.
-result: [pending]
+result: pass — author: name doesn't matter, keep `milestone/v0.1-milestone`; the stray `milestone/v1.0-milestone` (fully contained in it) was deleted
 
 ### 9. Store publishing
 expected: Repository secrets `CF_API_KEY` and `WAGO_API_TOKEN` must be set before the tag push. Whether CurseForge / Wago accept the `forever` game type is only known after the first tag.
@@ -50,7 +50,7 @@ result: [pending]
 
 ### 10. Playstyle colour
 expected: The playstyle line in the row tooltip is green; the ROADMAP said light grey. Your call.
-result: [pending]
+result: [pending] — author: either way; decides after trying it in game (green for now)
 
 ### 11. Deferred cleanup items (later milestone)
 expected: Tooltip blank-line rules vs UI-SPEC; raw `|cff..` status colours; a hint on a non-leader's own row; feedback for clicks during the lock or lockdown prefill; intro text length; listings during chat lockdown (02 IN-09); triple refresh on show (02 IN-03); header label width-bound (02 IN-05, skipped: a second anchor would move the sort arrow); localisation.
