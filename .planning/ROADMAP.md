@@ -12,7 +12,7 @@ v0.1 ships the first public release: Forever's own group finder, improved in pla
 
 - [x] **Phase 1: Gear Score Off and Release Plumbing** - Gear score disappears from the player's view; store IDs, icon and packaging ready (completed 2026-11-11)
 - [x] **Phase 2: List Foundation** - ScrollBox list with stock-style section headers, selection, layout, row look and search states (completed 2026-11-11)
-- [ ] **Phase 3: Rows, Tooltip and Own Listing** - Stock-faithful role icons, own-listing row, tooltip and row details
+- [x] **Phase 3: Rows, Tooltip and Own Listing** - Stock-faithful role icons, own-listing row, tooltip and row details (completed 2026-11-11)
 - [ ] **Phase 4: Messages and Contact** - New presets, key buttons, Auto-send / Auto-invite, 1 s lock, Messages tab and panel
 - [ ] **Phase 5: Release Review** - Code cleanup, version, changelog draft, author review
 
@@ -103,7 +103,7 @@ Plans:
 |-------|----------------|--------|-----------|
 | 1. Gear Score Off and Release Plumbing | 3/3 | Complete    | 2026-11-11 |
 | 2. List Foundation | 4/4 | Complete    | 2026-11-11 |
-| 3. Rows, Tooltip and Own Listing | 0/4 | Planned | - |
+| 3. Rows, Tooltip and Own Listing | 4/4 | Complete    | 2026-11-11 |
 | 4. Messages and Contact | 0/TBD | Not started | - |
 | 5. Release Review | 0/TBD | Not started | - |
 

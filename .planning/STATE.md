@@ -2,16 +2,16 @@
 gsd_state_version: 1.0
 milestone: v0.1
 milestone_name: milestone
-status: verifying
-stopped_at: Completed 03-04-PLAN.md
+status: ready_to_plan
+stopped_at: Phase 3 complete (verification human_needed; in-game checks in 03-HUMAN-UAT.md)
 last_updated: "2026-11-11T18:21:32.259Z"
 last_activity: 2026-11-11
 progress:
-  total_phases: 6
-  completed_phases: 2
+  total_phases: 5
+  completed_phases: 3
   total_plans: 11
   completed_plans: 11
-  percent: 100
+  percent: 60
 ---
 
 # Project State
@@ -25,18 +25,18 @@ See: .planning/PROJECT.md (updated 2026-11-11)
 
 ## Current Position
 
-Phase: 3 (Rows, Tooltip and Own Listing) — EXECUTING
-Plan: 4 of 4
-Status: Phase complete — ready for verification
+Phase: 4
+Plan: Not started
+Status: Ready to plan
 Last activity: 2026-11-11
 
-Progress: [██████████] 100%
+Progress: [██████░░░░] 60%
 
 ## Performance Metrics
 
 **Velocity:**
 
-- Total plans completed: 7
+- Total plans completed: 11
 - Average duration: -
 - Total execution time: -
 
@@ -46,6 +46,7 @@ Progress: [██████████] 100%
 |-------|-------|-------|----------|
 | 1 | 3 | - | - |
 | 2 | 4 | ~2h 10m | ~33min |
+| 3 | 4 | - | - |
 
 | Plan | Duration | Tasks | Files |
 |------|----------|-------|-------|
@@ -73,6 +74,10 @@ Recent decisions affecting current work:
 - 02: selection is by resultID; cleared on results / failure / search start / Browse re-show (stock parity, adopted in the AFK run)
 - 02: whispers and invites use the plain character name; Auto-send never sends during chat messaging lockdown (prefills instead)
 - 02 execution ran the four single-plan waves sequentially on the main tree (no worktrees: one plan per wave, all in UI/Table.lua)
+- 03: own row = `LFG_SELF_LISTING` in light green + stock delist button (UIMenuButtonStretchTemplate, redx) for solo/leader only; click calls only `C_LFGList.RemoveListing()`; own row shown only while `HasActiveEntryInfo()` (`source.hasListing`)
+- 03: tooltip = GameTooltip in Forever's stock order; extras after (playstyle green, spec/area, friends, listed age, hidden note); re-shown for the hovered row after every Refresh
+- 03: Needs my role reads `GetSearchResultMemberCounts` `*_REMAINING`; all-zero on a non-full group falls back to the composition estimate (in-game check)
+- 03: hide button = icon button (`W.IconButton`, 24x22, eye atlases, x/+ fallback); `row.message` is now a plain Whisper button (unlist path removed)
 
 ### Pending Todos
 
@@ -83,13 +88,15 @@ None yet.
 - In-game checks are deferred to the author; phases are verified by stubbed fengari smoke tests and `/tgf` preview
 - Phase 1 in-game checks pending (4 items in `phases/01-gear-score-off-and-release-plumbing/01-HUMAN-UAT.md`: Browse without GS, Messages without `{gs}`, no ready-check inspects, TGA icon shows)
 - Phase 2 in-game checks pending (11 items in `phases/02-list-foundation/02-HUMAN-UAT.md`); check #1 first: if our XML templates don't resolve via `C_XMLUtil.GetTemplateInfo`, the table silently uses the fallback list
-- Phase 3 inputs: our Unlist button still calls `C_LFGList.RemoveListing()` directly (now leader/solo only); UIP-08's stock delist button replaces it (review IN-06). UI review: hide (X) glyph button (UIP-14), hardcoded English labels (future localization item), Activity width at 620 (UAT Q1)
+- Phase 3 in-game checks pending (11 items in `phases/03-rows-tooltip-and-own-listing/03-HUMAN-UAT.md`), incl. the author decision on playstyle colour (ROADMAP SC3 says light grey; built green as stock's row label per D-17) and remaining-slot semantics on quest/custom groups
+- Phase 3 advisory UI review (18/24, `03-UI-REVIEW.md`): tooltip blank-line rules vs UI-SPEC (no blank after leader block when there is no comment; two extra blanks in extras), raw `|cff..` colours for delisted/invited/sent, no hint on a non-leader's own row; review info items IN-01..IN-03 in `03-REVIEW.md`. Candidates for Phase 5 cleanup
+- Phase 4 inputs: `row.message` is a plain Whisper button calling `Instance:Message` → `ns.Messages.Send`; the bottom Send Message uses `ShownSelection`; the delist and hide buttons must stay outside the 1 s contact lock; hardcoded English labels remain (future localization item); Activity width at 620 (UAT Q1)
 - Phase 5 inputs: README.md still mentions gear score (lines ~7, ~12); `.pkgmeta` excludes LICENSE from the release zip (author convention, review WR-01; GPL-3.0 may want it shipped); `CF_API_KEY` is the packager's deprecated name for `CF_API_TOKEN` (kept per author); whether CurseForge / Wago accept the `forever` game type is only known after the first tagged release; open review info items IN-01..IN-09 in `phases/02-list-foundation/02-REVIEW.md`
 
 ## Session Continuity
 
 Last session: 2026-11-11T18:21:32.253Z
-Stopped at: Completed 03-04-PLAN.md
+Stopped at: Phase 3 complete
 Resume file: None
 
 **Planned Phase:** 3 (Rows, Tooltip and Own Listing) — 4 plans — 2026-11-11T18:04:29.539Z
