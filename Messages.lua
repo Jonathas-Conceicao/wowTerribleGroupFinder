@@ -146,8 +146,12 @@ function M.Format(kind, l, text)
 	return M.Clip(out)
 end
 
--- Which preset a listing takes: solo players get the invite one, groups the request one.
+-- Which preset a whisper takes: in a group you always offer yours (invite); on your own you
+-- ask a group for a spot (request) and offer a solo player to group up (invite).
 local function KindFor(l)
+	if ns.GroupSize() > 1 then
+		return "invite"
+	end
 	return l.solo and "invite" or "request"
 end
 
@@ -199,7 +203,8 @@ function M.Send(l, preview, from)
 	-- Forever lists only your own mega-realm: whisper by plain character name.
 	local target = l.leader.name
 	local _, auto, autoInvite = M.Get(kind)
-	local invite = kind == "invite" and autoInvite and ns.CanInvite()
+	-- Auto-invite only reaches solo players: a group's leader is already in a group.
+	local invite = kind == "invite" and l.solo and autoInvite and ns.CanInvite()
 	if auto and preview then
 		ns.state.messaged[l.id] = true
 		ns.Print(string.format("preview: whispered %s: %s", target, text))
@@ -254,8 +259,18 @@ local INTRO =
 	"Each Whisper button contacts that player or group leader with the message below. Auto-send on: it whispers at once. Off: it opens the whisper and you press Enter. Auto-invite also invites a solo player. After an automatic send, the contact buttons rest for 1 second."
 
 local SECTIONS = {
-	{ kind = "invite", title = "Inviting a solo player", help = "Used by Whisper on a solo player's row.", y = 0 },
-	{ kind = "request", title = "Asking a group for an invite", help = "Used by Whisper on a group's row.", y = -208 },
+	{
+		kind = "invite",
+		title = "Inviting a player",
+		help = "Used by Whisper while in a group, or on a solo player's row.",
+		y = 0,
+	},
+	{
+		kind = "request",
+		title = "Asking a group for an invite",
+		help = "Used by Whisper on a group's row while on your own.",
+		y = -208,
+	},
 }
 
 local BOX_WIDTH, BOX_HEIGHT = 410, 56
