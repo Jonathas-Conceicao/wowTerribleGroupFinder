@@ -85,6 +85,7 @@ COLUMNS[#COLUMNS + 1] = { key = "activity", label = "Activity" }
 COLUMNS[#COLUMNS + 1] = { key = "listed", label = "Listed" }
 local SORT_ARROW = "auctionhouse-ui-sortarrow"
 local HEADER_BUTTON = "ColumnDisplayButtonShortTemplate"
+local HEADER_INSET, HEADER_CAP = 8, 6 -- the template's label inset; room for its right cap
 
 local SECTION_LABEL = {
 	solo = LFG_LIST_CATEGORY_SOLO_PLAYERS or "Solo players",
@@ -847,16 +848,25 @@ local function Layout(owner, cells, rightAnchor, rightOffset)
 	cells.activity:SetPoint("RIGHT", cells.listed, "LEFT", -GAP, 0)
 end
 
--- The width a header needs to show its label with the sort arrow beside it: the label, the
--- 3 px gap, the arrow and 4 px from each edge (a centred label shifts aside for its arrow).
+-- The width a header needs to show its label with the sort mark after it: the inset, the
+-- label, the 3 px gap and the arrow (or the " v" text mark without the atlas), and room for
+-- the tab's right cap. A label not measured yet (no font) is estimated at 7 px a letter.
 local function HeaderNeed(b, label)
-	if not (b and b.arrow and b.label) then
+	if not (b and b.label) then
 		return 0
+	end
+	local mark = 0
+	if b.arrow then
+		mark = 3 + (b.arrow:GetWidth() or 0)
+	else
+		label = label .. " v"
 	end
 	b.label:SetText(label)
 	local tw = b.label:GetStringWidth() or 0
-	local aw = b.arrow:GetWidth() or 0
-	return math.ceil(tw + 3 + aw + 8)
+	if tw <= 0 then
+		tw = #label * 7
+	end
+	return math.ceil(HEADER_INSET + tw + mark + HEADER_CAP)
 end
 
 -- Widens any fixed column (and Listed) whose header can't hold its label and the sort arrow,
@@ -1386,12 +1396,6 @@ function Instance:Refresh()
 		b:SetText(col.label .. (sorted and not useArrow and (view.desc and " v" or " ^") or ""))
 		if b.arrow then
 			b.arrow:SetShown(sorted)
-			-- A centred label moves left by half the arrow's room, so the pair stays centred.
-			if b.justify == "CENTER" and b.Text then
-				local half = sorted and -math.floor(((b.arrow:GetWidth() or 0) + 3) / 2) or 0
-				b.label:ClearAllPoints()
-				b.label:SetPoint("CENTER", b, "CENTER", half, 0)
-			end
 			if sorted then
 				if view.desc then
 					b.arrow:SetTexCoord(0, 1, 0, 1)
@@ -1666,20 +1670,19 @@ function T.Attach(host, area, source)
 		header:SetPoint("TOPRIGHT", area, "TOPRIGHT", inset or (barShown and -22 or -6), 0)
 	end
 	PlaceStrip(false)
-	local justify = { level = "CENTER", gs = "CENTER", listed = "RIGHT" }
+	-- Every header as the stock sortable ones (the auction house's): the label on the left at
+	-- the template's inset, the arrow 3 px after it. FitColumns widens a column to hold both.
 	for _, key in ipairs(CELL_KEYS) do
 		local b = W.Create("Button", header, HEADER_BUTTON)
 		b:SetHeight(19)
-		local j = justify[key] or "LEFT"
 		local text = b.Text
 		if text then
-			-- Inset 4 px from the edge the text is justified to, so it stays inside its column.
 			text:ClearAllPoints()
-			text:SetPoint(j, b, j, (j == "CENTER" and 0) or (j == "RIGHT" and -4) or 4, 0)
-			text:SetJustifyH(j)
+			text:SetPoint("LEFT", b, "LEFT", HEADER_INSET, 0)
+			text:SetJustifyH("LEFT")
 		else
-			text = W.Text(b, "GameFontNormalSmall", 11, justify[key])
-			text:SetAllPoints()
+			text = W.Text(b, "GameFontNormalSmall", 11, "LEFT")
+			text:SetPoint("LEFT", b, "LEFT", HEADER_INSET, 0)
 			local hl = b:CreateTexture(nil, "HIGHLIGHT")
 			hl:SetAllPoints()
 			hl:SetColorTexture(1, 1, 1, 0.08)
@@ -1687,14 +1690,7 @@ function T.Attach(host, area, source)
 		if W.HasAtlas(SORT_ARROW) then
 			local arrow = b:CreateTexture(nil, "OVERLAY")
 			arrow:SetAtlas(SORT_ARROW, true)
-			if b.Text and j == "RIGHT" then
-				-- Right-justified labels end at the column's edge: the arrow goes before them.
-				arrow:SetPoint("RIGHT", text, "LEFT", -3, 0)
-			elseif b.Text then
-				arrow:SetPoint("LEFT", text, "RIGHT", 3, 0)
-			else
-				arrow:SetPoint("RIGHT", b, "RIGHT", -2, 0)
-			end
+			arrow:SetPoint("LEFT", text, "RIGHT", 3, 0)
 			arrow:Hide()
 			b.arrow = arrow
 		end
@@ -1709,7 +1705,7 @@ function T.Attach(host, area, source)
 		function b:SetText(t)
 			text:SetText(t)
 		end
-		b.label, b.justify = text, j
+		b.label = text
 		header[key] = b
 	end
 	FitColumns(header)

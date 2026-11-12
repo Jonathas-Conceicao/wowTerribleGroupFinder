@@ -255,9 +255,6 @@ end
 -------------------------------------------------------------------------------
 local W
 
-local INTRO =
-	"Each Whisper button contacts that player or group leader with the message below. Auto-send on: it whispers at once. Off: it opens the whisper and you press Enter. Auto-invite also invites a solo player. After an automatic send, the contact buttons rest for 1 second."
-
 local SECTIONS = {
 	{
 		kind = "invite",
@@ -269,7 +266,7 @@ local SECTIONS = {
 		kind = "request",
 		title = "Asking a group for an invite",
 		help = "Used by Whisper on a group's row while on your own.",
-		y = -208,
+		y = -220,
 	},
 }
 
@@ -304,12 +301,6 @@ local function BuildLayers(panel)
 		local info = C_Texture.GetAtlasInfo("groupfinder-ScrollLine")
 		line:SetHeight(info and info.height or 3)
 	end
-	local intro = W.Text(panel, "GameFontHighlightSmall", 11)
-	intro:SetPoint("TOPLEFT", 14, -27)
-	intro:SetPoint("RIGHT", -14, 0)
-	intro:SetWordWrap(true)
-	intro:SetMaxLines(4)
-	intro:SetText(INTRO)
 end
 
 --- A multi-line preset box (InputScrollFrameTemplate, plain Lua, not the Listing tab's
@@ -323,7 +314,7 @@ local function PresetBox(parent)
 			box:SetSize(BOX_WIDTH, BOX_HEIGHT)
 			edit:SetWidth(BOX_WIDTH - 18)
 			edit:SetMaxLetters(255)
-			box:SetPoint("TOPLEFT", 6, -20)
+			box:SetPoint("TOPLEFT", 6, -32)
 			edit:SetScript("OnEnterPressed", function(e)
 				e:ClearFocus()
 			end)
@@ -333,7 +324,7 @@ local function PresetBox(parent)
 		box:SetParent(nil)
 	end
 	local edit = W.EditBox(parent, BOX_WIDTH)
-	edit:SetPoint("TOPLEFT", 6, -20)
+	edit:SetPoint("TOPLEFT", 6, -32)
 	edit:SetMaxLetters(255)
 	return edit, edit
 end
@@ -343,7 +334,7 @@ function M.BuildPanel(panel)
 	W = ns.W
 	BuildLayers(panel)
 	local content = CreateFrame("Frame", nil, panel)
-	content:SetPoint("TOPLEFT", 18, -100)
+	content:SetPoint("TOPLEFT", 18, -88)
 	content:SetPoint("BOTTOMRIGHT", -18, 16)
 	panel.tgfBlocks = {}
 	local refreshers = {}
@@ -351,7 +342,7 @@ function M.BuildPanel(panel)
 	for _, s in ipairs(SECTIONS) do
 		local kind = s.kind
 		local block = CreateFrame("Frame", nil, content)
-		block:SetSize(422, 192)
+		block:SetSize(422, 204)
 		block:SetPoint("TOPLEFT", 0, s.y)
 		local handles = { keys = {} }
 		panel.tgfBlocks[kind] = handles
@@ -360,14 +351,18 @@ function M.BuildPanel(panel)
 		title:SetPoint("TOPLEFT", 0, 0)
 		title:SetText(s.title)
 		local help = W.Text(block, "GameFontDisableSmall", 10)
-		help:SetPoint("LEFT", title, "RIGHT", 8, 0)
+		-- On its own line under the title, cut to the block: never past the panel.
+		help:SetPoint("TOPLEFT", title, "BOTTOMLEFT", 0, -2)
+		help:SetPoint("RIGHT", block, "RIGHT", -4, 0)
+		help:SetWordWrap(false)
+		help:SetMaxLines(1)
 		help:SetText(s.help)
 
 		local box, edit = PresetBox(block)
 		handles.box, handles.edit = box, edit
 
 		local example = W.Text(block, "GameFontDisableSmall", 10)
-		example:SetPoint("TOPLEFT", 4, -168)
+		example:SetPoint("TOPLEFT", 4, -180)
 		example:SetPoint("RIGHT", -4, 0)
 		example:SetWordWrap(true)
 		example:SetMaxLines(2)
@@ -420,7 +415,7 @@ function M.BuildPanel(panel)
 		end)
 
 		-- Key buttons: two rows (4 + 3); wraps once at most.
-		local x, rowY, wrapped = 0, -86, false
+		local x, rowY, wrapped = 0, -98, false
 		for i, k in ipairs(M.KEYS) do
 			local label = k.label or k.key
 			local b = W.Button(block, label, 60, 22, function()
@@ -463,11 +458,11 @@ function M.BuildPanel(panel)
 				SyncAutoInvite()
 			end
 		end)
-		auto:SetPoint("TOPLEFT", 0, -138)
+		auto:SetPoint("TOPLEFT", 0, -150)
 		W.Tooltip(
 			auto,
 			"Auto-send",
-			"On: the Whisper button sends the message at once. Off: it opens the whisper with the message and you press Enter.",
+			"On: the Whisper button sends the message at once. Off: it opens the whisper with the message and you press Enter. After an automatic send, the contact buttons rest for 1 second.",
 			{ gold = true }
 		)
 		handles.auto = auto
@@ -519,7 +514,7 @@ function M.BuildPanel(panel)
 			M.Reset(kind)
 			ShowText()
 		end)
-		reset:SetPoint("TOPRIGHT", -6, -140)
+		reset:SetPoint("TOPRIGHT", -6, -152)
 		W.Tooltip(reset, "Default", "Restores the standard message.", { gold = true })
 		handles.reset = reset
 
