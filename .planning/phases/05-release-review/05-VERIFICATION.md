@@ -1,8 +1,9 @@
 ---
 phase: 05-release-review
 verified: 2026-11-11
-status: human_needed
-score: 3/4
+status: passed
+score: 4/4
+human_verified: 2026-11-12 (author reviewed README.md and CHANGELOG.md, confirmed v0.1.0 and Phase 5, 05-HUMAN-UAT.md)
 human_verification:
   - test: "Author reviews README.md and the CHANGELOG.md draft, resolves the open decisions, and confirms Phase 5"
     expected: "All items in .planning/phases/05-release-review/05-HUMAN-UAT.md are resolved (13 pending; tests 1, 3, 4 and 13 gate SC4)"

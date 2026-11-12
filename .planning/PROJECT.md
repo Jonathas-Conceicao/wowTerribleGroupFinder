@@ -4,16 +4,33 @@
 
 A WoW Forever addon that improves the game's own group finder in place. Forever's Browse
 tab becomes a table of solo players and groups (in the game's two sections) that players
-can sort by role, level and gear score, with one-click whispers from preset messages, gear
-scores remembered between sessions, and friend / recent ally marks. It is for Forever
-players looking for groups or members who find the stock bulletin board hard to scan.
+can sort by role, level, activity and listed time, showing where each player or leader is,
+with one-click whispers (and invites) from preset messages and friend / recent ally marks,
+while looking and behaving like the stock finder. It is for Forever players looking for
+groups or members who find the stock bulletin board hard to scan.
 
 ## Core Value
 
 Finding the right players or group fast: the listing must be easy to read and order (role,
-level, gear score) without leaving or replacing Forever's own group finder.
+level, activity, location) and quick to act on, without leaving or replacing Forever's own
+group finder.
 
-## Current Milestone: v0.1 Initial Release
+## Current State
+
+**Shipped v0.1.0 "Initial Release" (2026-11-12)** — the first public release; see
+[MILESTONES.md](MILESTONES.md) and the archives in [milestones/](milestones/). ~5.3k lines of
+Lua/XML; checked in the live Forever client by the author. Releases are tagged on `main`; the
+release workflow builds the zip and the author uploads it to CurseForge / Wago by hand.
+
+## Next Milestone Goals
+
+Not planned yet (start with `/gsd-new-milestone`). Candidates: the gear score finish-or-drop
+decision (backlog 999.1), the cleanup list from the v0.1 release review
+(`phases/05-release-review/05-HUMAN-UAT.md` item 11), settings, remembered sort / filters,
+localisation.
+
+<details>
+<summary>v0.1 Initial Release — milestone brief (archived)</summary>
 
 **Goal:** Ship the first public release: Forever's finder looks and works as close as possible
 to the stock one, with our table, sorting, hiding and quick contact on top; gear score is
@@ -38,7 +55,7 @@ switched off for now.
   packaging checked
 - Release Review phase (code cleanup, version, changelog draft, author review)
 
-## Current State
+### Progress log during v0.1
 
 Prototype (initial commit on `main`, 2026-11-04), checked with a preview stand-in on sample
 data and stubbed smoke tests, not yet in the live client. Design notes:
@@ -72,15 +89,27 @@ migration of saved old defaults, the Messages side tab made stock-correct and it
 the Who tab's layers and multi-line boxes (one builder for game and preview). In-game checks pending
 (Phase 4 HUMAN-UAT).
 
+Phases 04.1 (player location, inserted) and 5 (release review) complete 2026-11-12; the
+migration was later dropped, and all in-game checks passed at close.
+
+</details>
+
 ## Requirements
 
 ### Validated
 
-<!-- Built in the prototype and confirmed in preview; still to be confirmed in the live client. -->
+- ✓ Gear score switched off behind `ns.GEAR_SCORE`, code and notes kept (GS-01, GS-02) — v0.1
+- ✓ `[TGF]` presets with key buttons; the invite preset for every whisper while in a group, the request preset to groups while on your own (MSG-01..06) — v0.1
+- ✓ Auto-send / Auto-invite and the 1 s contact lock with the pressed look (LOCK-01..03) — v0.1
+- ✓ UI parity with the stock finder: ScrollBox list, section headers, selection, layout, row art, role icons, own listing with delist, stock tooltip, search states, sounds, sort headers, the stock right-click menu (UIP-01..16) — v0.1
+- ✓ Player location on rows and in group tooltips (LOC-01, LOC-02) — v0.1
+- ✓ Release plumbing: store IDs, icon, packaging with LICENSE, README, changelog (REL-01..04; uploads are manual) — v0.1
+
+<!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
 - ✓ In-place table inside Forever's `LFGBrowseFrame` (its list and bottom buttons replaced; dropdowns, refresh and search stay Blizzard's; window widens while Browse shows) — prototype
 - ✓ One list like Forever's: own listing first, collapsible "Solo players" / "Groups" sections ordered by solo vs leader — prototype
-- ✓ Sorting within sections by Roles (tank > healer > damage), Lvl, GS (groups: best known), Activity, Listed — prototype
+- ✓ Sorting within sections by Roles (tank > healer > damage), Lvl, Activity, Listed (the GS sort is off with gear score) — prototype
 - ✓ Hide until relisted, and Needs my role, grey and move rows to the end of their section — prototype
 - ✓ Whisper per row from presets (invite / request, placeholders, Auto-send off by default) in a Messages side tab — prototype
 - ✓ Send Message and Group Invite (solo players) bottom buttons — prototype
@@ -90,20 +119,13 @@ the Who tab's layers and multi-line boxes (one builder for game and preview). In
 
 ### Active
 
-<!-- Current scope: milestone v0.1 Initial Release. Detailed REQ-IDs in REQUIREMENTS.md. -->
-
-See [REQUIREMENTS.md](REQUIREMENTS.md) (milestone v0.1 Initial Release). Validated in Phase 1
-(Gear Score Off and Release Plumbing): GS-01, GS-02, REL-01, REL-02, REL-03 (in-game checks pending).
-Validated in Phase 2 (List Foundation): UIP-02, UIP-03, UIP-04, UIP-05, UIP-06, UIP-10, UIP-12
-(in-game checks pending).
-Validated in Phase 3 (Rows, Tooltip and Own Listing): UIP-07, UIP-08, UIP-09, UIP-13, UIP-14,
-UIP-15, UIP-16 (in-game checks pending).
-Validated in Phase 4 (Messages and Contact): MSG-01..MSG-06, LOCK-01..LOCK-03, UIP-01, UIP-11
-(in-game checks pending).
+None — v0.1 shipped; the next milestone defines its requirements (`/gsd-new-milestone`).
+v0.1's requirements are archived in [milestones/v0.1-REQUIREMENTS.md](milestones/v0.1-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
-- Gear score: decide between finishing it (tuning against real gear, sharing scores between TerribleGroupFinder users by addon whisper) and dropping it fully (code switched off in v0.1)
+- Gear score: decide between finishing it (tuning against real gear, sharing scores between TerribleGroupFinder users by addon whisper) and dropping it fully (code switched off in v0.1; backlog 999.1)
+- v0.1 release-review cleanup list (tooltip blank lines, raw status colours, feedback for clicks during the lock, header label width, and more: `phases/05-release-review/05-HUMAN-UAT.md` item 11)
 - Settings panel, remembered sort / filters, localization-ready strings
 
 ### Out of Scope
@@ -111,7 +133,7 @@ Validated in Phase 4 (Messages and Contact): MSG-01..MSG-06, LOCK-01..LOCK-03, U
 - Retail support — the addon targets Forever's Vanilla-style finder only (one TOC, interface 16001)
 - Applications / apply flow — Forever's finder has listings only; contact is by whisper and invite
 - A separate group finder window in game — the addon changes Forever's own finder in place
-- Writing the listing description — Blizzard's comment box is secure; the Listing tab stays Blizzard's
+- Writing the listing description — Blizzard's comment box is secure; the Listing tab stays Blizzard's (delisting from your own row is the one deliberate exception)
 
 ## Context
 
@@ -128,7 +150,7 @@ Validated in Phase 4 (Messages and Contact): MSG-01..MSG-06, LOCK-01..LOCK-03, U
 - **Compatibility**: Forever only, `## Interface: 16001`, no flavour-forked files — one TOC
 - **Taint**: never replace or write fields on Blizzard's finder; only Hide()/HookScript/hooksecurefunc, resize the parent, parent our frames to it — keeps the game's restricted calls working
 - **Look**: native to Forever (Blizzard templates, atlases, icons) — the addon should feel like the game's own finder
-- **Tooling**: Lua formatted with `stylua .`; deploy with `scripts/install.bat`; releases by tag through the BigWigs packager
+- **Tooling**: Lua formatted with `stylua .`; deploy with `scripts/install.bat`; releases by tag through the BigWigs packager, zip uploaded to CurseForge / Wago by hand
 
 ## Key Decisions
 
@@ -138,8 +160,14 @@ Validated in Phase 4 (Messages and Contact): MSG-01..MSG-06, LOCK-01..LOCK-03, U
 | Follow Forever's model: solo players or groups, no applications | That is how Forever's finder works; "apply" is a retail concept | ✓ Good |
 | Never remove rows: hidden / no-slot listings greyed at the end | Players keep the whole picture while focusing on what fits | ✓ Good |
 | Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | — On hold (switched off in v0.1) |
-| Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Built in Phase 4 (in-game check pending) |
-| Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Built in Phase 4 |
+| Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Good (v0.1) |
+| Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Good (v0.1) |
+| The preset follows your group state: in a group always the invite preset; on your own, request to groups and invite to solo players | You offer your group when you have one; you ask for a spot when you don't | ✓ Good (v0.1) |
+| Delist from your own row calls `C_LFGList.RemoveListing()` | Delisting is important enough to have on Browse; the one exception to "listing stays Blizzard's" | ✓ Good (v0.1) |
+| Right-click opens the finder's own row menu (`CreateSearchEntryMenu`) | Same menu and reports as the stock rows | ✓ Good (v0.1) |
+| Stock-style sort headers: label left at the template inset, arrow after it, columns widened to fit | Matches the stock sortable headers; nothing spills over | ✓ Good (v0.1) |
+| No preset migration from the dev build | No compatibility needed before the first release | ✓ Good (v0.1) |
+| Manual CurseForge / Wago uploads from the release zip | The author prefers it; no store keys in the repo secrets | — For now |
 | Whisper presets with Auto-send off by default | Prefill keeps the player in control; Auto-send is opt-in | ✓ Good |
 | License GPL-3.0 | Open source, share-alike | ✓ Good |
 
@@ -208,4 +236,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-11 after Phase 4 of milestone v0.1 Initial Release*
+*Last updated: 2026-11-12 after v0.1 milestone*

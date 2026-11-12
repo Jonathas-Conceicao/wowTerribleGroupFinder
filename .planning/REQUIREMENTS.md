@@ -58,7 +58,7 @@ reviews before the milestone closes.
 - [x] **REL-01**: The TOC carries `X-Curse-Project-ID: 1798577` and `X-Wago-ID: Q6aqvA6W`; the release workflow enables the CurseForge / Wago upload keys
 - [x] **REL-02**: The icon sources (`baseicon.ase`, `baseicon.png`) live under `Media/Source/`; an in-game texture under `Media/Textures/` is the TOC's `IconTexture`
 - [x] **REL-03**: Packaging ships only the addon files and the in-game texture (`.pkgmeta`, `scripts/install`, `scripts/package` checked)
-- [ ] **REL-04**: Release Review: code cleanup, version confirmed, changelog draft, author review of README.md / CHANGELOG.md
+- [x] **REL-04**: Release Review: code cleanup, version confirmed, changelog draft, author review of README.md / CHANGELOG.md
 
 ## Future Requirements (deferred)
 
@@ -114,6 +114,6 @@ reviews before the milestone closes.
 | UIP-11 | Phase 4 | Complete |
 | LOC-01 | Phase 4.1 | Complete |
 | LOC-02 | Phase 4.1 | Complete |
-| REL-04 | Phase 5 | Pending |
+| REL-04 | Phase 5 | Complete |
 
 **Coverage:** 33/33 v0.1 requirements mapped, none duplicated.

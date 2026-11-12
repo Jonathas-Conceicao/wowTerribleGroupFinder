@@ -1,7 +1,8 @@
 ---
 phase: 04-messages-and-contact
 verified: 2026-11-11T00:00:00Z
-status: human_needed
+status: passed
+human_verified: 2026-11-12 (author: all in-game checks pass, 04-HUMAN-UAT.md; the migration check is skipped, the migration was dropped)
 score: 5/5 must-haves verified (automatable parts)
 overrides_applied: 0
 human_verification:
