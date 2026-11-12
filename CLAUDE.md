@@ -32,7 +32,7 @@ table of solo players and groups. Prototype stage. License: GPL-3.0.
 - `UI/InPlace.lua` — attaches the table to `LFGBrowseFrame` once Blizzard's finder loads; widens `LFGParentFrame` while Browse shows; adds a fourth side tab (Messages: starts unchecked, icon filled like the stock tabs, a post-hook on `LFGParentFrame.UpdateTabs` keeps it from showing checked with a stock tab, the template's own tooltip); `/tgf`
 - `UI/MainFrame.lua` — the preview stand-in for `LFGParentFrame` (Listing, Browse, Messages tabs; Blizzard's Browse geometry)
 - `UI/Listing.lua` — the stand-in's copy of Forever's Listing tab (List Self / List Group); not used in game
-- `Media/Textures/` — the in-game icon (`IconTexture` in the TOC); `Media/Source/` holds its art sources and never ships
+- `Media/Textures/` — the in-game icon (`IconTexture` in the TOC); `Media/Source/` holds its art sources and `Media/Screenshots/` the README images; neither ships
 - `TerribleGroupFinder.toc` — the load list is the shipped file set
 - `scripts/install.bat` / `install.ps1` — deploy to the local `_forever_` client (derives files from the TOC)
 - `scripts/package.bat` / `package.ps1` — local test zip in `dist/` (gitignored), same file set as install
