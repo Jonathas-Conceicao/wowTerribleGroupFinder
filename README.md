@@ -4,8 +4,10 @@ A group finder addon for **WoW Forever**. It improves the game's own group finde
 in place, keeping its look: the Browse tab becomes a sortable table of solo players and
 groups, and a new Messages tab holds whisper presets for contacting them in one click.
 
-![The Browse tab as a table of groups and solo players](Media/Screenshots/tgf_lfg_window.png)
-![The Messages tab with the two whisper presets](Media/Screenshots/tgf_lfg_message_config.png)
+<p align="center">
+  <img src="Media/Screenshots/tgf_lfg_window.png" alt="The Browse tab as a table of groups and solo players" width="56%">
+  <img src="Media/Screenshots/tgf_lfg_message_config.png" alt="The Messages tab with the two whisper presets" width="42%">
+</p>
 
 ## Features
 

@@ -19,7 +19,3 @@ First release: Forever's own group finder gets a sortable table of solo players 
 - Messages tab with two whisper presets (inviting a player, used while you're in a group or to a solo player; asking a group for an invite, while you're on your own), key buttons, Auto-send and Auto-invite; a short pause after each automatic send, and nothing is sent during chat lockdown
 - Slash commands `/tgf`, `/tgf preview`, `/tgf reset` and `/tgf version`
 - Addon icon
-
-## Unreleased
-
-- Project bootstrap: TOC, core namespace, install and release scripts.
