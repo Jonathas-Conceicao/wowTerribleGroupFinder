@@ -50,7 +50,7 @@ result: [pending]
 
 ### 10. Preset migration
 expected: A character that had the old default presets gets the new `[TGF]` defaults on first load; a custom preset is kept untouched; it happens once.
-result: [pending]
+result: skipped — the migration was dropped (author: no compatibility with the dev build needed)
 
 ### 11. Taint
 expected: With `/console taintLog 1`, using the Messages tab, Whisper, Send Message and Group Invite logs no taint against Blizzard's finder and no ADDON_ACTION_BLOCKED.
