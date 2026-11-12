@@ -152,19 +152,19 @@ local function Solo(keys, who, roles, spec, area, comment, minutes, extra)
 end
 
 Group("DM", {
-	"Brannoc:WARRIOR:21:TANK:22.4@Westfall",
-	"Elsiwyn:PRIEST:20:HEALER:~21.0@Westfall",
-	"Tobbin:ROGUE:22:DAMAGER:23.1@Elwynn Forest",
+	"Varian Wrynn:WARRIOR:21:TANK:22.4@Westfall",
+	"Anduin Wrynn:PRIEST:20:HEALER:~21.0@Westfall",
+	"Mathias Shaw:ROGUE:22:DAMAGER:23.1@Elwynn Forest",
 }, "Need 2 dps, VanCleef quest run", 4)
 -- Three damage dealers: "Needs my role" keeps this only for players who can tank or heal.
 Group("DM", {
-	"Corvin:ROGUE:22:DAMAGER:23.5@Westfall",
-	"Ellery:MAGE:21:DAMAGER:~20.9",
-	"Haskel:WARLOCK:22:DAMAGER@Stormwind City",
+	"Valeera Sanguinar:ROGUE:22:DAMAGER:23.5@Westfall",
+	"Jaina Proudmoore:MAGE:21:DAMAGER:~20.9",
+	"Wilfred Fizzlebang:WARLOCK:22:DAMAGER@Stormwind City",
 }, "3 dps here, LF tank + healer", 5)
 Group(
 	{ "SMGY", "SMLIB" },
-	{ "Kaelthorn:PALADIN:34:TANK:36.2", "Mirabelle:MAGE:33:DAMAGER:~31.8" },
+	{ "Uther Lightbringer:PALADIN:34:TANK:36.2", "Kael'thas Sunstrider:MAGE:33:DAMAGER:~31.8" },
 	"GY then Lib, need healer + 2",
 	11,
 	{
@@ -175,18 +175,18 @@ Group(
 	}
 )
 Group("WC", {
-	"Durgash:SHAMAN:19:HEALER@The Barrens",
-	"Pip:HUNTER:18:DAMAGER@The Barrens",
-	"Nyx:WARLOCK:20:DAMAGER:19.8",
-	"Halvard:WARRIOR:19:DAMAGER@Orgrimmar",
+	"Rehgar Earthfury:SHAMAN:19:HEALER@The Barrens",
+	"Nathanos Blightcaller:HUNTER:18:DAMAGER@The Barrens",
+	"Ner'zhul Shadowmoon:WARLOCK:20:DAMAGER:19.8",
+	"Varok Saurfang:WARRIOR:19:DAMAGER@Orgrimmar",
 }, "LF tank, we have all quests", 2, { newPlayerFriendly = true })
 Group(
 	"BRD",
 	{
-		"Grimtusk:WARRIOR:58:TANK:61.5@Blackrock Mountain",
-		"Solenne:PRIEST:57:HEALER:57.9@Blackrock Mountain",
-		"Varok:HUNTER:56:DAMAGER:~55.4@Blackrock Mountain",
-		"Isolde:MAGE:58:DAMAGER:59.2@Searing Gorge",
+		"Muradin Bronzebeard:WARRIOR:58:TANK:61.5@Blackrock Mountain",
+		"Moira Thaurissan:PRIEST:57:HEALER:57.9@Blackrock Mountain",
+		"Brann Bronzebeard:HUNTER:56:DAMAGER:~55.4@Blackrock Mountain",
+		"Aethas Sunreaver:MAGE:58:DAMAGER:59.2@Searing Gorge",
 	},
 	"Arena + Emperor, 1 dps",
 	7,
@@ -198,57 +198,64 @@ Group(
 )
 Group(
 	"STRAT",
-	{ "Aldric:PALADIN:60:HEALER:66.0@Eastern Plaguelands", "Morwen:WARLOCK:60:DAMAGER:63.4@Eastern Plaguelands" },
+	{
+		"Tirion Fordring:PALADIN:60:HEALER:66.0@Eastern Plaguelands",
+		"Teron Gorefiend:WARLOCK:60:DAMAGER:63.4@Eastern Plaguelands",
+	},
 	"UD strat, LF tank and 2 dps, know the route",
 	23
 )
 Group("SFK", {
-	"Ferris:DRUID:25:TANK@Silverpine Forest",
-	"Lunelle:PRIEST:24:HEALER",
-	"Kord:WARRIOR:26:DAMAGER",
-	"Sable:ROGUE:24:DAMAGER",
-	"Quill:MAGE:25:DAMAGER",
+	"Malfurion Stormrage:DRUID:25:TANK@Silverpine Forest",
+	"Tyrande Whisperwind:PRIEST:24:HEALER",
+	"Garrosh Hellscream:WARRIOR:26:DAMAGER",
+	"Garona Halforcen:ROGUE:24:DAMAGER",
+	"Ansirem Runeweaver:MAGE:25:DAMAGER",
 }, "Full, thanks!", 31, { delisted = true })
 Group(
 	"ZF",
-	{ "Rhazgul:SHAMAN:45:DAMAGER:44.7@The Temple of Atal'Hakkar", "Zul:HUNTER:44:DAMAGER" },
+	{ "Muln Earthfury:SHAMAN:45:DAMAGER:44.7@The Temple of Atal'Hakkar", "Vol'jin Darkspear:HUNTER:44:DAMAGER" },
 	"Need tank, healer + 1, carrot run",
 	1
 )
 Group(
 	"RFK",
-	{ "Tamsin:DRUID:31:HEALER:~33.0", "Bram:WARRIOR:30:TANK:29.6" },
+	{ "Hamuul Runetotem:DRUID:31:HEALER:~33.0", "Grommash Hellscream:WARRIOR:30:TANK:29.6" },
 	"Chill run, newbies welcome",
 	15,
 	{ newPlayerFriendly = true, voiceMode = ns.VOICE.Legacy, playstyle = 1 }
 )
 Group("UBRS", {
-	"Ostrava:WARRIOR:60:TANK:68.1",
-	"Bellamy:PRIEST:60:HEALER:64.3",
-	"Cinder:MAGE:60:DAMAGER",
-	"Thane:ROGUE:60:DAMAGER:65.0",
-	"Vex:WARLOCK:59:DAMAGER",
-	"Rook:HUNTER:60:DAMAGER:62.2",
+	"Danath Trollbane:WARRIOR:60:TANK:68.1",
+	"Alonsus Faol:PRIEST:60:HEALER:64.3",
+	"Meryl Felstorm:MAGE:60:DAMAGER",
+	"Edwin VanCleef:ROGUE:60:DAMAGER:65.0",
+	"Kanrethad Ebonlocke:WARLOCK:59:DAMAGER",
+	"Alleria Windrunner:HUNTER:60:DAMAGER:62.2",
 }, "Have key, LF healer + dps", 9)
 Group("MC", {
-	"Aethelred:WARRIOR:60:TANK:72.3@Blackrock Mountain",
-	"Corwin:WARRIOR:60:TANK:70.1@Blackrock Mountain",
-	"Ysolde:PRIEST:60:HEALER:69.4@Orgrimmar",
-	"Bryn:PRIEST:60:HEALER",
-	"Faelan:DRUID:60:HEALER:66.8",
-	"Hollis:PALADIN:60:HEALER",
-	"Gerrit:ROGUE:60:DAMAGER:68.0",
-	"Iona:MAGE:60:DAMAGER",
-	"Jareth:MAGE:60:DAMAGER:67.5",
-	"Kestra:HUNTER:60:DAMAGER",
-	"Lorne:WARLOCK:60:DAMAGER",
-	"Mael:ROGUE:60:DAMAGER:64.9",
-	"Nessa:MAGE:60:DAMAGER",
-	"Orrin:WARRIOR:60:DAMAGER",
+	"Magni Bronzebeard:WARRIOR:60:TANK:72.3@Blackrock Mountain",
+	"Thoras Trollbane:WARRIOR:60:TANK:70.1@Blackrock Mountain",
+	"Calia Menethil:PRIEST:60:HEALER:69.4@Orgrimmar",
+	"Natalie Seline:PRIEST:60:HEALER",
+	"Fandral Staghelm:DRUID:60:HEALER:66.8",
+	"Bolvar Fordragon:PALADIN:60:HEALER",
+	"Vanessa VanCleef:ROGUE:60:DAMAGER:68.0",
+	"Millhouse Manastorm:MAGE:60:DAMAGER",
+	"Thalen Songweaver:MAGE:60:DAMAGER:67.5",
+	"Shandris Feathermoon:HUNTER:60:DAMAGER",
+	"Vereesa Windrunner:HUNTER:60:DAMAGER",
+	"Maiev Shadowsong:ROGUE:60:DAMAGER:64.9",
+	"Arcanist Doan:MAGE:60:DAMAGER",
+	"Darius Crowley:WARRIOR:60:DAMAGER",
 }, "Pug MC, SR +1, need fire res healers", 38, { voiceMode = ns.VOICE.Discord })
 Group(
 	"ONY",
-	{ "Pellam:WARRIOR:60:TANK:69.9@Dustwallow Marsh", "Quenna:PRIEST:60:HEALER@Orgrimmar", "Rivka:MAGE:60:DAMAGER" },
+	{
+		"Dranosh Saurfang:WARRIOR:60:TANK:69.9@Dustwallow Marsh",
+		"Lady Liadrin:PALADIN:60:HEALER@Orgrimmar",
+		"Sylvanas Windrunner:HUNTER:60:DAMAGER",
+	},
 	"Ony pug, Discord required",
 	19,
 	{
@@ -258,20 +265,38 @@ Group(
 		remaining = { TANK = 0, HEALER = 0, DAMAGER = 2 },
 	}
 )
-Group("EPL", { "Stellan:PALADIN:55:DAMAGER", "Torva:HUNTER:54:DAMAGER:53.0" }, "Questing Tyr's Hand, anyone welcome", 6)
+Group(
+	"EPL",
+	{ "Alexandros Mograine:PALADIN:55:DAMAGER", "Lor'themar Theron:HUNTER:54:DAMAGER:53.0" },
+	"Questing Tyr's Hand, anyone welcome",
+	6
+)
 Group(
 	"STV",
-	{ "Ulric:ROGUE:38:DAMAGER@Stranglethorn Vale", "Maren:PRIEST:37:HEALER:~36.1@Stranglethorn Vale" },
+	{
+		"Hemet Nesingwary:HUNTER:38:DAMAGER@Stranglethorn Vale",
+		"Talanji Zandalari:PRIEST:37:HEALER:~36.1@Stranglethorn Vale",
+	},
 	"Kill quests in STV, any class",
 	3
 )
-Group("WSG", { "Wren:DRUID:29:HEALER", "Xander:WARRIOR:29:DAMAGER", "Yara:ROGUE:28:DAMAGER" }, "19 bracket premade", 12)
-Group("CUSTOM", { "Zephyr:MAGE:60:DAMAGER", "Sorrel:MAGE:60:DAMAGER" }, "Two mages selling portals", 45)
+Group(
+	"WSG",
+	{ "Broll Bearmantle:DRUID:29:HEALER", "Jarod Shadowsong:WARRIOR:29:DAMAGER", "Lorna Crowley:HUNTER:28:DAMAGER" },
+	"19 bracket premade",
+	12
+)
+Group(
+	"CUSTOM",
+	{ "Archmage Khadgar:MAGE:60:DAMAGER", "Archmage Vargoth:MAGE:60:DAMAGER" },
+	"Two mages selling portals",
+	45
+)
 
-Solo("DM", "Ashlin:PRIEST:20:21.3", "HD", "Holy", "Westfall", "Healer LF DM group", 3)
+Solo("DM", "Archbishop Benedictus:PRIEST:20:21.3", "HD", "Holy", "Westfall", "Healer LF DM group", 3)
 Solo(
 	"DM",
-	"Ironvale:WARRIOR:21:24.0",
+	"Genn Greymane:WARRIOR:21:24.0",
 	"TD",
 	"Protection",
 	"Westfall",
@@ -279,15 +304,23 @@ Solo(
 	1,
 	{ voiceMode = ns.VOICE.Discord, playstyle = 2 }
 )
-Solo("DM", "Saelis:PRIEST:20:~19.5", "HD", nil, "Stormwind City", nil, 2)
-Solo("DM", "Quintus:MAGE:22:~23.0", "D", "Fire", "Westfall", "Have water for everyone", 4)
-Solo({ "DM", "WC" }, "Marrow:ROGUE:19", "D", nil, "The Barrens", "Need the Defias quest", 6)
-Solo("DM", "Lyss:DRUID:21:20.6", "THD", "Restoration", "Duskwood", "Any role", 7)
-Solo({ "DM", "SFK" }, "Torvald:HUNTER:23:25.1", "D", "Beast Mastery", "Redridge Mountains", "Pet tanks too lol", 9)
-Solo("DM", "Bertram:PALADIN:22:~21.7", "THD", nil, "Westfall", nil, 13)
+Solo("DM", "Delas Moonfang:DRUID:20:~19.5", "HD", nil, "Stormwind City", nil, 2)
+Solo("DM", "Archmage Arugal:MAGE:22:~23.0", "D", "Fire", "Westfall", "Have water for everyone", 4)
+Solo({ "DM", "WC" }, "Tess Greymane:ROGUE:19", "D", nil, "The Barrens", "Need the Defias quest", 6)
+Solo("DM", "Keeper Remulos:DRUID:21:20.6", "THD", "Restoration", "Duskwood", "Any role", 7)
+Solo(
+	{ "DM", "SFK" },
+	"Halduron Brightwing:HUNTER:23:25.1",
+	"D",
+	"Beast Mastery",
+	"Redridge Mountains",
+	"Pet tanks too lol",
+	9
+)
+Solo("DM", "Saidan Dathrohan:PALADIN:22:~21.7", "THD", nil, "Westfall", nil, 13)
 Solo(
 	"DM",
-	"Cressida:WARLOCK:20:18.7",
+	"Ritssyn Flamescowl:WARLOCK:20:18.7",
 	"D",
 	"Affliction",
 	"Elwynn Forest",
@@ -295,41 +328,58 @@ Solo(
 	16,
 	{ newPlayerFriendly = true }
 )
-Solo("DM", "Dunstan:WARRIOR:24:26.2", "TD", "Arms", "Westfall", "Can tank if needed", 20)
+Solo("DM", "Gryan Stoutmantle:WARRIOR:24:26.2", "TD", "Arms", "Westfall", "Can tank if needed", 20)
 Solo(
 	{ "SMGY", "SMLIB", "SMARM" },
-	"Boruk:WARRIOR:35:37.4",
+	"Brigitte Abbendis:WARRIOR:35:37.4",
 	"TD",
 	"Protection",
 	"Tirisfal Glades",
 	"Can tank all SM wings",
 	8
 )
-Solo("BRD", "Cael:DRUID:57:58.8", "THD", "Feral", "Burning Steppes", "Any role, need the Attunement quest", 14)
-Solo("WC", "Delphine:MAGE:19", "D", nil, "The Barrens", nil, 1)
-Solo("WC", "Fennick:SHAMAN:18:17.9", "HD", "Restoration", "The Barrens", nil, 5)
-Solo("STRAT", "Eamon:PALADIN:60:65.2", "TH", "Holy", "Eastern Plaguelands", "Prot or holy, Living side", 22)
-Solo("MC", "Fenna:HUNTER:60:67.1", "D", "Marksmanship", "Orgrimmar", "Have fire res gear", 33)
-Solo("MC", "Garran:PRIEST:60", "H", nil, "Ironforge", "Fire res healer", 12)
-Solo("ZF", "Gwyn:SHAMAN:44:~43.5", "HD", "Restoration", "Tanaris", nil, 5)
-Solo("RFC", "Hale:WARLOCK:15", "D", nil, "Orgrimmar", "First time, happy to learn", 2, { newPlayerFriendly = true })
+Solo(
+	"BRD",
+	"Mathrengyl Bearwalker:DRUID:57:58.8",
+	"THD",
+	"Feral",
+	"Burning Steppes",
+	"Any role, need the Attunement quest",
+	14
+)
+Solo("WC", "Magister Rommath:MAGE:19", "D", nil, "The Barrens", nil, 1)
+Solo("WC", "Magatha Grimtotem:SHAMAN:18:17.9", "HD", "Restoration", "The Barrens", nil, 5)
+Solo("STRAT", "Taelan Fordring:PALADIN:60:65.2", "TH", "Holy", "Eastern Plaguelands", "Prot or holy, Living side", 22)
+Solo("MC", "Ormak Grimshot:HUNTER:60:67.1", "D", "Marksmanship", "Orgrimmar", "Have fire res gear", 33)
+Solo("MC", "Theodrus Frostbeard:PRIEST:60", "H", nil, "Ironforge", "Fire res healer", 12)
+Solo("ZF", "Durotan Frostwolf:SHAMAN:44:~43.5", "HD", "Restoration", "Tanaris", nil, 5)
+Solo(
+	"RFC",
+	"Neeru Fireblade:WARLOCK:15",
+	"D",
+	nil,
+	"Orgrimmar",
+	"First time, happy to learn",
+	2,
+	{ newPlayerFriendly = true }
+)
 
 P.playstyles = { "Learning", "Fun (relaxed)", "Fun (serious)", "Expert" }
 
 -- The party you lead when the preview plays a group leader (you are added first).
-P.party = { "Garrick:WARRIOR:21:TANK:23.8", "Neve:HUNTER:20:DAMAGER" }
+P.party = { "Anduin Lothar:WARRIOR:21:TANK:23.8", "Kurdran Wildhammer:HUNTER:20:DAMAGER" }
 
 -- Who you know among the sample players: Battle.net friends, character friends,
 -- guildmates and recent allies (the game reports these for real listings).
 local SOCIAL = {
-	Ashlin = { bnet = true },
-	Tobbin = { bnet = true },
-	Lyss = { friend = true },
-	Kaelthorn = { guild = true },
-	Mirabelle = { guild = true },
-	Brannoc = { recent = true },
-	Ironvale = { recent = true },
-	Eamon = { bnet = true, recent = true },
+	["Archbishop Benedictus"] = { bnet = true },
+	["Mathias Shaw"] = { bnet = true },
+	["Keeper Remulos"] = { friend = true },
+	["Uther Lightbringer"] = { guild = true },
+	["Kael'thas Sunstrider"] = { guild = true },
+	["Varian Wrynn"] = { recent = true },
+	["Genn Greymane"] = { recent = true },
+	["Taelan Fordring"] = { bnet = true, recent = true },
 }
 for _, l in ipairs(listings) do
 	for _, m in ipairs(l.members) do
