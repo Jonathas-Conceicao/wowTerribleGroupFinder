@@ -18,7 +18,7 @@ table of solo players and groups. Prototype stage. License: GPL-3.0.
 - Leaders browse solo players and invite them; solo players browse groups and whisper the leader. **No "apply"**: each row's button whispers (preset messages, Messages tab)
 - Browse picks a category and activities (Blizzard's dropdowns), then searches; results are one list: your listing, then two collapsible sections (Solo players, Groups) with a divider each — groups first while solo, solo players first while leading
 - Never remove a listing from view: hidden (until they relist), delisted and (with Needs my role) no-slot-for-you listings are greyed and moved to the end of their section
-- Listing (create/update/unlist) stays Blizzard's own tab, untouched: its description box is secure
+- Listing (create/update) stays Blizzard's own tab, untouched: its description box is secure. The one exception, kept on purpose: the delist button on your own row calls `C_LFGList.RemoveListing()`
 
 ## Architecture
 - `Core.lua` — namespace, `TerribleGroupFinderDB`, runtime state (`ns.state`), the questions the table asks (`ns.IsLeader/CanInvite/MyRoles/Party/MyListingSize/GroupSize`) answered from the game or the preview, `/tgf`
@@ -36,7 +36,7 @@ table of solo players and groups. Prototype stage. License: GPL-3.0.
 - `TerribleGroupFinder.toc` — the load list is the shipped file set
 - `scripts/install.bat` / `install.ps1` — deploy to the local `_forever_` client (derives files from the TOC)
 - `scripts/package.bat` / `package.ps1` — local test zip in `dist/` (gitignored), same file set as install
-- `scripts/release.bat` — tag and push a release; `.github/workflows/release.yml` packages it (BigWigs packager on tag push; the workflow publishes the first `## ` section of CHANGELOG.md; uploads to CurseForge / Wago need the `CF_API_KEY` / `WAGO_API_TOKEN` repository secrets, and the TOC carries the project IDs)
+- `scripts/release.bat` — tag and push a release; `.github/workflows/release.yml` packages it (BigWigs packager on tag push; the workflow publishes the first `## ` section of CHANGELOG.md; the zip lands on the GitHub release; the author uploads it to CurseForge / Wago by hand. With no `CF_API_KEY` / `WAGO_API_TOKEN` secrets the packager skips those uploads; the TOC carries the project IDs)
 - `.pkgmeta` — BigWigs packager config
 
 ## Style Reference

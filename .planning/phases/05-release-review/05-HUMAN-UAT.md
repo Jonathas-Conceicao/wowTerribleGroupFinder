@@ -34,7 +34,7 @@ result: pass — author: no compatibility with the dev build needed; migration d
 
 ### 6. Delist behaviour
 expected: `Instance:Delist` (UI/Table.lua) calls `C_LFGList.RemoveListing()` directly, while CLAUDE.md says create/update/unlist stays Blizzard's own tab. Accept for v0.1.0, or change later (and adjust CLAUDE.md).
-result: [pending]
+result: pass — author: delist is kept, it's important; CLAUDE.md now names it as the one exception
 
 ### 7. LICENSE shipping
 expected: `.pkgmeta` excludes `LICENSE`, and install/package scripts do not copy it. Recommendation: ship it (the TOC declares GPL-3.0): drop `LICENSE` from the `.pkgmeta` ignore list and add it to the file set of `scripts/install.ps1` and `scripts/package.ps1`. `.pkgmeta` is unchanged for now.
@@ -46,7 +46,7 @@ result: pass — author: name doesn't matter, keep `milestone/v0.1-milestone`; t
 
 ### 9. Store publishing
 expected: Repository secrets `CF_API_KEY` and `WAGO_API_TOKEN` must be set before the tag push. Whether CurseForge / Wago accept the `forever` game type is only known after the first tag.
-result: [pending]
+result: pass — author: no keys for now; uploads to CurseForge / Wago are manual, from the release zip (the packager skips uploads without the secrets)
 
 ### 10. Playstyle colour
 expected: The playstyle line in the row tooltip is green; the ROADMAP said light grey. Your call.
