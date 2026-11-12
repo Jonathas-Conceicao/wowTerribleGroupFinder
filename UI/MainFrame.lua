@@ -90,6 +90,9 @@ local function Select(index)
 	end
 	UI.current = p.key
 	SetTitle(LFG_TITLE or "Group Finder")
+	if p.key == "browse" then
+		ns.Table.ClearSelection() -- as Forever clears it whenever Browse is shown
+	end
 	if p.refresh then
 		p.refresh(p.frame)
 	end
@@ -240,6 +243,31 @@ local function BuildBrowse(parent)
 	if not W.Atlas(artTex, "groupfinder-background") then
 		artTex:SetColorTexture(0.05, 0.05, 0.05, 0.6)
 	end
+	-- Forever's border (common-insideframe) and the two lines: BarTop under the column
+	-- headers, BarMiddle above the bottom bar.
+	local border = art:CreateTexture(nil, "BORDER")
+	if W.Atlas(border, "common-insideframe") then
+		border:SetPoint("TOPLEFT", 0, 2)
+		border:SetPoint("BOTTOMRIGHT", 0, 0)
+	end
+	-- At the atlas's own size (as stock's useAtlasSize): only LEFT/RIGHT are anchored, so
+	-- the height has to come from the atlas.
+	local function ScrollLine()
+		local line = art:CreateTexture(nil, "OVERLAY")
+		if line.SetAtlas and W.HasAtlas("groupfinder-ScrollLine") then
+			line:SetAtlas("groupfinder-ScrollLine", true)
+		else
+			line:SetColorTexture(0.35, 0.3, 0.2, 0.8)
+			line:SetHeight(1)
+		end
+		return line
+	end
+	local barTop = ScrollLine()
+	barTop:SetPoint("LEFT", art, "TOPLEFT", 0, -20)
+	barTop:SetPoint("RIGHT", art, "TOPRIGHT", 0, -20)
+	local barMiddle = ScrollLine()
+	barMiddle:SetPoint("LEFT", panel, "BOTTOMLEFT", 0, 61)
+	barMiddle:SetPoint("RIGHT", panel, "BOTTOMRIGHT", 0, 61)
 
 	categoryDrop = W.Dropdown(panel, 140, function()
 		local items = {}
@@ -286,6 +314,7 @@ local function BuildBrowse(parent)
 
 	local refresh = W.Button(panel, "", 26, 22, function()
 		ns.Table.RelistOneHidden(ns.state.listings)
+		ns.Table.ClearSelection()
 		ns.Print("preview: in game this is Forever's own refresh button, which searches again.")
 		RefreshBrowse()
 	end)
@@ -303,6 +332,13 @@ local function BuildBrowse(parent)
 		preview = function()
 			return true
 		end,
+		hasListing = function()
+			return ns.state.myListing ~= nil
+		end,
+		failed = function()
+			return false
+		end,
+		refreshAnchor = refresh,
 	})
 	return panel
 end
@@ -316,16 +352,7 @@ local refreshMessages
 
 local function BuildMessages(parent)
 	local panel = CreateFrame("Frame", nil, parent)
-	local back = panel:CreateTexture(nil, "BACKGROUND")
-	back:SetPoint("TOPLEFT", 4, -60)
-	back:SetPoint("BOTTOMRIGHT", -4, 3)
-	if not W.Atlas(back, "groupfinder-background") then
-		back:SetColorTexture(0.05, 0.05, 0.05, 0.6)
-	end
-	local content = CreateFrame("Frame", nil, panel)
-	content:SetPoint("TOPLEFT", 16, -70)
-	content:SetPoint("BOTTOMRIGHT", -16, 16)
-	refreshMessages = ns.Messages.BuildPanel(content)
+	refreshMessages = ns.Messages.BuildPanel(panel)
 	return panel
 end
 

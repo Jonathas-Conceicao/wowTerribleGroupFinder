@@ -2,7 +2,8 @@
 #
 # Three things this does that a plain copy cannot:
 #   1. Derives the file set from the TOC instead of duplicating it,
-#      and adds every texture under Media\Textures.
+#      adds the IconTexture file named in the TOC, and every texture under
+#      Media\Textures.
 #   2. Substitutes a dev version into the DEPLOYED TOC only, so the client
 #      reports something real instead of the literal "@project-version@".
 #      The repo TOC is never modified — the packager keyword has to survive
@@ -53,10 +54,17 @@ foreach ($entry in @($files)) {
 # The icon named by ## IconTexture:, which carries no extension in the TOC.
 $iconLine = $tocLines | Where-Object { $_ -match '^\s*##\s*IconTexture\s*:' } | Select-Object -First 1
 if ($iconLine) {
-    $iconBase = Split-Path -Leaf ($iconLine -replace '^\s*##\s*IconTexture\s*:\s*', '').Trim()
-    $icon = Get-ChildItem -LiteralPath $source -Filter "$iconBase.*" -File |
-        Where-Object { $_.Extension -in '.blp', '.tga' } | Select-Object -First 1
-    if ($icon -and ($files -notcontains $icon.Name)) { $files.Add($icon.Name) }
+    $iconValue = ($iconLine -replace '^\s*##\s*IconTexture\s*:\s*', '').Trim()
+    $iconRel = $iconValue -replace '(?i)^Interface\\AddOns\\TerribleGroupFinder\\', ''
+    $iconFile = $null
+    foreach ($ext in '.blp', '.tga') {
+        if (Test-Path -LiteralPath (Join-Path $source ($iconRel + $ext))) { $iconFile = $iconRel + $ext; break }
+    }
+    if (-not $iconFile) {
+        Write-Host "ERROR: IconTexture $iconValue names no .blp/.tga in $source"
+        exit 1
+    }
+    if ($files -notcontains $iconFile) { $files.Add($iconFile) }
 }
 
 # Every texture under Media\Textures is shipped. The relative path is
@@ -87,6 +95,9 @@ if (Test-Path -LiteralPath $texDir) {
         }
     }
 }
+
+# The license ships with the addon (GPL-3.0), as in a release.
+if ($files -notcontains 'LICENSE') { $files.Add('LICENSE') }
 
 foreach ($f in $files) {
     if (-not (Test-Path -LiteralPath (Join-Path $source $f))) {

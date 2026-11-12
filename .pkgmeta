@@ -14,10 +14,14 @@ ignore:
   - CHANGELOG.md
   - CLAUDE.md
   - README.md
-  - LICENSE
   - RELEASE_NOTES.md
   - stylua.toml
   - scripts
   - tools
   - "*.png"
   - "*.org"
+  - Media/Source
+  - Media/Screenshots
+  - "*.ase"
+  - dist
+  - .release

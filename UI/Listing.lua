@@ -123,6 +123,7 @@ local function MakeRow(parent)
 	row.check = W.Check(row, "")
 	row.check:SetPoint("LEFT", 2, 0)
 	row.check:SetScript("OnClick", function(self)
+		W.PlayCheckbox(self:GetChecked() and true or false)
 		local key = self:GetParent().activity.key
 		if self:GetChecked() then
 			if nSelected >= MAX_ACTIVITIES then

@@ -37,7 +37,8 @@ Not a goal for now: Retail support.
   level averaged over the gear slots. Cache `DB.gs` (name → gs, level, time; 60-day expiry);
   scores from an earlier session show in `W.GS_OUTDATED`. Ready check → inspect members
   without a fresh score (one at a time, 1.5 s apart, not in combat, not with InspectFrame
-  open). Your own GS shows in the table's top band.
+  open). Your own GS shows in the table's top band. Switched off for v0.1
+  (`ns.GEAR_SCORE = false`); full notes and how to re-enable in `GEARSCORE.md`.
 - **Friend marks.** `C_LFGList.GetSearchResultFriends` (Battle.net / character / guild, as
   the retail finder's tooltip) and `C_RecentAllies.IsRecentAllyByFullName`. Icons as chat
   marks whispers: recent allies `friendslist-recentallies-yellow`, Battle.net friends the

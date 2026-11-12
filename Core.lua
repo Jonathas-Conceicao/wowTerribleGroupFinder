@@ -10,6 +10,22 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
+-- Gear score is switched off. Setting this to true brings back the GS column, "Your GS", the
+-- tooltip lines and the ready-check inspects. Messages have no gear score key.
+ns.GEAR_SCORE = false
+
+-- How a listing's voice chat is set up (the game's enum; the same values elsewhere).
+ns.VOICE = (Enum and Enum.LFGEntryVoiceMode) or { None = 0, Legacy = 1, Discord = 2, Custom = 3 }
+
+--- A character name without its realm suffix; nil for anything but a readable string (a
+--- secret value can't be matched or used as a key).
+function ns.Short(name)
+	if type(name) ~= "string" or (issecretvalue and issecretvalue(name)) then
+		return nil
+	end
+	return name:match("^([^%-]+)") or name
+end
+
 local DEFAULTS = {
 	schema = 1,
 }
@@ -69,6 +85,18 @@ function ns.CanInvite()
 	return not IsInGroup() or UnitIsGroupLeader("player") or UnitIsGroupAssistant("player") or false
 end
 
+-- How many players are in your group now, counting you: 1 solo.
+function ns.GroupSize()
+	if ns.UsingPreview() then
+		return #ns.Party()
+	end
+	local n = GetNumGroupMembers and GetNumGroupMembers() or 0
+	if issecretvalue and issecretvalue(n) then
+		n = 0
+	end
+	return math.max(n or 0, 1)
+end
+
 -- The roles you play: the game's saved group finder roles, else the preview's.
 function ns.MyRoles()
 	if not ns.UsingPreview() and C_LFGListRoles and C_LFGListRoles.GetRoles then
@@ -91,10 +119,12 @@ function ns.Me()
 		roles = { tank = roles.tank, healer = roles.healer, dps = roles.dps },
 		leader = true,
 	}
-	if ns.UsingPreview() then
-		me.gs = me.level + 1.5
-	else
-		me.gs = ns.GS.Mine()
+	if ns.GEAR_SCORE then
+		if ns.UsingPreview() then
+			me.gs = me.level + 1.5
+		else
+			me.gs = ns.GS.Mine()
+		end
 	end
 	return me
 end
@@ -156,6 +186,7 @@ local function MyEntry()
 	for i, key in ipairs(mine.activities) do
 		acts[i] = ns.Preview.activities[key]
 	end
+	local voiceMode = mine.voiceMode or (mine.voice and ns.VOICE.Discord or ns.VOICE.None)
 	return {
 		id = 0,
 		mine = true,
@@ -163,11 +194,13 @@ local function MyEntry()
 		acts = acts,
 		members = party,
 		leader = party[1],
-		comment = "Your listing",
+		comment = mine.comment,
 		age = 0,
 		listedAt = time(),
 		newPlayerFriendly = mine.newPlayerFriendly,
-		voice = mine.voice,
+		voiceMode = voiceMode,
+		voice = voiceMode ~= ns.VOICE.None,
+		playstyle = mine.playstyle,
 	}
 end
 

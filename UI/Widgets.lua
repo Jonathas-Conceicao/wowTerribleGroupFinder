@@ -52,6 +52,21 @@ function W.ClassColor(class)
 	return c[1], c[2], c[3]
 end
 
+-- Forever's row colours: level and activity grey (BRIGHTBLUE_FONT_COLOR when the activity is
+-- one of your active listing's), and the stock grey of delisted / filtered rows.
+W.GRAY = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
+W.BRIGHTBLUE = BRIGHTBLUE_FONT_COLOR or { r = 0.4, g = 0.73, b = 1 }
+W.DELISTED = { r = 0.3, g = 0.3, b = 0.3 }
+W.LIGHTGREEN = LIGHTGREEN_FONT_COLOR or { r = 0.25, g = 0.75, b = 0.25 }
+W.LIGHTGRAY = LIGHTGRAY_FONT_COLOR or { r = 0.753, g = 0.753, b = 0.753 }
+W.GREEN = GREEN_FONT_COLOR or { r = 0.1, g = 1, b = 0.1 }
+W.NORMAL = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
+W.RED = RED_FONT_COLOR or { r = 1, g = 0.1, b = 0.1 }
+
+function W.SetColor(fs, c)
+	fs:SetTextColor(c.r, c.g, c.b)
+end
+
 -- A gear score on the item level scale ("23.1"), coloured like item quality by how it
 -- compares with a well geared player of that level (blues about five levels above it).
 -- An outdated one (only known from an earlier session) takes its own dusty colour; an
@@ -158,6 +173,35 @@ local function HasAtlas(atlas)
 end
 W.HasAtlas = HasAtlas
 
+-- Inline atlas markup for tooltip text; empty when the client doesn't know the atlas.
+function W.AtlasMarkup(atlas, size)
+	if not HasAtlas(atlas) then
+		return ""
+	end
+	if type(CreateAtlasMarkup) == "function" then
+		return CreateAtlasMarkup(atlas, size, size)
+	end
+	return "|A:" .. atlas .. ":" .. size .. ":" .. size .. "|a"
+end
+
+-- A listing's playstyle as text: the game's own string, its global, or the preview's names.
+function W.Playstyle(value)
+	if type(value) ~= "number" or value == 0 then
+		return nil
+	end
+	if type(GetGeneralPlaystyleString) == "function" then
+		local ok, text = pcall(GetGeneralPlaystyleString, value)
+		if ok and type(text) == "string" and text ~= "" then
+			return text
+		end
+	end
+	local text = _G["GROUP_FINDER_GENERAL_PLAYSTYLE" .. value]
+	if type(text) == "string" and text ~= "" then
+		return text
+	end
+	return ns.Preview and ns.Preview.playstyles and ns.Preview.playstyles[value] or nil
+end
+
 -- Sets an atlas when the client knows it; otherwise a flat colour (when given).
 function W.Atlas(tex, atlas, r, g, b, a)
 	if tex.SetAtlas and HasAtlas(atlas) then
@@ -209,24 +253,34 @@ function W.Inset(parent)
 	return f
 end
 
-function W.Line(parent)
-	local t = parent:CreateTexture(nil, "ARTWORK")
-	if not W.Atlas(t, "groupfinder-ScrollLine") then
-		t:SetColorTexture(0.35, 0.3, 0.2, 0.8)
-	end
-	t:SetHeight(1)
-	return t
-end
-
-local function Tooltip(f, title, body)
+-- title / body: a string, or a function of the frame (read when the tooltip opens).
+-- opts (optional): gold = gold title and white body; note = function of the frame giving a
+-- grey extra line (or nil).
+local function Tooltip(f, title, body, opts)
 	if not title then
 		return
 	end
 	f:HookScript("OnEnter", function(self)
+		local t = type(title) == "function" and title(self) or title
+		if not t then
+			return
+		end
+		local b = type(body) == "function" and body(self) or body
 		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		GameTooltip:SetText(title, 1, 1, 1)
-		if body then
-			GameTooltip:AddLine(body, nil, nil, nil, true)
+		if opts and opts.gold then
+			local gold = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
+			GameTooltip:SetText(t, gold.r, gold.g, gold.b)
+		else
+			GameTooltip:SetText(t, 1, 1, 1)
+		end
+		if b then
+			local white = opts and opts.gold and (HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }) or nil
+			GameTooltip:AddLine(b, white and white.r, white and white.g, white and white.b, true)
+		end
+		local note = opts and opts.note and opts.note(self)
+		if note then
+			local gray = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
+			GameTooltip:AddLine(note, gray.r, gray.g, gray.b, true)
 		end
 		GameTooltip:Show()
 	end)
@@ -249,6 +303,10 @@ function W.Button(parent, text, width, height, onClick)
 		hl:SetAllPoints()
 		hl:SetColorTexture(1, 1, 1, 0.15)
 		b:SetHighlightTexture(hl)
+		local pushed = b:CreateTexture(nil, "ARTWORK")
+		pushed:SetAllPoints()
+		pushed:SetColorTexture(0.25, 0.04, 0.02, 1)
+		b:SetPushedTexture(pushed)
 	end
 	if not b:GetFontString() then
 		b:SetFontString(W.Text(b, "GameFontNormal", 12, "CENTER"))
@@ -262,10 +320,86 @@ function W.Button(parent, text, width, height, onClick)
 	return b
 end
 
--- UICheckButtonTemplate with its own label.
+local PANEL_UP = "Interface\\Buttons\\UI-Panel-Button-Up"
+local PANEL_DOWN = "Interface\\Buttons\\UI-Panel-Button-Down"
+
+-- The template swaps its Left/Middle/Right art on mouse up, show and enable: re-apply ours.
+local function ApplyPressed(b)
+	if not b:IsEnabled() then
+		return
+	end
+	local path = b.tgfPressed and PANEL_DOWN or PANEL_UP
+	for _, k in ipairs({ "Left", "Middle", "Right" }) do
+		local part = b[k]
+		if part and part.SetTexture then
+			part:SetTexture(path)
+		end
+	end
+end
+
+-- Show a button of ours as pressed (the 1 s "sending" look) or normal again.
+function W.SetPressed(b, on)
+	on = on and true or false
+	if not on and b.tgfPressed ~= true then
+		return
+	end
+	if not b.tgfHooked then
+		b.tgfHooked = true
+		for _, name in ipairs({ "OnMouseUp", "OnShow", "OnEnable" }) do
+			if b:HasScript(name) then
+				b:HookScript(name, function()
+					if b.tgfPressed then
+						ApplyPressed(b)
+					end
+				end)
+			end
+		end
+	end
+	b.tgfPressed = on
+	if on then
+		b:SetButtonState("PUSHED", true)
+	else
+		b:SetButtonState("NORMAL", false)
+	end
+	if b.Left then
+		ApplyPressed(b)
+	end
+end
+
+-- A small icon button: UIMenuButtonStretchTemplate (the look of Forever's own delist button),
+-- or a plain panel button where the template is missing. b.Icon is the centred icon texture;
+-- b.styled says whether the template took (without it the caller shows text instead).
+function W.IconButton(parent, w, h)
+	local b = Create("Button", parent, "UIMenuButtonStretchTemplate")
+	local styled = b.MiddleMiddle ~= nil
+	if not styled then
+		b:Hide()
+		b:SetParent(nil)
+		b = W.Button(parent, "", w, h)
+	end
+	b:SetSize(w, h)
+	b.Icon = b:CreateTexture(nil, "ARTWORK")
+	b.Icon:SetPoint("CENTER", 0, 0)
+	local hl = b:CreateTexture(nil, "HIGHLIGHT")
+	hl:SetAllPoints()
+	hl:SetTexture("Interface\\Buttons\\UI-Common-MouseHilight")
+	hl:SetBlendMode("ADD")
+	b.styled = styled
+	return b
+end
+
+-- Forever's checkbox sound: on when checked (or a row is picked), off when unchecked.
+function W.PlayCheckbox(on)
+	if PlaySound and SOUNDKIT then
+		PlaySound(on and SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_ON or SOUNDKIT.IG_MAINMENU_OPTION_CHECKBOX_OFF)
+	end
+end
+
+-- UICheckButtonTemplate, 26x26, with the template's own label (GameFontNormalSmall) where it
+-- has one, else a label of our own. Every click plays the checkbox sound first.
 function W.Check(parent, label, onClick)
 	local c = Create("CheckButton", parent, "UICheckButtonTemplate")
-	c:SetSize(24, 24)
+	c:SetSize(26, 26)
 	if not c:GetNormalTexture() then
 		c:SetNormalTexture("Interface\\Buttons\\UI-CheckBox-Up")
 		c:SetPushedTexture("Interface\\Buttons\\UI-CheckBox-Down")
@@ -273,14 +407,19 @@ function W.Check(parent, label, onClick)
 		c:SetCheckedTexture("Interface\\Buttons\\UI-CheckBox-Check")
 	end
 	if c.Text then
-		c.Text:SetText("")
+		c.Text:SetText(label or "")
+		c.Label = c.Text
+	else
+		c.Label = W.Text(c, "GameFontHighlightSmall", 11)
+		c.Label:SetPoint("LEFT", c, "RIGHT", 2, 1)
+		c.Label:SetText(label or "")
 	end
-	c.Label = W.Text(c, "GameFontHighlightSmall", 11)
-	c.Label:SetPoint("LEFT", c, "RIGHT", 2, 1)
-	c.Label:SetText(label or "")
-	if onClick then
-		c:SetScript("OnClick", onClick)
-	end
+	c:SetScript("OnClick", function(b, ...)
+		W.PlayCheckbox(b:GetChecked() and true or false)
+		if onClick then
+			onClick(b, ...)
+		end
+	end)
 	return c
 end
 
@@ -301,7 +440,10 @@ function W.EditBox(parent, width, template)
 		bg:SetPoint("BOTTOMRIGHT", 4, -2)
 		bg:SetColorTexture(0, 0, 0, 0.6)
 	end
-	e:SetTextInsets(2, 2, 0, 0)
+	-- SearchBoxTemplate keeps its own insets: they leave room for its magnifier and clear button.
+	if not e.searchIcon then
+		e:SetTextInsets(2, 2, 0, 0)
+	end
 	e:SetScript("OnEscapePressed", e.ClearFocus)
 	e:SetScript("OnEnterPressed", e.ClearFocus)
 	return e
@@ -311,6 +453,7 @@ end
 local ROLE_ATLAS = { TANK = "tank", HEALER = "heal", DAMAGER = "dps" }
 local ROLE_COLOR = { TANK = { 0.2, 0.45, 0.9 }, HEALER = { 0.2, 0.75, 0.3 }, DAMAGER = { 0.8, 0.25, 0.2 } }
 local ROLE_LETTER = { TANK = "T", HEALER = "H", DAMAGER = "D" }
+local MICRO = 22
 W.ROLE_NAME = { TANK = "Tank", HEALER = "Healer", DAMAGER = "Damage" }
 
 function W.RoleIcon(parent, size)
@@ -320,12 +463,21 @@ function W.RoleIcon(parent, size)
 	f.tex:SetAllPoints()
 	f.letter = W.Text(f, "GameFontHighlightSmall", 10, "CENTER")
 	f.letter:SetPoint("CENTER", 0, 0)
-	function f:SetRole(role)
+	-- micro: Forever's solo-player icon (MICRO px); otherwise the large one (the creation size).
+	function f:SetRole(role, micro)
 		self.letter:SetText("")
+		self:SetSize(size, size)
 		if not role then
 			if not W.Atlas(self.tex, "groupfinder-icon-emptyslot") then
 				self.tex:SetColorTexture(0.2, 0.2, 0.2, 0.8)
 			end
+			return
+		end
+		local microAtlas = "groupfinder-icon-role-micro-" .. ROLE_ATLAS[role]
+		if micro and W.HasAtlas(microAtlas) then
+			self:SetSize(MICRO, MICRO)
+			self.tex:SetAtlas(microAtlas, false)
+			self.tex:SetVertexColor(1, 1, 1, 1)
 			return
 		end
 		if not W.Atlas(self.tex, "groupfinder-icon-role-large-" .. ROLE_ATLAS[role]) then
@@ -441,10 +593,27 @@ function W.Dropdown(parent, width, getItems, onPick)
 	return d
 end
 
--- A pooled, mouse-wheel scrolled list of fixed-height rows.
-function W.List(parent, rowHeight, makeRow, fillRow)
+-- A pooled, mouse-wheel scrolled list: the fallback where the ScrollBox API or our
+-- templates are missing. Two forms:
+--   W.List(parent, rowHeight, makeRow, fillRow)         one kind of fixed-height row
+--   W.List(parent, kinds, kindOf, fillItem)             several kinds, one pool each
+--     kinds   = { header = { height = 36, make = fn(list) -> frame }, row = { ... } }
+--     kindOf  = fn(item) -> kind;  fillItem = fn(frame, item)
+-- list.pools[kind] holds that kind's frames (and its height); the wheel scrolls one item.
+function W.List(parent, kinds, kindOf, fillItem)
+	if type(kinds) == "number" then
+		local makeRow, fillRow = kindOf, fillItem
+		kinds = { row = { height = kinds, make = makeRow } }
+		kindOf = function()
+			return "row"
+		end
+		fillItem = fillRow
+	end
 	local list = CreateFrame("Frame", nil, parent)
-	list.rows, list.items, list.offset = {}, {}, 0
+	list.items, list.offset, list.pools, list.shown = {}, 0, {}, {}
+	for kind, def in pairs(kinds) do
+		list.pools[kind] = { height = def.height }
+	end
 	list:EnableMouseWheel(true)
 	local track = list:CreateTexture(nil, "BACKGROUND")
 	track:SetPoint("TOPRIGHT", 0, 0)
@@ -457,8 +626,8 @@ function W.List(parent, rowHeight, makeRow, fillRow)
 	list.empty = W.Text(list, "GameFontDisable", 12, "CENTER")
 	list.empty:SetPoint("CENTER")
 
-	function list:Visible()
-		return max(1, floor((self:GetHeight() or 0) / rowHeight))
+	local function Height(item)
+		return kinds[kindOf(item)].height
 	end
 
 	function list:SetItems(items, emptyText)
@@ -468,41 +637,78 @@ function W.List(parent, rowHeight, makeRow, fillRow)
 	end
 
 	function list:Refresh()
-		local visible = self:Visible()
-		local total = #self.items
-		self.offset = max(0, min(self.offset, total - visible))
-		for i = 1, visible do
-			local row = self.rows[i]
-			if not row then
-				row = makeRow(self)
-				row:SetPoint("TOPLEFT", 0, -(i - 1) * rowHeight)
-				row:SetPoint("RIGHT", self, "RIGHT", -8, 0)
-				row:SetHeight(rowHeight)
-				self.rows[i] = row
+		local items, total = self.items, #self.items
+		local room = self:GetHeight() or 0
+		-- The furthest offset that still fills the list (no empty gap below the last item).
+		local first, used = total, 0
+		while first > 0 do
+			local h = Height(items[first])
+			if used + h > room then
+				break
 			end
-			local item = self.items[self.offset + i]
-			if item then
-				fillRow(row, item)
-				row:Show()
-			else
-				row:Hide()
+			used, first = used + h, first - 1
+		end
+		self.offset = max(0, min(self.offset, first))
+
+		local taken, shown = {}, self.shown
+		for i = #shown, 1, -1 do
+			shown[i] = nil
+		end
+		local y, count = 0, 0
+		for i = self.offset + 1, total do
+			local item = items[i]
+			local kind = kindOf(item)
+			local pool = self.pools[kind]
+			local h = pool.height
+			if count > 0 and y + h > room then
+				break
+			end
+			taken[kind] = (taken[kind] or 0) + 1
+			local frame = pool[taken[kind]]
+			if not frame then
+				frame = kinds[kind].make(self)
+				pool[taken[kind]] = frame
+			end
+			frame:ClearAllPoints()
+			frame:SetPoint("TOPLEFT", 0, -y)
+			frame:SetPoint("RIGHT", self, "RIGHT", -8, 0)
+			frame:SetHeight(h)
+			fillItem(frame, item)
+			frame:Show()
+			shown[#shown + 1] = { frame, item }
+			y, count = y + h, count + 1
+		end
+		for kind, pool in pairs(self.pools) do
+			for i = (taken[kind] or 0) + 1, #pool do
+				pool[i]:Hide()
 			end
 		end
-		for i = visible + 1, #self.rows do
-			self.rows[i]:Hide()
-		end
-		if total > visible then
-			local h = self:GetHeight()
-			local size = max(20, h * visible / total)
+		if total > count then
+			local size = max(20, room * count / total)
 			thumb:SetHeight(size)
 			thumb:ClearAllPoints()
-			thumb:SetPoint("TOPRIGHT", 0, -(h - size) * self.offset / (total - visible))
+			thumb:SetPoint("TOPRIGHT", 0, -(room - size) * self.offset / max(1, total - count))
 			thumb:Show()
 			track:Show()
 		else
 			thumb:Hide()
 			track:Hide()
 		end
+	end
+
+	-- Refills the shown frames (the ScrollBox's ReinitializeFrames).
+	function list:Reinitialize()
+		self:Refresh()
+	end
+
+	function list:ForEachFrame(fn)
+		for _, entry in ipairs(self.shown) do
+			fn(entry[1], entry[2])
+		end
+	end
+
+	function list:Clear()
+		self:SetItems({}, "")
 	end
 
 	list:SetScript("OnMouseWheel", function(self, delta)

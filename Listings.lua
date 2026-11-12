@@ -17,6 +17,10 @@ local function Secret(v)
 	return v ~= nil and issecretvalue ~= nil and issecretvalue(v)
 end
 
+local function Num(v)
+	return type(v) == "number" and not Secret(v)
+end
+
 local acts = {} -- activityID -> our activity table, made once each
 local function Act(id)
 	local a = acts[id]
@@ -35,11 +39,21 @@ local function Act(id)
 		minLevel = info.minLevelSuggestion or info.minLevel or 1,
 		maxLevel = info.maxLevelSuggestion or 60,
 		size = (info.maxNumPlayers and info.maxNumPlayers > 0) and info.maxNumPlayers or 5,
+		groupID = Num(info.groupFinderActivityGroupID) and info.groupFinderActivityGroupID or nil,
 	}
 	acts[id] = a
 	return a
 end
 L.Act = Act
+
+-- A string the game gave, or nil when it is missing, empty or secret. The type and secret
+-- checks come before the comparison: a secret string must never be compared.
+local function Text(v)
+	if type(v) ~= "string" or Secret(v) or v == "" then
+		return nil
+	end
+	return v
+end
 
 local function Member(id, i)
 	local p = C_LFGList.GetSearchResultPlayerInfo(id, i)
@@ -53,14 +67,15 @@ local function Member(id, i)
 		return nil
 	end
 	local m = {
-		name = ns.GS.Short(p.name),
+		name = ns.Short(p.name),
 		fullName = p.name,
 		class = p.classFilename or "WARRIOR",
 		level = p.level or 0,
 		role = ROLE_OF[p.assignedRole] or "DAMAGER",
 		leader = p.isLeader == true,
-		spec = p.specName,
-		area = p.areaName,
+		-- A secret or empty spec or zone is dropped on its own; the member stays.
+		spec = Text(p.specName),
+		area = Text(p.areaName),
 	}
 	local r = p.lfgRoles
 	if type(r) == "table" then
@@ -78,7 +93,7 @@ local function Names(list, set)
 	end
 	for _, name in ipairs(type(list) == "table" and list or {}) do
 		if type(name) == "string" and not Secret(name) then
-			set[ns.GS.Short(name)] = true
+			set[ns.Short(name)] = true
 		end
 	end
 	return set
@@ -107,6 +122,35 @@ function L.Social(id, members)
 			end
 		end
 	end
+end
+
+local COUNT_KEYS = { "TANK", "HEALER", "DAMAGER" }
+
+-- A table of the three role numbers read with a suffix, or nil when any is missing or secret.
+local function RoleNumbers(c, suffix)
+	local out = {}
+	for _, role in ipairs(COUNT_KEYS) do
+		local n = c[role .. suffix]
+		if not Num(n) then
+			return nil
+		end
+		out[role] = n
+	end
+	return out
+end
+
+--- The group's members per role and the slots still open per role, as the game counts them
+--- (GetSearchResultMemberCounts is not in the API documentation: nil when it is missing, fails
+--- or hands back anything but plain numbers).
+local function ReadCounts(id)
+	if not C_LFGList.GetSearchResultMemberCounts then
+		return nil, nil
+	end
+	local ok, c = pcall(C_LFGList.GetSearchResultMemberCounts, id)
+	if not ok or type(c) ~= "table" or Secret(c) then
+		return nil, nil
+	end
+	return RoleNumbers(c, ""), RoleNumbers(c, "_REMAINING")
 end
 
 local function Read(id, now)
@@ -147,13 +191,17 @@ local function Read(id, now)
 	if l.solo then
 		l.leader.roles = l.leader.roles or { tank = false, healer = false, dps = true }
 	end
-	-- The comment is shown as is; it may not support string work, so it is not searched.
+	-- The comment is shown as is; it may not support string work, so the table's search
+	-- reads it only inside a pcall.
 	l.comment = not Secret(info.comment) and info.comment or nil
 	l.age = info.age or 0
 	l.listedAt = now - l.age
 	l.delisted = info.isDelisted == true
 	l.mine = info.hasSelf == true or nil
-	l.voice = info.voiceMode ~= nil and info.voiceMode ~= 0
+	l.voiceMode = Num(info.voiceMode) and info.voiceMode or nil
+	l.voice = l.voiceMode ~= nil and l.voiceMode ~= ns.VOICE.None
+	l.playstyle = Num(info.generalPlaystyle) and info.generalPlaystyle or nil
+	l.counts, l.remaining = ReadCounts(id)
 	l.newPlayerFriendly = info.newPlayerFriendly == true
 	return l
 end

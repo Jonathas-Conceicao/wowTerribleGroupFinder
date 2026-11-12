@@ -67,8 +67,22 @@ local source = {
 	preview = function()
 		return ns.UsingPreview()
 	end,
+	-- Your own row stays only while Forever has an active listing for you.
+	hasListing = function()
+		if ns.UsingPreview() then
+			return ns.state.myListing ~= nil
+		end
+		if not (C_LFGList and C_LFGList.HasActiveEntryInfo) then
+			return false
+		end
+		local active = C_LFGList.HasActiveEntryInfo()
+		return not (issecretvalue and issecretvalue(active)) and active == true
+	end,
 	searching = function()
-		return LFGBrowseFrame and LFGBrowseFrame.searching == true
+		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searching == true
+	end,
+	failed = function()
+		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searchFailed == true
 	end,
 }
 
@@ -86,16 +100,20 @@ end
 -- the three panels (Hide() only); any of them showing again hides it.
 local messages, messagesTab, refreshMessages
 
-local function ShowMessages()
-	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
-		f:Hide()
-	end
+local function UncheckStock()
 	for _, key in ipairs({ "ListingTab", "BrowsingTab", "WhoListingTab" }) do
 		local tab = LFGParentFrame[key]
 		if tab and tab.SetChecked then
 			tab:SetChecked(false)
 		end
 	end
+end
+
+local function ShowMessages()
+	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
+		f:Hide()
+	end
+	UncheckStock()
 	messages:Show()
 	if messagesTab.SetChecked then
 		messagesTab:SetChecked(true)
@@ -121,16 +139,7 @@ local function AddMessagesTab()
 	if messages.SetTitle then
 		messages:SetTitle(LFG_TITLE or "Group Finder")
 	end
-	local stone = messages:CreateTexture(nil, "BACKGROUND", nil, 1)
-	stone:SetPoint("TOPLEFT", 2, -21)
-	stone:SetPoint("BOTTOMRIGHT", -2, 3)
-	if not W.Atlas(stone, "groupfinder-background") then
-		stone:SetColorTexture(0.05, 0.05, 0.05, 0.8)
-	end
-	local content = CreateFrame("Frame", nil, messages)
-	content:SetPoint("TOPLEFT", 16, -70)
-	content:SetPoint("BOTTOMRIGHT", -16, 16)
-	refreshMessages = ns.Messages.BuildPanel(content)
+	refreshMessages = ns.Messages.BuildPanel(messages)
 	messages:Hide()
 
 	local below = LFGParentFrame.WhoListingTab or LFGParentFrame.BrowsingTab
@@ -138,8 +147,17 @@ local function AddMessagesTab()
 	messagesTab:SetPoint("TOPLEFT", below, "BOTTOMLEFT", 0, -2)
 	if messagesTab.Icon then
 		messagesTab.Icon:SetTexture("Interface\\Icons\\INV_Letter_15")
-		messagesTab.Icon:SetSize(30, 30)
-		messagesTab.Icon:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+		if messagesTab.SetFillToInterior then
+			messagesTab:SetFillToInterior(true)
+		elseif messagesTab.UpdateIconInterior then
+			messagesTab.fillToInterior = true -- our own tab; read by its first SetChecked
+		else
+			messagesTab.Icon:SetSize(30, 30)
+			messagesTab.Icon:SetTexCoord(0.03125, 0.96875, 0.03125, 0.96875)
+		end
+	end
+	if messagesTab.SetChecked then
+		messagesTab:SetChecked(false)
 	end
 	messagesTab.tooltipText = "Messages"
 	if messagesTab.SetCustomOnMouseUpHandler then
@@ -152,7 +170,13 @@ local function AddMessagesTab()
 		messagesTab:EnableMouse(true)
 		messagesTab:SetScript("OnMouseUp", ShowMessages)
 	end
-	W.Tooltip(messagesTab, "Messages", "Whisper presets for inviting players and asking groups.")
+	if type(LFGParentFrame.UpdateTabs) == "function" then
+		hooksecurefunc(LFGParentFrame, "UpdateTabs", function()
+			if messages and messages:IsShown() then
+				UncheckStock()
+			end
+		end)
+	end
 	for _, f in ipairs({ LFGListingFrame, LFGBrowseFrame, LFGWhoListFrame }) do
 		f:HookScript("OnShow", HideMessages)
 	end
@@ -164,6 +188,7 @@ local function Attach()
 	end
 	local f = LFGBrowseFrame
 	baseWidth = LFGParentFrame:GetWidth()
+	source.refreshAnchor = f.RefreshButton -- read only; the search box sits right of it
 	tbl = ns.Table.Attach(f, f.BackgroundArt or f, source)
 	for _, key in ipairs(REPLACED) do
 		if f[key] then
@@ -172,6 +197,7 @@ local function Attach()
 	end
 	f:HookScript("OnShow", function()
 		LFGParentFrame:SetWidth(WIDE)
+		ns.Table.ClearSelection()
 		Read()
 	end)
 	f:HookScript("OnHide", function()
@@ -185,16 +211,19 @@ local function Attach()
 	end
 	if LFGBrowse_DoSearch then
 		hooksecurefunc("LFGBrowse_DoSearch", function()
-			if tbl then
-				tbl:Refresh()
-			end
+			ns.Table.ClearSelection()
 		end)
 	end
 	local events = CreateFrame("Frame")
 	for _, event in ipairs(EVENTS) do
 		events:RegisterEvent(event)
 	end
-	events:SetScript("OnEvent", ReadSoon)
+	events:SetScript("OnEvent", function(_, event)
+		if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" or event == "LFG_LIST_SEARCH_FAILED" then
+			ns.Table.ClearSelection()
+		end
+		ReadSoon()
+	end)
 	Read()
 end
 

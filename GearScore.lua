@@ -60,10 +60,12 @@ local GetItemLevel = C_Item and C_Item.GetDetailedItemLevelInfo or GetDetailedIt
 local cache -- name -> { gs, level, at }
 local fresh = {} -- name -> true once learned this session
 
-local function Short(name)
-	return name and (name:match("^([^%-]+)") or name)
+local Short = ns.Short
+
+-- Unit names and GUIDs may be secret on the modern client: never compare or index with one.
+local function Secret(v)
+	return v ~= nil and issecretvalue ~= nil and issecretvalue(v)
 end
-GS.Short = Short
 
 -- An item link's level, its quality's factor (nil while not loaded), and two-handed.
 local function Item(link)
@@ -131,13 +133,35 @@ function GS.Of(member)
 	return gs, stale
 end
 
-local function StoreSelf()
+-- Stores your own score once your gear has loaded: up to ITEM_RETRIES more tries a second
+-- apart, one chain at a time (selfPending) however many events ask for it.
+local selfPending = false
+
+local function StoreSelf(tries)
 	local gs, complete = GS.Unit("player")
 	if complete then
-		GS.Store(UnitName("player"), gs, UnitLevel("player"))
-	else
-		C_Timer.After(1, StoreSelf)
+		selfPending = false
+		return GS.Store(UnitName("player"), gs, UnitLevel("player"))
 	end
+	if tries >= ITEM_RETRIES then
+		selfPending = false
+		return
+	end
+	selfPending = true
+	C_Timer.After(1, function()
+		StoreSelf(tries + 1)
+	end)
+end
+
+-- After an equipment change or a loading screen: one try a second later, unless a chain runs.
+local function QueueStoreSelf()
+	if selfPending then
+		return
+	end
+	selfPending = true
+	C_Timer.After(1, function()
+		StoreSelf(0)
+	end)
 end
 
 --- Your own score: worked out from your gear when it has loaded, else the last one kept.
@@ -196,8 +220,16 @@ function Next()
 			return C_Timer.After(INSPECT_GAP * 2, Next)
 		end
 		local unit = table.remove(queue, 1)
-		if UnitExists(unit) and UnitIsConnected(unit) and CanInspect(unit) then
-			local c = { unit = unit, guid = UnitGUID(unit), name = UnitName(unit) }
+		local guid, name = UnitGUID(unit), UnitName(unit)
+		if
+			guid
+			and not Secret(guid)
+			and not Secret(name)
+			and UnitExists(unit)
+			and UnitIsConnected(unit)
+			and CanInspect(unit)
+		then
+			local c = { unit = unit, guid = guid, name = name }
 			current = c
 			NotifyInspect(unit)
 			C_Timer.After(INSPECT_WAIT, function()
@@ -212,7 +244,9 @@ end
 
 --- Queues an inspect of every group member whose score isn't fresh.
 function GS.ScanGroup()
-	StoreSelf()
+	if not selfPending then
+		StoreSelf(0)
+	end
 	for i = #queue, 1, -1 do
 		queue[i] = nil
 	end
@@ -220,29 +254,21 @@ function GS.ScanGroup()
 	local count = raid and GetNumGroupMembers() or GetNumSubgroupMembers()
 	for i = 1, count do
 		local unit = (raid and "raid" or "party") .. i
-		local name = UnitName(unit)
-		if name and not UnitIsUnit(unit, "player") and not fresh[Short(name)] then
+		local short = Short(UnitName(unit))
+		if short and not UnitIsUnit(unit, "player") and not fresh[short] then
 			queue[#queue + 1] = unit
 		end
 	end
 	Next()
 end
 
-local frame = CreateFrame("Frame")
-frame:SetScript("OnEvent", function(_, event, arg)
-	if event == "INSPECT_READY" then
-		if current and arg == current.guid then
-			Read(0)
-		end
-	elseif event == "READY_CHECK" then
-		GS.ScanGroup()
-	elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
-		C_Timer.After(1, StoreSelf)
-	end
-end)
+local frame
 
---- Called once the saved variables are loaded.
+--- Called once the saved variables are loaded. Does nothing while gear score is switched off.
 function GS.Init(db)
+	if not ns.GEAR_SCORE then
+		return
+	end
 	db.gs = db.gs or {}
 	cache = db.gs
 	local cutoff = time() - KEEP_DAYS * 86400
@@ -252,6 +278,18 @@ function GS.Init(db)
 		end
 	end
 	if C_Timer and NotifyInspect then
+		frame = CreateFrame("Frame")
+		frame:SetScript("OnEvent", function(_, event, arg)
+			if event == "INSPECT_READY" then
+				if current and not Secret(arg) and arg == current.guid then
+					Read(0)
+				end
+			elseif event == "READY_CHECK" then
+				GS.ScanGroup()
+			elseif event == "PLAYER_EQUIPMENT_CHANGED" or event == "PLAYER_ENTERING_WORLD" then
+				QueueStoreSelf()
+			end
+		end)
 		frame:RegisterEvent("INSPECT_READY")
 		frame:RegisterEvent("READY_CHECK")
 		frame:RegisterEvent("PLAYER_EQUIPMENT_CHANGED")
