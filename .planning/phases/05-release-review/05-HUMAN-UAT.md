@@ -18,7 +18,7 @@ result: [pending]
 
 ### 2. README screenshots
 expected: No screenshots exist in the repo, so the screenshot step was skipped. Add some if wanted before the release.
-result: [pending]
+result: pass — author added two screenshots (Browse table, Messages tab); saved in `Media/Screenshots/` (ignored by `.pkgmeta`) and shown on top of the README, which was rewritten for the release with an AI usage section (author's direction); the author's read of README.md (item 1) still stands
 
 ### 3. CHANGELOG draft review
 expected: Review the `## v0.1.0` section (now with a player location bullet under Added, from the inserted phase 04.1) (first `## ` heading, so the release workflow publishes it). The old `## Unreleased` bootstrap line ("Project bootstrap: TOC, core namespace, install and release scripts.") likely folds into v0.1.0 or goes; left as is, the author edits it.
