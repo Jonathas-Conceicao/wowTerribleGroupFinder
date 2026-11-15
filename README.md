@@ -34,6 +34,15 @@ groups, and a new Messages tab holds whisper presets for contacting them in one 
 - **Stock behaviour kept** - your own listing first with its delist button, Send Message
   and Group Invite at the bottom, right-click a row for the game's own menu, and the
   game's row tooltip
+- **Item level** - shown on friendly players' tooltips, on weapon and armor tooltips, as
+  a row under Movement Speed on the character sheet, and on the Inspect window
+- **Region flags** - a US or Oceania flag after each name, your own listing included,
+  with the region in the row tooltip
+- **Row icon tooltips** - every icon on a row explains itself on hover
+- **Dynamic refresh** - the refresh button keeps the list and updates it in place: rows
+  swipe out and in and slide into place (try it in `/tgf preview`)
+- **Settings page** - in Settings > AddOns: turn each item level spot, Dynamic refresh,
+  the animations and region flags on or off, and open the Messages tab from a button
 
 ## Usage
 
@@ -50,9 +59,14 @@ groups, and a new Messages tab holds whisper presets for contacting them in one 
   | `{players}` | your current group size, counting you |
   | `{class}` / `{level}` | your class and level |
   | `{role}` | the roles you can play |
+  | `{ilvl}` | your equipped item level |
 
 - `/tgf` toggles the table on Browse; `/tgf preview` switches between your search results
   and sample listings; `/tgf reset` restores the sample data; `/tgf version`
+- `/tgf settings` (or `/tgf config`) opens the settings page; `/tgf set <key> on|off`
+  changes a setting from chat
+- `/tgf ilvl` prints the item level figures the game gives for you and your group;
+  `/tgf region` prints the region the addon reads for listings
 
 ## Supported clients
 

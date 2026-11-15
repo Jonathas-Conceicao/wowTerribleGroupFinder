@@ -5,9 +5,11 @@
 A WoW Forever addon that improves the game's own group finder in place. Forever's Browse
 tab becomes a table of solo players and groups (in the game's two sections) that players
 can sort by role, level, activity and listed time, showing where each player or leader is,
-with one-click whispers (and invites) from preset messages and friend / recent ally marks,
-while looking and behaving like the stock finder. It is for Forever players looking for
-groups or members who find the stock bulletin board hard to scan.
+with one-click whispers (and invites) from preset messages, friend / recent ally marks and
+region flags, while looking and behaving like the stock finder; the list refreshes in place.
+Beyond the finder it shows item level, from the game's own data, on player and item tooltips,
+the character sheet and the Inspect window, with a settings page for every extra. It is for
+Forever players looking for groups or members who find the stock bulletin board hard to scan.
 
 ## Core Value
 
@@ -17,17 +19,51 @@ group finder.
 
 ## Current State
 
-**Shipped v0.1.0 "Initial Release" (2026-11-12)** — the first public release; see
-[MILESTONES.md](MILESTONES.md) and the archives in [milestones/](milestones/). ~5.3k lines of
-Lua/XML; checked in the live Forever client by the author. Releases are tagged on `main`; the
-release workflow builds the zip and the author uploads it to CurseForge / Wago by hand.
+**Shipped v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15)**, after v0.1.0 "Initial
+Release" (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
+[milestones/](milestones/). ~8.0k lines of Lua/XML; checked in the live Forever client by the
+author. Releases are tagged on `main`; the release workflow builds the zip and the author
+uploads it to CurseForge / Wago by hand.
 
 ## Next Milestone Goals
 
-Not planned yet (start with `/gsd-new-milestone`). Candidates: the gear score finish-or-drop
-decision (backlog 999.1), the cleanup list from the v0.1 release review
-(`phases/05-release-review/05-HUMAN-UAT.md` item 11), settings, remembered sort / filters,
-localisation.
+Not defined yet (`/gsd-new-milestone`). Candidates: backlog 999.5 (quest log LFG button), the
+deferred v0.1 cleanup list, the v0.2 audit's tech debt, remembered sort / filters,
+localization-ready strings, EU and other regions from bug reports.
+
+<details>
+<summary>v0.2 ILvL Info and Improved Refresh — milestone brief (archived)</summary>
+
+**Goal:** Item level shown wherever players look, from the game's own data (replacing gear
+score), a settings window to turn each extra on or off, the finder's refresh made seamless with
+animations, and a region flag on every listing.
+
+**Target features:**
+- Gear score dropped: its code removed (switch, column, sort, tooltip lines, inspects, saved
+  data); the design notes stay in `research/GEARSCORE.md`; backlog 999.1 closed
+- Item level on friendly players' tooltips (quiet inspect, prototyped), on item tooltips (retail
+  look: "Item Level N" under the name; backlog 999.2), a line on the character sheet's stats
+  (General, under Movement Speed) and raw text at the top right of the Inspect window
+- Settings window: each item level spot on or off on its own (player tooltip, item tooltip,
+  character sheet, Inspect), Dynamic refresh, the swipe animations, region flags, and a button
+  that opens the finder on the Messages tab; the finder changes themselves are not optional
+  (disable the addon instead)
+- Dynamic refresh (the quiet refresh, prototyped): finished and tuned: slower swipes, rows
+  sliding up when one leaves, the swipes playable in the preview for testing (backlog 999.4)
+- Region flags (prototyped): US East / US West / Oceania on rows and in the tooltip; the
+  US1 = West, US2 = East mapping confirmed in game
+- Release Review phase (code cleanup, version, changelog draft, author review)
+
+**Starting point:** branched from `topic/dev`, which already holds working prototypes of the
+player tooltip item level (`ItemLevel.lua`, `/tgf ilvl`), the quiet refresh with swipes
+(`UI/InPlace.lua`, `T.SwipeOut` / `T.SwipeIn`), region flags (`Region.lua`, `/tgf region`) and
+the Needs my role fix; most work is tweaks, fixes and the new spots (sheet, Inspect, item
+tooltips, settings).
+
+**Adjusted at close:** region labels name the game's shard group (US1 / US2 / AU1); the
+West / East mapping was never confirmed, so it is not assumed.
+
+</details>
 
 <details>
 <summary>v0.1 Initial Release — milestone brief (archived)</summary>
@@ -104,6 +140,12 @@ migration was later dropped, and all in-game checks passed at close.
 - ✓ UI parity with the stock finder: ScrollBox list, section headers, selection, layout, row art, role icons, own listing with delist, stock tooltip, search states, sounds, sort headers, the stock right-click menu (UIP-01..16) — v0.1
 - ✓ Player location on rows and in group tooltips (LOC-01, LOC-02) — v0.1
 - ✓ Release plumbing: store IDs, icon, packaging with LICENSE, README, changelog (REL-01..04; uploads are manual) — v0.1
+- ✓ Gear score removed: code, UI, ready-check inspects and saved data (schema-2 migration); settings registry `ns.Settings` with the seven v0.2 toggles (GSR-01) — v0.2
+- ✓ Item level on friendly player tooltips, item tooltips, the character sheet (our own Item Level row under Movement Speed, native look) and the Inspect window, with a guarded quiet inspect; `{ilvl}` whisper key (ILV-01..05) — v0.2
+- ✓ Region flags (one US flag, Oceania; tooltip names the shard group, US1 / US2 / AU1; own listing = leader's region; learned servers saved) and a tooltip on every row icon; raid role counts with icons (REG-01..04, ICO-01..02) — v0.2
+- ✓ Dynamic refresh: same-filter refresh updates the list in place, swipes, rows slide up, dropped listings stay out until a new search; simulated in the preview (REF-01..04) — v0.2
+- ✓ Settings page in the game's Settings (item level spots, Dynamic refresh, swipes, region flags, "Edit whisper messages"), `/tgf settings` / `set` (SET-01..07) — v0.2
+- ✓ Release Review for v0.2.0 (REL-05) — v0.2
 
 <!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
@@ -119,14 +161,15 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-None — v0.1 shipped; the next milestone defines its requirements (`/gsd-new-milestone`).
-v0.1's requirements are archived in [milestones/v0.1-REQUIREMENTS.md](milestones/v0.1-REQUIREMENTS.md).
+None until the next milestone defines them. Archived: [v0.1](milestones/v0.1-REQUIREMENTS.md),
+[v0.2](milestones/v0.2-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
-- Gear score: decide between finishing it (tuning against real gear, sharing scores between TerribleGroupFinder users by addon whisper) and dropping it fully (code switched off in v0.1; backlog 999.1)
-- v0.1 release-review cleanup list (tooltip blank lines, raw status colours, feedback for clicks during the lock, header label width, and more: `phases/05-release-review/05-HUMAN-UAT.md` item 11)
-- Settings panel, remembered sort / filters, localization-ready strings
+- v0.2 audit tech debt (unused `SP.ID()`, `searchOut` reset edge case, tooltip spots without change listeners): `milestones/v0.2-MILESTONE-AUDIT.md`
+- Regions outside US / AU: shard names assumed to follow `CAMWOW <group> Realm …`; no flag art beyond US / AU; fix from bug reports
+- v0.1 release-review cleanup list (tooltip blank lines, raw status colours, feedback for clicks during the lock, header label width, and more: `milestones/v0.1-phases/05-release-review/05-HUMAN-UAT.md` item 11)
+- Remembered sort / filters, localization-ready strings
 
 ### Out of Scope
 
@@ -159,7 +202,12 @@ v0.1's requirements are archived in [milestones/v0.1-REQUIREMENTS.md](milestones
 | Improve Forever's finder in place, not a new window | Players keep the game's flow; search and listing stay Blizzard's | ✓ Good |
 | Follow Forever's model: solo players or groups, no applications | That is how Forever's finder works; "apply" is a retail concept | ✓ Good |
 | Never remove rows: hidden / no-slot listings greyed at the end | Players keep the whole picture while focusing on what fits | ✓ Good |
-| Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | — On hold (switched off in v0.1) |
+| Our own gear score (slot weights, quality-scaled item level) | Readable on the item level scale; tunable to Forever's items | ✗ Dropped in v0.2 for item level |
+| Item level from the game's own data instead of gear score | Blizzard's figures (`GetAverageItemLevel`, `C_PaperDollInfo.GetInspectItemLevel`) are what players know; more natural than a score of ours | ✓ Good (v0.2) |
+| Settings never turn off the finder changes themselves | The table in the finder is the addon; to go without it, disable the addon | ✓ Good (v0.2) |
+| Region tooltip names the game's shard group (US1 / US2 / AU1), no West / East | The mapping could not be confirmed; a confidently wrong label is worse than the game's own name; generic for any region | ✓ Good (v0.2) |
+| Raid-sized groups show the game's role count (count + role icon) | Matches Forever's own and retail's raid display; slot icons can't fit 40 | ✓ Good (v0.2) |
+| Changelog written for players, against the last release | Players read it; nothing they never saw (e.g. gear score) | ✓ Good (v0.2) |
 | Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Good (v0.1) |
 | Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Good (v0.1) |
 | The preset follows your group state: in a group always the invite preset; on your own, request to groups and invite to solo players | You offer your group when you have one; you ask for a spot when you don't | ✓ Good (v0.1) |
@@ -170,6 +218,7 @@ v0.1's requirements are archived in [milestones/v0.1-REQUIREMENTS.md](milestones
 | Manual CurseForge / Wago uploads from the release zip | The author prefers it; no store keys in the repo secrets | — For now |
 | Whisper presets with Auto-send off by default | Prefill keeps the player in control; Auto-send is opt-in | ✓ Good |
 | License GPL-3.0 | Open source, share-alike | ✓ Good |
+| Character sheet Item Level row: our own frame from Blizzard's stat row template on the stats list's scroll target, placed under Movement Speed by moving the shown rows' anchors; never an entry in Blizzard's stats list | Inserting Blizzard's `ITEMLEVEL` element into the pane's `elementData` tainted the sheet in game (secure code then failed comparing secret values, "execution tainted by TerribleGroupFinder"); writing `PAPERDOLL_STATCATEGORIES` taints the same path. Moving anchors writes no Lua values | ✓ Good (v0.2) |
 
 ## Git Workflow
 
@@ -236,4 +285,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-12 after v0.1 milestone*
+*Last updated: 2026-11-15 after the v0.2 milestone*

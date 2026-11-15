@@ -10,10 +10,6 @@ local GetMetadata = C_AddOns and C_AddOns.GetAddOnMetadata or GetAddOnMetadata
 
 ns.version = GetMetadata and GetMetadata(addonName, "Version") or "dev"
 
--- Gear score is switched off. Setting this to true brings back the GS column, "Your GS", the
--- tooltip lines and the ready-check inspects. Messages have no gear score key.
-ns.GEAR_SCORE = false
-
 -- How a listing's voice chat is set up (the game's enum; the same values elsewhere).
 ns.VOICE = (Enum and Enum.LFGEntryVoiceMode) or { None = 0, Legacy = 1, Discord = 2, Custom = 3 }
 
@@ -27,8 +23,20 @@ function ns.Short(name)
 end
 
 local DEFAULTS = {
-	schema = 1,
+	schema = 2,
 }
+
+-- Saved data from an older version, brought up to schema 2 in place (the table is never
+-- replaced: the settings registry, the presets and the shard table all hold it). Runs
+-- before every module's Init. The obsolete keys go on every load, so a trip back to an
+-- older version that wrote them again leaves nothing behind.
+function ns.Migrate(db)
+	db.gs = nil -- v0.1 gear score cache
+	db.autoRefresh = nil -- an unused key from a development build, cleared
+	if (tonumber(db.schema) or 0) < 2 then
+		db.schema = 2
+	end
+end
 
 local function Print(...)
 	print("|cff4fc3f7TerribleGroupFinder|r:", ...)
@@ -119,13 +127,6 @@ function ns.Me()
 		roles = { tank = roles.tank, healer = roles.healer, dps = roles.dps },
 		leader = true,
 	}
-	if ns.GEAR_SCORE then
-		if ns.UsingPreview() then
-			me.gs = me.level + 1.5
-		else
-			me.gs = ns.GS.Mine()
-		end
-	end
 	return me
 end
 
@@ -201,6 +202,7 @@ local function MyEntry()
 		voiceMode = voiceMode,
 		voice = voiceMode ~= ns.VOICE.None,
 		playstyle = mine.playstyle,
+		shard = 6934, -- the preview's own entry plays on a US2 shard
 	}
 end
 
@@ -227,16 +229,21 @@ function ns.PreviewListings(category, activities)
 end
 
 -- Runtime-only state: your preview roles, whispers sent, invites, hidden players (until
--- they list again), the preview's own listing and its sample listings.
-local function ResetState(preview)
-	local listings = Copy(ns.Preview.listings)
-	for _, l in ipairs(listings) do
+-- they list again), the preview's own listing, its sample listings and the reserve the
+-- simulated refresh draws new ones from.
+local function CopyListings(src)
+	local out = Copy(src)
+	for _, l in ipairs(out) do
 		if l.solo then
 			l.members = { l.leader }
 		else
 			l.leader = l.members[1]
 		end
 	end
+	return out
+end
+
+local function ResetState(preview)
 	ns.state = {
 		preview = preview,
 		roles = { tank = false, healer = true, dps = true },
@@ -245,7 +252,10 @@ local function ResetState(preview)
 		hidden = {},
 		asLeader = false,
 		myListing = nil,
-		listings = listings,
+		listings = CopyListings(ns.Preview.listings),
+		reserve = CopyListings(ns.Preview.reserve),
+		nextId = 1000, -- above every sample and reserve id
+		previewSearching = false,
 	}
 end
 
@@ -264,20 +274,27 @@ function ns:ADDON_LOADED(name)
 		return
 	end
 	frame:UnregisterEvent("ADDON_LOADED")
-	TerribleGroupFinderDB = TerribleGroupFinderDB or {}
-	for key, value in pairs(DEFAULTS) do
-		if TerribleGroupFinderDB[key] == nil then
-			TerribleGroupFinderDB[key] = value
-		end
+	if type(TerribleGroupFinderDB) ~= "table" then
+		TerribleGroupFinderDB = {}
 	end
 	ns.db = TerribleGroupFinderDB
+	ns.Migrate(ns.db)
+	for key, value in pairs(DEFAULTS) do
+		if ns.db[key] == nil then
+			ns.db[key] = value
+		end
+	end
+	ns.Settings.Init(ns.db)
 	ResetState(not ns.Listings.HasAPI())
-	ns.GS.Init(ns.db)
+	ns.ILvl.Init()
+	ns.ILvlUI.Init()
+	ns.Region.Init(ns.db)
 	ns.Messages.Init(ns.db)
 	ns.InPlace.Init()
+	ns.SettingsPanel.Init()
 end
 
-local USAGE = "/tgf [preview | reset | version]"
+local USAGE = "/tgf [preview | reset | version | ilvl | region | settings|config | set <key> on|off]"
 
 SLASH_TERRIBLEGROUPFINDER1 = "/tgf"
 SLASH_TERRIBLEGROUPFINDER2 = "/terriblegroupfinder"
@@ -296,9 +313,18 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 		Print(ns.state.preview and "showing sample listings (preview)." or "showing your search results.")
 		ns.InPlace.Open(true)
 	elseif command == "reset" then
+		ns.Motion.Cancel()
 		ResetState(ns.state.preview)
 		ns.Table.RefreshAll()
 		Print("preview data reset.")
+	elseif command == "ilvl" then
+		ns.ILvl.Probe()
+	elseif command == "region" then
+		ns.Region.Probe()
+	elseif command == "settings" or command == "config" then
+		ns.SettingsPanel.Open()
+	elseif command == "set" or command:sub(1, 4) == "set " then
+		ns.SettingsPanel.Command(command:match("^set%s*(.-)$"))
 	elseif command == "version" then
 		Print("version " .. ns.version)
 	else

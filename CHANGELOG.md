@@ -1,5 +1,27 @@
 # Changelog
 
+## v0.2.0
+
+Item level across the game's UI, region flags, a refresh that keeps the list, and a settings page.
+
+### Added
+
+- Item level on friendly players' tooltips, on weapon and armor tooltips, as a row under Movement Speed on the character sheet, and on the Inspect window
+- Region flags (US / Oceania) after each name, your own listing included, with the region in the row tooltip
+- Tooltips on every row icon
+- `{ilvl}` key for whisper messages: your equipped item level
+- Settings page in Settings > AddOns (also `/tgf settings`): turn each item level spot, Dynamic refresh, the animations and region flags on or off
+- `/tgf ilvl` and `/tgf region` print the item level and region details the addon reads, handy for bug reports
+
+### Changed
+
+- Dynamic refresh: the refresh button now keeps the list and updates it in place, with rows swiping out and in (try it in `/tgf preview`)
+- Raid groups show a count beside each role icon, as the game's own finder does, instead of text
+
+### Fixed
+
+- Needs my role no longer greys groups that still have a slot for you
+
 ## v0.1.0
 
 First release: Forever's own group finder gets a sortable table of solo players and groups, and whisper presets.

@@ -30,6 +30,7 @@ M.KEYS = {
 	{ key = "{players}", tip = "Your current group size, counting you." },
 	{ key = "{class}", tip = "Your class." },
 	{ key = "{level}", tip = "Your level." },
+	{ key = "{ilvl}", tip = "Your equipped item level, as the character sheet shows it." },
 	{ key = "{role}", tip = "The roles you can play, for example Tank/Healer." },
 }
 local MAX = 255
@@ -109,6 +110,13 @@ local function MyRoleText()
 	return #out > 0 and table.concat(out, "/") or "any role"
 end
 
+-- Your equipped item level as the character sheet shows it; "?" while unknown or where the
+-- client can't tell (the preview outside the game).
+local function MyILvlText()
+	local v = UnitIsPlayer and ns.ILvl and ns.ILvl.Of("player")
+	return v and tostring(v) or "?"
+end
+
 --- Puts the addon key once at the very start: every {addon} and literal [TGF] is removed
 --- and, if there was one, a single {addon} leads. No key at all leaves the text alone.
 function M.Normalize(text)
@@ -138,10 +146,15 @@ function M.Format(kind, l, text)
 		role = MyRoleText(),
 		class = ns.W.ClassName(ns.PlayerClass()),
 		level = tostring(ns.PlayerLevel()),
+		ilvl = MyILvlText, -- read only when the text uses it
 	}
 	local raw = M.Normalize(text or db[kind].text)
 	local out = raw:gsub("{(%a+)}", function(key)
-		return values[key]
+		local v = values[key]
+		if type(v) == "function" then
+			return v()
+		end
+		return v
 	end)
 	return M.Clip(out)
 end
@@ -414,7 +427,7 @@ function M.BuildPanel(panel)
 			Example()
 		end)
 
-		-- Key buttons: two rows (4 + 3); wraps once at most.
+		-- Key buttons: two rows (4 + 4); wraps once at most.
 		local x, rowY, wrapped = 0, -98, false
 		for i, k in ipairs(M.KEYS) do
 			local label = k.label or k.key

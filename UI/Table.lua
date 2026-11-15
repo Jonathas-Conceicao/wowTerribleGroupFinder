@@ -4,18 +4,23 @@
 --
 --  As Forever's list: your own listing first, then two collapsible sections, Solo players
 --  and Groups (groups first while you're solo, solo players first while you lead). Within
---  each, rows sort by the clicked column: Roles (tank > healer > damage), Lvl, GS (a group's
---  best known; only while ns.GEAR_SCORE is on), Activity, Listed. Hidden players and, with
---  Needs my role, listings with no slot for you are greyed and moved to the end of their
---  section, never removed.
+--  each, rows sort by the clicked column: Roles (tank > healer > damage), Lvl, Activity,
+--  Listed. Hidden players and, with Needs my role, listings with no slot for you are greyed
+--  and moved to the end of their section, never removed.
+--
+--  The row animations of a Dynamic refresh live in UI/Motion.lua (ns.Motion).
 --
 --  The list is Blizzard's own ScrollBox (WowScrollBoxList + MinimalScrollBar) with separate
 --  header and row frames; where the ScrollBox API or our templates (UI/Templates.xml) are
 --  missing, W.List draws the same items.
 --
---  Columns can't overlap: Name, Lvl, Roles (and GS, while ns.GEAR_SCORE is on) have fixed widths from the left, Listed
---  and the row's buttons are anchored to the right, and Activity takes what is left
---  between them; every cell is width-bound, so long text is cut, not drawn over a neighbour.
+--  The icons on a row (region flag, friend marks, new player friendly, Discord, and the
+--  class / leader icon) are textures with hit frames that pass mouse motion and clicks to the
+--  row; each shows its own tooltip, and the row's tooltip returns when the mouse leaves it.
+--
+--  Columns can't overlap: Name, Lvl, Roles have fixed widths from the left, Listed and the
+--  row's buttons are anchored to the right, and Activity takes what is left between them;
+--  every cell is width-bound, so long text is cut, not drawn over a neighbour.
 -------------------------------------------------------------------------------
 local _, ns = ...
 local W = ns.W
@@ -42,10 +47,19 @@ local GAP = 6
 local HIDE_W, MSG_W = 24, 66
 local ACTIONS_W = HIDE_W + 3 + MSG_W + 2 -- the buttons at a row's right edge
 local LISTED_W = 44
-local NAME_W, DISCORD = 130, 16 -- the name text's width (the cell's less the class icon), the Discord icon
+local NAME_W = 130 -- the name text's width (the cell's less the class icon)
+local ICON_GAP, NAME_MIN = 3, 50 -- between name-cell icons; the least width the name keeps
+-- The name cell's icons after the name, in visual order. Each is a texture with a hit frame.
+local NAME_ICONS = { "flag", "bnet", "friend", "recent", "newPlayer", "friendsIn", "discord" }
+-- When they don't all fit, the order they're left out in: recent ally first (the weakest
+-- mark), then friends in group, Friend and Battle.net friend (the leader's two marks often
+-- come together), new player friendly, Discord, and the flag last.
+local ICON_DROP = { "recent", "friendsIn", "friend", "bnet", "newPlayer", "discord", "flag" }
 local ROLES = { "TANK", "HEALER", "DAMAGER" }
 local ROLE_KEY = { TANK = "tank", HEALER = "healer", DAMAGER = "dps" }
-local ROLE_SHORT = { TANK = "T", HEALER = "H", DAMAGER = "D" }
+-- A raid's role count: per role, the count (COUNT_W, right-aligned) then the icon, COUNT_STEP
+-- apart, three across the Roles cell.
+local COUNT_W, COUNT_STEP = 13, 33
 local COMPOSITION = {
 	[5] = { 1, 1, 3 },
 	[10] = { 2, 3, 5 },
@@ -61,14 +75,11 @@ local LEFT = {
 	{ key = "level", label = "Lvl", x = 156, w = 30, justify = "CENTER" },
 	{ key = "role", label = "Roles", x = 190, w = 100 },
 }
-if ns.GEAR_SCORE then
-	LEFT[#LEFT + 1] = { key = "gs", label = "GS", x = 292, w = 44, justify = "CENTER" }
-end
-local ACTIVITY_X = ns.GEAR_SCORE and 342 or 292
+local ACTIVITY_X = 292
 -- The zone on a row's second line: its width cap, its share of the Activity cell, and the gap
 -- before the comment.
 local ZONE_MAX, ZONE_FRAC, ZONE_GAP = 100, 0.45, 6
-local FIRST_DESC = { level = true, gs = ns.GEAR_SCORE or nil }
+local FIRST_DESC = { level = true }
 -- Every cell of a row and of the header, in order.
 local CELL_KEYS = {}
 for _, col in ipairs(LEFT) do
@@ -145,21 +156,6 @@ local function BestRole(roles)
 	return 4
 end
 
--- A listing's GS: a solo player's own; a group's highest known (with whether it is outdated).
-local function ListingGS(l)
-	if l.solo then
-		return ns.GS.Of(l.leader)
-	end
-	local best, stale
-	for _, m in ipairs(l.members) do
-		local gs, old = ns.GS.Of(m)
-		if gs and (not best or gs > best) then
-			best, stale = gs, old
-		end
-	end
-	return best, stale
-end
-
 local function FitsMyRoles(l)
 	if l.solo then
 		local t, h, d = MyOpen()
@@ -167,20 +163,17 @@ local function FitsMyRoles(l)
 		return (r.tank and t > 0) or (r.healer and h > 0) or (r.dps and d > 0) or false
 	end
 	local mine = ns.MyRoles()
-	-- The game's own count of open slots per role, when it gave one. All zeros for a group
-	-- that is not full means the activity has no roles to count: the estimate decides then.
-	local left = l.remaining
-	if left and (left.TANK > 0 or left.HEALER > 0 or left.DAMAGER > 0 or #l.members >= Size(l)) then
-		for _, role in ipairs(ROLES) do
-			if mine[ROLE_KEY[role]] and left[role] > 0 then
-				return true
-			end
-		end
+	-- A full group has no slot for anyone. Otherwise a slot is open for you when either the
+	-- game's count of open slots or our estimate from the members' roles says so: the game's
+	-- count alone greyed groups with a slot left for you, and greying a group you could join
+	-- is worse than keeping one you can't.
+	if #l.members >= Size(l) then
 		return false
 	end
+	local left = l.remaining
 	RoleCounts(l)
 	for _, role in ipairs(ROLES) do
-		if mine[ROLE_KEY[role]] and open[role] > 0 then
+		if mine[ROLE_KEY[role]] and ((left and left[role] > 0) or open[role] > 0) then
 			return true
 		end
 	end
@@ -244,11 +237,6 @@ local VALUES = {
 		return l.age
 	end,
 }
-if ns.GEAR_SCORE then
-	VALUES.gs = function(l)
-		return (ListingGS(l))
-	end
-end
 
 local function Compare(a, b)
 	if a.demoted ~= b.demoted then
@@ -285,30 +273,6 @@ local function ActivityText(l)
 	local text = a and a.name or "?"
 	if #l.acts > 1 then
 		text = text .. format(" |cff999999+%d|r", #l.acts - 1)
-	end
-	return text
-end
-
-local function Ago(at)
-	if not at then
-		return ""
-	end
-	local days = math.floor((time() - at) / 86400)
-	if days < 1 then
-		return "earlier today"
-	end
-	return days == 1 and "a day ago" or (days .. " days ago")
-end
-
-local function GSLine(m)
-	local gs, stale = ns.GS.Of(m)
-	if not gs then
-		return W.GS(nil)
-	end
-	local text = W.GS(gs, m.level, stale)
-	if stale then
-		local _, _, _, at = ns.GS.Lookup(m.name)
-		text = text .. (at and (" |cff999999(" .. Ago(at) .. ")|r") or " |cff999999(outdated)|r")
 	end
 	return text
 end
@@ -480,16 +444,13 @@ local function BossNames(l, inst)
 	return #names > 0 and names or nil
 end
 
--- Right-hand text of a tooltip line: the member's zone in grey, then Gear Score when given.
-local function RightText(m, gs)
+-- Right-hand text of a tooltip line: the member's zone in grey.
+local function RightText(m)
 	local zone
 	if type(m.area) == "string" and m.area ~= "" then
 		zone = ColorCode(W.GRAY) .. m.area:gsub("|", "||") .. "|r"
 	end
-	if zone and gs then
-		return zone .. "  " .. gs
-	end
-	return zone or gs
+	return zone
 end
 
 -- Forever's own tooltip content, in its order and wording.
@@ -526,16 +487,14 @@ local function StockTooltip(tip, l, ids, inst)
 		roles = RoleMarkup(who.role)
 	end
 	local left = prefix .. PlayerText(who, roles)
-	local leaderGS = ns.GEAR_SCORE and ("GS " .. GSLine(who)) or nil
-	tip.line(left, WHITE, false, (group and not l.mine) and RightText(who, leaderGS) or leaderGS)
+	tip.line(left, WHITE, false, (group and not l.mine) and RightText(who) or nil)
 
 	if group and #l.members <= 10 then
 		for _, m in ipairs(l.members) do
 			if m ~= who and not m.leader then
-				local memberGS = ns.GEAR_SCORE and GSLine(m) or nil
-				local right = memberGS
+				local right
 				if not l.mine then
-					right = RightText(m, memberGS)
+					right = RightText(m)
 				end
 				tip.line("   " .. PlayerText(m, RoleMarkup(m.role)), WHITE, false, right)
 			end
@@ -611,6 +570,10 @@ local function ExtrasTooltip(tip, l)
 			tip.line(where, W.GRAY)
 		end
 	end
+	local region = ns.Region.Line(l)
+	if region then
+		tip.line(region, W.GRAY)
+	end
 	local friends = FriendsLine(l)
 	if friends then
 		tip.blank()
@@ -634,6 +597,58 @@ local function ShowTooltip(row, inst)
 	StockTooltip(tip, l, inst and inst.activeIDs, inst)
 	ExtrasTooltip(tip, l)
 	GameTooltip:Show()
+end
+
+-- The small tooltip of a name-cell icon (or the class / leader icon), anchored to its hit
+-- frame. False when there is nothing to say (the caller shows the row tooltip instead).
+local function IconTooltip(hit, inst)
+	local row = hit.tgfRow
+	local l = row and row.listing
+	local kind = hit.tgfKind
+	if not l or not kind then
+		return false
+	end
+	local title, body
+	if kind == "flag" then
+		title = ns.Region.Line(l)
+	elseif kind == "bnet" then
+		title = "Battle.net friend"
+	elseif kind == "friend" then
+		title = "Friend"
+	elseif kind == "recent" then
+		title = type(RECENT_ALLY) == "string" and RECENT_ALLY or "Recent ally"
+	elseif kind == "newPlayer" then
+		title = LFG_LIST_NEW_PLAYER_FRIENDLY_HEADER or "New player friendly"
+		body = type(LFG_LIST_NEW_PLAYER_FRIENDLY_TOOLTIP) == "string" and LFG_LIST_NEW_PLAYER_FRIENDLY_TOOLTIP or nil
+	elseif kind == "friendsIn" then
+		title = LFG_LIST_TOOLTIP_FRIENDS_IN_GROUP or "Friends in group:"
+		body = FriendsLine(l)
+	elseif kind == "discord" then
+		local label = VoiceLabels()[l.voiceMode] or "Discord"
+		title = format(VOICE_CHAT_MODE_FORMAT or "Voice chat: %s", label)
+	elseif kind == "leader" then
+		title = "Group leader"
+	elseif kind == "class" then
+		title = l.leader and l.leader.class and W.ClassName(l.leader.class) or nil
+	elseif kind == "role" then
+		local function RoleName(role)
+			local g = role and _G[role]
+			return type(g) == "string" and g or W.ROLE_NAME[role]
+		end
+		if hit.tgfRole and hit.tgfCount then
+			title = RoleName(hit.tgfRole)
+			body = hit.tgfCount == 1 and "1 member" or format("%d members", hit.tgfCount)
+		elseif hit.tgfRole then
+			title = RoleName(hit.tgfRole)
+			body = hit.tgfMicro and "A role this player can fill" or "A member's role"
+		elseif hit.tgfOpenRole and RoleName(hit.tgfOpenRole) then
+			title = format("Open %s slot", RoleName(hit.tgfOpenRole))
+			body = hit.tgfOpenGuess and "Estimated from the members' roles" or nil
+		else
+			title = "Open slot"
+		end
+	end
+	return W.ShowTip(hit, title, body, { gold = true })
 end
 
 local function Hide(l)
@@ -691,7 +706,7 @@ end
 
 -- The row's message button: whisper the player or the group's leader (Messages.lua).
 function Instance:Message(l, from)
-	if not l or l.mine or ns.Messages.Locked() then
+	if not l or l.mine or ns.Motion.Busy() or ns.Messages.Locked() then
 		return
 	end
 	ns.Messages.Send(l, self.source.preview(), from)
@@ -724,7 +739,7 @@ end
 
 -- Forever's Group Invite: solo players only.
 function Instance:Invite(l)
-	if ns.Messages.Locked() then
+	if ns.Motion.Busy() or ns.Messages.Locked() then
 		return
 	end
 	if not (l and l.solo and not l.mine) then
@@ -744,6 +759,9 @@ end
 -- Invite, Report Group, Report Advertisement), built by its finder. The preview and a client
 -- without that method get a copy, with the reports greyed.
 function Instance:ContextMenu(l)
+	if ns.Motion.Busy() then
+		return
+	end
 	W.PlayCheckbox(true)
 	local finder = LFGBrowseFrame
 	if not ns.UsingPreview() and finder and finder.CreateSearchEntryMenu then
@@ -771,8 +789,11 @@ end
 local function SetRoles(row, l)
 	for _, s in ipairs(row.slots) do
 		s:Hide()
+		s.tgfCount = nil
 	end
-	row.count:SetText("")
+	for _, fs in ipairs(row.roleCounts) do
+		fs:SetText("")
+	end
 	-- Solo players: Forever's micro icons, a MICRO_STEP step. Groups: the large icons at SLOT_SIZE,
 	-- a SLOT_STEP step. Every fill sets both, as the frames are reused between the two.
 	if l.solo then
@@ -793,12 +814,15 @@ local function SetRoles(row, l)
 		slot:ClearAllPoints()
 		slot:SetPoint("LEFT", (i - 1) * SLOT_STEP, 0)
 	end
-	RoleCounts(l)
+	-- Copied at once: Fill's tables are shared, and any later Fill (MyOpen) would overwrite them.
+	local c, o = RoleCounts(l)
+	local have = { TANK = c.TANK, HEALER = c.HEALER, DAMAGER = c.DAMAGER }
+	local estimate = { TANK = o.TANK, HEALER = o.HEALER, DAMAGER = o.DAMAGER }
 	local size = Size(l)
 	if size <= SLOTS then
 		local i = 0
 		for _, role in ipairs(ROLES) do
-			for _ = 1, counts[role] do
+			for _ = 1, have[role] do
 				i = i + 1
 				if row.slots[i] then
 					row.slots[i]:SetRole(role)
@@ -816,18 +840,34 @@ local function SetRoles(row, l)
 		if remaining > 0 then
 			total = min(SLOTS, i + remaining)
 		end
+		-- Which role each open slot is for: the server's remaining counts, else the estimate
+		-- (its tooltip says so).
+		local fromServer = remaining > 0
+		local openRoles = {}
+		local source = fromServer and l.remaining or estimate
+		for _, role in ipairs(ROLES) do
+			for _ = 1, min(SLOTS, tonumber(source[role]) or 0) do
+				openRoles[#openRoles + 1] = role
+			end
+		end
 		for j = i + 1, total do
-			row.slots[j]:SetRole(nil)
+			row.slots[j]:SetRole(nil, nil, openRoles[j - i], not fromServer)
 		end
 		for j = 1, total do
 			row.slots[j]:Show()
 		end
 	else
-		local parts = {}
-		for _, role in ipairs(ROLES) do
-			parts[#parts + 1] = ROLE_SHORT[role] .. counts[role]
+		-- Raids: the game's own role count (a count before each role's icon), as Forever's
+		-- Browse and retail show them; the member total is on the name cell's second line.
+		for i, role in ipairs(ROLES) do
+			local slot = row.slots[i]
+			slot:SetRole(role)
+			slot.tgfCount = have[role]
+			slot:ClearAllPoints()
+			slot:SetPoint("LEFT", (i - 1) * COUNT_STEP + COUNT_W + 1, 0)
+			slot:Show()
+			row.roleCounts[i]:SetText(tostring(have[role]))
 		end
-		row.count:SetText(format("%d/%d |cff999999%s|r", #l.members, size, table.concat(parts, " ")))
 	end
 end
 
@@ -933,10 +973,38 @@ function Instance:BuildRow(row)
 	row.icon:SetPoint("TOPLEFT", 0, -3)
 	row.name = W.Text(cells.name, "GameFontNormal", 12)
 	row.name:SetPoint("TOPLEFT", 20, -4)
-	row.name:SetWidth(NAME_W) -- FillRow narrows it to make room for the Discord icon
-	row.discord = cells.name:CreateTexture(nil, "ARTWORK")
-	row.discord:SetSize(DISCORD, DISCORD)
-	row.discord:Hide()
+	row.name:SetWidth(NAME_W) -- FillRow narrows it to make room for the icons
+	-- The icons after the name are textures, each with a hit frame (built once, here) that
+	-- passes mouse motion and clicks to the row and gives the icon its own tooltip.
+	row.tgfIcons, row.tgfHits = {}, {}
+	local function HitScripts(hit)
+		hit:SetScript("OnEnter", function(h)
+			if not IconTooltip(h, inst) then
+				ShowTooltip(row, inst)
+			end
+		end)
+		hit:SetScript("OnLeave", function(h)
+			if GameTooltip:GetOwner() ~= h then
+				return
+			end
+			if row:IsMouseOver() and row.listing then
+				ShowTooltip(row, inst)
+			else
+				GameTooltip:Hide()
+			end
+		end)
+		row.tgfHits[#row.tgfHits + 1] = hit
+	end
+	for _, kind in ipairs(NAME_ICONS) do
+		local tex = cells.name:CreateTexture(nil, "ARTWORK")
+		tex:Hide()
+		local hit = W.HitFrame(cells.name, tex, row)
+		hit.tgfKind = kind
+		HitScripts(hit)
+		row.tgfIcons[kind] = { tex = tex, hit = hit }
+	end
+	row.iconHit = W.HitFrame(cells.name, row.icon, row)
+	HitScripts(row.iconHit)
 	row.sub = W.Text(cells.name, "GameFontDisableSmall", 10)
 	row.sub:SetPoint("TOPLEFT", 0, -19)
 	row.sub:SetPoint("RIGHT", 0, 0)
@@ -946,13 +1014,19 @@ function Instance:BuildRow(row)
 	for i = 1, SLOTS do
 		local slot = W.RoleIcon(cells.role, SLOT_SIZE)
 		slot:SetPoint("LEFT", (i - 1) * SLOT_STEP, 0)
+		W.Propagate(slot)
+		slot.tgfRow = row
+		slot.tgfKind = "role"
+		HitScripts(slot)
 		row.slots[i] = slot
 	end
-	row.count = W.Text(cells.role, "GameFontHighlightSmall", 11)
-	row.count:SetAllPoints()
-	if cells.gs then
-		row.gs = W.Text(cells.gs, "GameFontHighlight", 12, "CENTER")
-		row.gs:SetAllPoints()
+	-- A raid's role counts, each before its role's icon.
+	row.roleCounts = {}
+	for i = 1, #ROLES do
+		local fs = W.Text(cells.role, "GameFontHighlight", 12, "RIGHT")
+		fs:SetWidth(COUNT_W)
+		fs:SetPoint("LEFT", (i - 1) * COUNT_STEP, 0)
+		row.roleCounts[i] = fs
 	end
 	row.activity = W.Text(cells.activity, "GameFontHighlightSmall", 11)
 	row.activity:SetPoint("TOPLEFT", 0, -4)
@@ -976,13 +1050,16 @@ function Instance:BuildRow(row)
 	row.listed = W.Text(cells.listed, "GameFontDisableSmall", 10, "RIGHT")
 	row.listed:SetAllPoints()
 	-- What these texts look like on a normal row, put back on every fill.
-	for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
+	for _, fs in ipairs({ row.sub, row.listed }) do
 		fs.__tgfColor = { fs:GetTextColor() }
 	end
 
 	row.hide = W.IconButton(row, HIDE_W, 22)
 	row.hide:SetPoint("RIGHT", -2, 0)
 	row.hide:SetScript("OnClick", function(b)
+		if ns.Motion.Busy() then
+			return
+		end
 		Hide(b:GetParent().listing)
 	end)
 	row.delist = W.IconButton(row, 24, 22)
@@ -1001,7 +1078,7 @@ function Instance:BuildRow(row)
 	row:RegisterForClicks("LeftButtonUp", "RightButtonUp")
 	row:SetScript("OnClick", function(r, button)
 		local l = r.listing
-		if not l or l.mine or l.delisted then
+		if not l or l.mine or l.delisted or ns.Motion.Busy() then
 			return
 		end
 		if button == "RightButton" then
@@ -1018,10 +1095,23 @@ function Instance:BuildRow(row)
 		inst.list:Reinitialize()
 	end)
 	row:SetScript("OnEnter", function(r)
+		for _, hit in ipairs(r.tgfHits) do
+			if hit:IsShown() and hit:IsMouseOver() and IconTooltip(hit, self) then
+				return
+			end
+		end
 		ShowTooltip(r, self)
 	end)
-	row:SetScript("OnLeave", function()
-		GameTooltip:Hide()
+	row:SetScript("OnLeave", function(r)
+		for _, hit in ipairs(r.tgfHits) do
+			if hit:IsShown() and hit:IsMouseOver() then -- onto an icon: its own scripts take over
+				return
+			end
+		end
+		local owner = GameTooltip:GetOwner()
+		if owner == r or (owner and owner.tgfRow == r) then
+			GameTooltip:Hide()
+		end
 	end)
 	local function RowHidden(b)
 		local l = b:GetParent().listing
@@ -1082,6 +1172,11 @@ function Instance:BuildHeader(frame)
 end
 
 function Instance:FillHeader(frame, item)
+	local mkey = ns.Motion.KeyOf(item)
+	if frame.tgfMotionKey ~= mkey then
+		ns.Motion.ResetRow(frame)
+	end
+	frame.tgfMotionKey = mkey
 	frame.item = item
 	frame.CategoryLabel:SetText(format("%s %s", SECTION_LABEL[item.key], Gray("(" .. item.count .. ")")))
 	local collapsed = view.collapsed[item.key] == true
@@ -1137,6 +1232,11 @@ end
 function Instance:FillRow(row, item)
 	local l = item
 	row.listing = l
+	local mkey = ns.Motion.KeyOf(l)
+	if row.tgfMotionKey ~= mkey then -- a frame re-used for another listing drops its animation
+		ns.Motion.ResetRow(row)
+	end
+	row.tgfMotionKey = mkey
 	local greyed = l.demoted == true
 
 	-- Art: your own listing has the highlight bar pair, the others Forever's list buttons.
@@ -1159,49 +1259,99 @@ function Instance:FillRow(row, item)
 		row.icon:SetClass(who.class)
 	end
 	row.icon:SetDesaturated(greyed)
+	row.iconHit.tgfKind = l.solo and "class" or "leader"
+	row.iconHit:Show()
+
+	-- Which icons follow the name. Art the client lacks falls back to its text tag, part of
+	-- the name text, so such a tag sits before the drawn icons (the flag included); accepted,
+	-- as only clients without the atlases show tags.
+	local flag = ns.Region.Flag(l)
+	local wanted = {
+		flag = flag ~= nil,
+		bnet = who.bnet,
+		friend = who.friend,
+		recent = who.recent,
+		newPlayer = l.newPlayerFriendly,
+		friendsIn = not l.solo and FriendsLine(l) ~= nil and not (who.bnet or who.friend or who.recent),
+		discord = l.voiceMode ~= nil and l.voiceMode == ns.VOICE.Discord,
+	}
 	local tags = ""
-	if l.newPlayerFriendly then
-		tags = tags .. " " .. W.Icon("newPlayer")
+	local drawn, iconsW = {}, 0
+	for _, kind in ipairs(NAME_ICONS) do
+		local icon = row.tgfIcons[kind]
+		local ok = false
+		if wanted[kind] then
+			if kind == "flag" then
+				icon.tex:SetTexture(flag.file)
+				icon.tex:SetTexCoord(unpack(flag.coords))
+				icon.tex:SetVertexColor(1, 1, 1, 1)
+				icon.tex:SetSize(flag.width, flag.height)
+				ok = true
+			else
+				ok = W.SetIcon(icon.tex, kind)
+				if not ok then
+					tags = tags .. " " .. (kind == "discord" and W.Icon("voice") or W.IconTag(kind))
+				end
+			end
+		end
+		if ok then
+			drawn[#drawn + 1] = icon
+			iconsW = iconsW + icon.tex:GetWidth() + ICON_GAP
+		else
+			icon.tex:Hide()
+			icon.hit:Hide()
+		end
 	end
-	-- Discord: Forever's icon after the name; where the atlas is missing, the text tag instead.
-	local discord = l.voiceMode ~= nil and l.voiceMode == ns.VOICE.Discord
-	local discordIcon = discord and W.Atlas(row.discord, "UI-ChatIcon-Discord")
-	if discord and not discordIcon then
-		tags = tags .. " " .. W.Icon("voice")
-	end
-	if not l.solo and FriendsLine(l) and not (who.bnet or who.friend or who.recent) then
-		tags = tags .. " " .. W.Icon("friendsIn")
-	end
-	local nameText = who.name .. W.Marks(who) .. tags
+	local nameText = who.name .. tags
 	row.name:SetText(greyed and Plain(nameText) or nameText)
-	if discordIcon then
-		local maxW = NAME_W - DISCORD - 4
-		row.name:SetWidth(maxW)
-		row.discord:ClearAllPoints()
-		row.discord:SetPoint("TOPLEFT", 20 + min(row.name:GetStringWidth(), maxW) + 4, -3)
-		row.discord:SetSize(DISCORD, DISCORD)
-		row.discord:SetDesaturated(greyed)
-		row.discord:SetAlpha(greyed and 0.5 or 1)
-		row.discord:Show()
-	else
-		row.name:SetWidth(NAME_W)
-		row.discord:Hide()
+	-- The icons get what the name leaves (it keeps NAME_MIN, or less when shorter). When they
+	-- don't fit, the gaps close to 1 px first, then icons go in ICON_DROP order (the least
+	-- informative first; Discord, then the region flag, go last).
+	-- The ones kept stay in NAME_ICONS order.
+	local room = NAME_W - min(row.name:GetStringWidth(), NAME_MIN)
+	local gap = ICON_GAP
+	if iconsW > room then
+		gap = 1
+		iconsW = iconsW - #drawn * (ICON_GAP - gap)
+	end
+	local dropped = {}
+	for _, kind in ipairs(ICON_DROP) do
+		if iconsW <= room then
+			break
+		end
+		local icon = row.tgfIcons[kind]
+		for _, d in ipairs(drawn) do
+			if d == icon then
+				dropped[icon] = true
+				iconsW = iconsW - icon.tex:GetWidth() - gap
+			end
+		end
+	end
+	local nameW = max(NAME_MIN, NAME_W - iconsW)
+	row.name:SetWidth(nameW)
+	local x = 20 + min(row.name:GetStringWidth(), nameW) + gap
+	for _, icon in ipairs(drawn) do
+		local w, h = icon.tex:GetWidth(), icon.tex:GetHeight()
+		if dropped[icon] or x + w > 20 + NAME_W then
+			icon.tex:Hide()
+			icon.hit:Hide()
+		else
+			icon.tex:ClearAllPoints()
+			icon.tex:SetPoint("TOPLEFT", x, h >= 16 and -3 or (-4 - floor((12 - h) / 2)))
+			icon.tex:SetDesaturated(greyed)
+			icon.tex:SetAlpha(greyed and 0.5 or 1)
+			icon.tex:Show()
+			icon.hit:Show()
+			x = x + w + gap
+		end
 	end
 	if l.solo then
 		row.sub:SetText(who.spec or W.ClassName(who.class))
 	else
 		row.sub:SetText(format("%d/%d members", #l.members, Size(l)))
 	end
-	if row.gs then
-		local gs, stale = ListingGS(l)
-		local text = W.GS(gs, who.level, stale)
-		row.gs:SetText(greyed and Plain(text) or text)
-	end
 	row.level:SetText(who.level)
 	SetRoles(row, l)
-	if greyed then
-		row.count:SetText(Plain(row.count:GetText() or ""))
-	end
 	local activityText = l.mine and (LFG_SELF_LISTING or "Your listing") or ActivityText(l)
 	row.activity:SetText(greyed and Plain(activityText) or activityText)
 	local zone = not l.mine and who.area or nil
@@ -1237,7 +1387,10 @@ function Instance:FillRow(row, item)
 
 	-- Colours, set on every fill: the frames are reused. Greyed rows take Forever's delisted
 	-- grey on all text (class-coloured name included) and desaturated icons.
-	local texts = { row.name, row.level, row.activity, row.sub, row.count, row.comment, row.zone, row.listed, row.gs }
+	local texts = { row.name, row.level, row.activity, row.sub, row.comment, row.zone, row.listed }
+	for _, fs in ipairs(row.roleCounts) do
+		texts[#texts + 1] = fs
+	end
 	if greyed then
 		for _, fs in pairs(texts) do
 			W.SetColor(fs, W.DELISTED)
@@ -1249,7 +1402,10 @@ function Instance:FillRow(row, item)
 		W.SetColor(row.activity, l.mine and W.LIGHTGREEN or (MatchesActive(self, l) and W.BRIGHTBLUE or W.GRAY))
 		W.SetColor(row.comment, W.LIGHTGRAY)
 		W.SetColor(row.zone, W.GRAY)
-		for _, fs in ipairs({ row.sub, row.count, row.listed, row.gs or row.count }) do
+		for _, fs in ipairs(row.roleCounts) do
+			W.SetColor(fs, W.WHITE)
+		end
+		for _, fs in ipairs({ row.sub, row.listed }) do
 			local c = fs.__tgfColor
 			if c and c[1] then
 				fs:SetTextColor(c[1], c[2], c[3])
@@ -1288,6 +1444,23 @@ function Instance:FillRow(row, item)
 		row.delist.Icon:Hide()
 		row.delist:SetText("x")
 	end
+end
+
+-- The state text (no results, nothing matches) sits where stock puts it, STATE_TOP below
+-- the list's top, unless rows show (your own listing): then STATE_GAP below the last one.
+local STATE_TOP, STATE_GAP = 40, 20
+local LIST_INSET = 26 -- rows start below the column headers (20) and the list's own inset (6)
+function Instance:PlaceStateText()
+	if not self.stateArea then
+		return
+	end
+	local height = 0
+	for _, item in ipairs(self.items) do
+		height = height + (item.header and HEADER_H or ROW_H)
+	end
+	local y = height > 0 and math.max(STATE_TOP, LIST_INSET + height + STATE_GAP) or STATE_TOP
+	self.stateText:ClearAllPoints()
+	self.stateText:SetPoint("TOP", self.stateArea, "TOP", 0, -y)
 end
 
 local sections = { solo = {}, groups = {} }
@@ -1351,7 +1524,7 @@ function Instance:HoveredRow()
 	end
 	local found
 	self.list:ForEachFrame(function(frame, item)
-		if frame == owner and not (item and item.header) then
+		if (frame == owner or owner.tgfRow == frame) and not (item and item.header) then
 			found = true
 		end
 	end)
@@ -1377,6 +1550,12 @@ function Instance:RefreshTooltip(hovered)
 		under = frame
 	end)
 	if under then
+		-- An icon under the mouse keeps its own tooltip, re-filled; never the row's over it.
+		for _, hit in ipairs(under.tgfHits) do
+			if hit:IsShown() and hit:IsMouseOver() and IconTooltip(hit, self) then
+				return
+			end
+		end
 		ShowTooltip(under, self)
 	else
 		GameTooltip:Hide()
@@ -1384,6 +1563,12 @@ function Instance:RefreshTooltip(hovered)
 end
 
 function Instance:Refresh()
+	-- A redraw during a swipe-out (a sort, a collapse, the search box, Needs my role, a
+	-- setting) would draw the new list under the rows going out: the list shows its new
+	-- state at once instead (Cancel redraws it, with no slide or swipe-in).
+	if ns.Motion.Busy() then
+		ns.Motion.Cancel()
+	end
 	if not self.band:IsVisible() then
 		return
 	end
@@ -1444,11 +1629,8 @@ function Instance:Refresh()
 		state = "No listings match your search."
 	end
 	self.stateText:SetText(state)
+	self:PlaceStateText()
 	self.status:SetText(format("%d solo players, %d groups", solo, groups))
-	if self.myGS then
-		local gs, stale = ns.GS.Of(ns.Me())
-		self.myGS:SetText("Your GS " .. W.GS(gs, ns.PlayerLevel(), stale))
-	end
 	self:RefreshButtons()
 	self:RefreshTooltip(hovered)
 end
@@ -1513,9 +1695,12 @@ function Instance:BuildList(back, placeStrip)
 				return item.header and HEADER_H or ROW_H
 			end)
 			scrollView:SetElementResetter(function(frame)
-				if GameTooltip:GetOwner() == frame then
+				local owner = GameTooltip:GetOwner()
+				if owner and (owner == frame or owner.tgfRow == frame) then
 					GameTooltip:Hide()
 				end
+				ns.Motion.ResetRow(frame) -- a released frame never keeps alpha 0 or a running group
+				frame.tgfMotionKey = nil
 			end)
 			box:SetPoint("TOPLEFT", back, "TOPLEFT", 3, -6)
 			box:SetPoint("BOTTOMRIGHT", back, "BOTTOMRIGHT", -22, 2)
@@ -1641,18 +1826,6 @@ function T.Attach(host, area, source)
 		T.RefreshAll()
 	end)
 	self.search = search
-	if ns.GEAR_SCORE then
-		self.myGS = W.Text(host, "GameFontNormal", 12, "RIGHT")
-		local gsHover = CreateFrame("Frame", nil, host)
-		gsHover:SetAllPoints(self.myGS)
-		gsHover:EnableMouse(true)
-		W.Tooltip(
-			gsHover,
-			"Your gear score",
-			"Item level of your gear, adjusted for quality, on the same scale as the GS column."
-		)
-	end
-
 	-- A backing for the list so nothing of the frame's own list takes the mouse through; it
 	-- draws nothing (the frame's art is behind it) and starts just below BarTop (art top -20).
 	local back = CreateFrame("Frame", nil, host)
@@ -1716,15 +1889,6 @@ function T.Attach(host, area, source)
 		"Roles",
 		"Solo players: tank, then healer, then damage. Groups: open slots for your roles first."
 	)
-	if header.gs then
-		W.Tooltip(
-			header.gs,
-			"Gear score",
-			"Item level of the gear, adjusted for quality. Groups show their best known. "
-				.. W.GS_OUTDATED
-				.. "This colour|r: known from an earlier session; a ready check refreshes your group's."
-		)
-	end
 	self.header = header
 
 	self.list = self:BuildList(back, PlaceStrip)
@@ -1741,20 +1905,15 @@ function T.Attach(host, area, source)
 	self.fits:SetPoint("LEFT", self.send, "RIGHT", 8, 0)
 	self.status = W.Text(host, "GameFontHighlightSmall", 11, "RIGHT")
 	self.status:SetPoint("RIGHT", self.invite, "LEFT", -8, 0)
-	if self.myGS then
-		-- Your GS sits after Needs my role, and the status takes the room after it.
-		self.myGS:SetPoint("LEFT", self.fits.Label, "RIGHT", 12, 0)
-		self.status:SetPoint("LEFT", self.myGS, "RIGHT", 8, 0)
-	else
-		self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
-	end
+	self.status:SetPoint("LEFT", self.fits.Label, "RIGHT", 8, 0)
 
 	-- What the list can't show: the spinner while searching, and the no-results, failed and
 	-- nothing-matches texts (stock puts them at the art's top, 240 wide).
 	self.stateText = W.Text(host, "GameFontDisable", 12, "CENTER")
 	self.stateText:SetWidth(240)
 	self.stateText:SetWordWrap(true)
-	self.stateText:SetPoint("TOP", area, "TOP", 0, -40)
+	self.stateText:SetPoint("TOP", area, "TOP", 0, -STATE_TOP)
+	self.stateArea = area
 	self.spinner = W.Create("Frame", host, "LoadingSpinnerTemplate")
 	self.spinner:SetSize(48, 48)
 	self.spinner:SetPoint("CENTER", area, "CENTER", 0, 0)
@@ -1776,6 +1935,52 @@ function T.ClearSelection()
 		inst.selectedID = nil
 	end
 	T.RefreshAll()
+end
+
+--- The selected listing's key (ns.Listings.Key), to find it again after a Dynamic refresh.
+function T.SelectedKey()
+	for _, inst in ipairs(T.instances) do
+		local l = FindByID(inst, inst.selectedID)
+		if l then
+			return ns.Listings.Key(l)
+		end
+	end
+	return nil
+end
+
+--- Selects the listing with that key again (its new result ID), or nothing, and redraws.
+function T.SelectKey(key)
+	for _, inst in ipairs(T.instances) do
+		inst.selectedID = nil
+		if key then
+			for _, l in ipairs(inst.source.listings()) do
+				if not l.mine and not l.delisted and ns.Listings.Key(l) == key then
+					inst.selectedID = l.id
+				end
+			end
+		end
+	end
+	T.RefreshAll()
+end
+
+--- Calls fn(frame, item, inst) for the frames each table shows now (header and row frames).
+function T.ForEachFrame(fn)
+	for _, inst in ipairs(T.instances) do
+		inst.list:ForEachFrame(function(frame, item)
+			fn(frame, item, inst)
+		end)
+	end
+end
+
+--- The set of listing keys the tables would show after a redraw (your own listing left out).
+function T.CurrentKeys()
+	local keys = {}
+	for _, inst in ipairs(T.instances) do
+		for key in pairs(ns.Motion.Keys(inst.source.listings())) do
+			keys[key] = true
+		end
+	end
+	return keys
 end
 
 function T.RefreshAll()

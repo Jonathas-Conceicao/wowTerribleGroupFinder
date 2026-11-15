@@ -203,15 +203,93 @@ local function Read(id, now)
 	l.playstyle = Num(info.generalPlaystyle) and info.generalPlaystyle or nil
 	l.counts, l.remaining = ReadCounts(id)
 	l.newPlayerFriendly = info.newPlayerFriendly == true
+	-- The hidden shard the party was made on (its region: ns.Region).
+	l.shard = tonumber(ns.Region.Server(info.partyGUID))
 	return l
 end
 
---- Reads the last search's results; returns the listings.
-function L.Read()
+-------------------------------------------------------------------------------
+--  Dynamic refresh (UI/InPlace.lua): the game's search of the same activities again. Its
+--  answer replaces the list in place: whisper and invite marks follow each listing to its
+--  new result ID, and the listings delisted since (and not relisted) are dropped and stay
+--  out of later reads until the next new search.
+-------------------------------------------------------------------------------
+
+--- A listing's identity across searches (result IDs change with every search).
+function L.Key(l)
+	return (l.solo and "s:" or "g:") .. l.leader.name
+end
+
+-- Whisper and invite marks follow a listing to its new result ID.
+local function Carry(from, to)
+	local state = ns.state
+	if not state or from == to then
+		return
+	end
+	for _, marks in ipairs({ state.messaged, state.invited }) do
+		if marks and marks[from] then
+			marks[to] = marks[from]
+		end
+	end
+end
+
+--- The listings shown now (not yours), by key: what a refresh's answer is matched with.
+function L.Snapshot()
+	local snap = {}
+	for _, l in ipairs(L.items) do
+		if not l.mine then
+			snap[L.Key(l)] = l
+		end
+	end
+	return snap
+end
+
+-- Result IDs of the delisted listings a Dynamic refresh dropped: later reads of the same
+-- results leave them out too, until the next new search (L.ClearDropped). A relisted
+-- listing is a live one under another ID, so it shows.
+local dropped = {}
+
+--- Forgets the listings Dynamic refreshes dropped (a new search shows its own list).
+function L.ClearDropped()
+	for id in pairs(dropped) do
+		dropped[id] = nil
+	end
+end
+
+--- Reads the last search's results; returns the listings. With previous (L.Snapshot()
+--- taken when a refresh went out), marks carry over by key and delisted listings drop;
+--- without, the ones an earlier refresh dropped stay out.
+function L.Read(previous)
 	local items = L.items
 	for i = #items, 1, -1 do
 		items[i] = nil
 	end
+	L.ReadResults(items)
+	if previous then
+		L.ClearDropped()
+	end
+	for i = #items, 1, -1 do
+		local l = items[i]
+		if not l.mine and l.delisted and (previous or dropped[l.id]) then
+			dropped[l.id] = true
+			table.remove(items, i)
+		end
+	end
+	if not previous then
+		return items
+	end
+	for _, l in ipairs(items) do
+		if not l.mine then
+			local old = previous[L.Key(l)]
+			if old then
+				Carry(old.id, l.id)
+			end
+		end
+	end
+	return items
+end
+
+function L.ReadResults(items)
 	if not (C_LFGList and C_LFGList.GetSearchResultInfo) then
 		return items
 	end

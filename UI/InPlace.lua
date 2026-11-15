@@ -38,10 +38,120 @@ local IsLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 local tbl, baseWidth
 local pending = false
 
+-------------------------------------------------------------------------------
+--  Dynamic refresh (setting dynamicRefresh, default on): the game's own search of the same
+--  category and activities the list already shows (the refresh button, or Browse opening
+--  again) doesn't blank the list. The search stays Blizzard's; we only read differently:
+--  no spinner, the list as it was until the answer, then the answer replaces it in place
+--  (ns.Listings.Read(snapshot)): new listings take their sorted place, the ones it lacks
+--  or that came back delisted leave (swiping out, ns.Motion) and stay out until the next
+--  new search (unless relisted), and the selection and whisper/invite marks follow their
+--  listing by key. A failed refresh keeps the list; a search for anything else is a new
+--  list; with the setting off every search is stock.
+--  There is never a refresh on a timer: the game blocks `Search` from one
+--  (ADDON_ACTION_BLOCKED), and this addon never calls `Search` at all.
+-------------------------------------------------------------------------------
+local REFRESH_WAIT = 10 -- seconds a Dynamic refresh is waited on
+-- pending: its answer is awaited; failed: it failed (the list stays); merge: its answer
+-- arrived and the next read merges it; snapshot: the list it's compared with.
+local refresh = { pending = false, failed = false, merge = false, snapshot = nil, at = 0 }
+local shownFilter -- the category and activities of the list shown (set by its answer), as a string
+-- The search Blizzard has out: LFGBrowse_DoSearch searches only while it isn't searching
+-- already, so a call while one is out (its own double calls, a click during a search) does
+-- nothing, and neither do we. issued: that search's filter, shown once it answers.
+local searchOut, issued = false, nil
+
+-- The category and activities Blizzard's dropdowns hold, as a string (nil without an activity).
+local function FilterKey()
+	local f = LFGBrowseFrame
+	local category = f and f.CategoryDropdown and f.CategoryDropdown.GetValue and f.CategoryDropdown:GetValue()
+	local acts = f and f.ActivityDropdown and f.ActivityDropdown.selectedValues
+	if type(category) ~= "number" or category <= 0 or type(acts) ~= "table" or #acts == 0 then
+		return nil
+	end
+	local ids = {}
+	for i, id in ipairs(acts) do
+		ids[i] = tostring(id)
+	end
+	table.sort(ids)
+	return category .. ":" .. table.concat(ids, ",")
+end
+
+local readAfterSwipe = false -- a read came in during a swipe-out: it runs once the list updated
+local ReadSoon
+
+-- Hooked after LFGBrowse_DoSearch: a refresh of the list shown, or a new list.
+local function OnSearch()
+	if searchOut then
+		return -- Blizzard was searching already: this call started nothing
+	end
+	if not (LFGBrowseFrame and LFGBrowseFrame.searching == true) then
+		return -- nothing searched (no category)
+	end
+	searchOut = true
+	-- A new search shows its state at once: a swipe in progress is cancelled, and a read
+	-- of the old answer deferred by it no longer runs (cleared before the cancel runs it).
+	readAfterSwipe = false
+	ns.Motion.Cancel()
+	local key = FilterKey()
+	issued = key
+	if ns.UsingPreview() then
+		-- /tgf preview: a search of the same filter again (the refresh button) runs the
+		-- simulated refresh; any other is a new list of the preview data. The real search
+		-- is harmless.
+		local again = key ~= nil and key == shownFilter
+		shownFilter = key
+		if again then
+			return ns.Preview.Refresh()
+		end
+		return ns.Table.ClearSelection()
+	end
+	local same = key ~= nil
+		and key == shownFilter
+		and #ns.Listings.items > 0
+		and ns.Settings.Get("dynamicRefresh") ~= false
+	refresh.failed, refresh.merge = false, false
+	if same then
+		refresh.pending, refresh.snapshot, refresh.at = true, ns.Listings.Snapshot(), GetTime()
+		local at = refresh.at
+		C_Timer.After(REFRESH_WAIT, function()
+			if refresh.pending and refresh.at == at then
+				refresh.pending, refresh.snapshot = false, nil -- no answer: the next read is a plain one
+			end
+		end)
+	else
+		refresh.pending, refresh.snapshot = false, nil
+		ns.Listings.ClearDropped() -- a new list: what earlier refreshes dropped may show again
+		ns.Table.ClearSelection()
+	end
+end
+
+-- Once a refresh is in view (any Motion.Show, the preview's too), a read that came in
+-- meanwhile runs.
+local function AfterMotion()
+	if readAfterSwipe then
+		readAfterSwipe = false
+		ReadSoon()
+	end
+end
+
 local function Read()
 	pending = false
+	if refresh.pending and not ns.UsingPreview() then
+		return -- keep showing the list until the refresh answers
+	end
+	if ns.Motion.Busy() then
+		readAfterSwipe = true -- the rows going out still show the old list
+		return
+	end
+	local previous = refresh.merge and refresh.snapshot or nil
+	refresh.merge, refresh.snapshot = false, nil
 	if not ns.UsingPreview() then
-		ns.Listings.Read()
+		local selected = previous and ns.Table.SelectedKey()
+		ns.Listings.Read(previous)
+		if previous then
+			return ns.Motion.Show(previous, selected)
+		end
 	end
 	if tbl then
 		tbl:Refresh()
@@ -49,7 +159,7 @@ local function Read()
 end
 
 -- Result updates come in bursts; read once per burst.
-local function ReadSoon()
+function ReadSoon()
 	if pending then
 		return
 	end
@@ -79,10 +189,15 @@ local source = {
 		return not (issecretvalue and issecretvalue(active)) and active == true
 	end,
 	searching = function()
-		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searching == true
+		-- A Dynamic refresh shows no spinner: the list stays until its answer.
+		if ns.UsingPreview() then
+			return ns.state.previewSearching == true
+		end
+		return LFGBrowseFrame and LFGBrowseFrame.searching == true and not refresh.pending
 	end,
+	-- A Dynamic refresh that failed keeps the list as it was.
 	failed = function()
-		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searchFailed == true
+		return not ns.UsingPreview() and LFGBrowseFrame and LFGBrowseFrame.searchFailed == true and not refresh.failed
 	end,
 }
 
@@ -210,19 +325,45 @@ local function Attach()
 		AddMessagesTab()
 	end
 	if LFGBrowse_DoSearch then
-		hooksecurefunc("LFGBrowse_DoSearch", function()
-			ns.Table.ClearSelection()
-		end)
+		hooksecurefunc("LFGBrowse_DoSearch", OnSearch)
 	end
 	local events = CreateFrame("Frame")
 	for _, event in ipairs(EVENTS) do
 		events:RegisterEvent(event)
 	end
 	events:SetScript("OnEvent", function(_, event)
-		if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" or event == "LFG_LIST_SEARCH_FAILED" then
+		local answer = event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" or event == "LFG_LIST_SEARCH_FAILED"
+		if answer then
+			-- Blizzard is no longer searching. The list now shows the filter that was searched
+			-- (a failed new search shows none; a failed refresh keeps its list).
+			searchOut = false
+			if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
+				shownFilter = issued
+			elseif not refresh.pending then
+				shownFilter = nil
+			end
+		end
+		if answer and refresh.pending then
+			refresh.pending = false
+			if event == "LFG_LIST_SEARCH_FAILED" then
+				refresh.failed, refresh.snapshot = true, nil -- keep the list as it was
+				return
+			end
+			refresh.merge = true
+		elseif answer and not ns.UsingPreview() then
 			ns.Table.ClearSelection()
 		end
 		ReadSoon()
+	end)
+	shownFilter = FilterKey()
+	ns.Motion.OnUpdated(AfterMotion)
+	ns.Settings.OnChange("dynamicRefresh", function(on)
+		if not on and refresh.pending then
+			-- Off while a refresh is out: its answer is a plain read, and the spinner shows.
+			refresh.pending, refresh.snapshot, refresh.merge = false, nil, false
+			ns.Listings.ClearDropped()
+			ns.Table.RefreshAll()
+		end
 	end)
 	Read()
 end
@@ -263,4 +404,53 @@ function IP.Open(keepOpen)
 	else
 		ns.UI.Toggle("browse")
 	end
+end
+
+-- Asked while the game's Settings panel was open: the Messages tab opens once it hides.
+-- The panel (HIGH strata, no UIPanelWindows entry) would cover the finder, and we never
+-- close it ourselves; a one-time HookScript is all that's added to it.
+local messagesAfterSettings, settingsHooked = false, false
+
+local function OpenAfterSettings()
+	messagesAfterSettings = true
+	if not settingsHooked then
+		settingsHooked = true
+		SettingsPanel:HookScript("OnHide", function()
+			if not messagesAfterSettings then
+				return
+			end
+			messagesAfterSettings = false
+			-- next frame: out of the panel's own hide
+			C_Timer.After(0, IP.OpenMessages)
+		end)
+	end
+	ns.Print("the Messages tab opens when you close the Settings.")
+end
+
+--- Opens the group finder on our Messages tab (the stand-in's only where the game has no
+--- group finder API). Out of combat only; with the game's Settings panel open, it opens
+--- once that panel closes (never closed by us).
+function IP.OpenMessages()
+	if not ns.Listings.HasAPI() then
+		ns.state.preview = true
+		return ns.UI.Show("messages")
+	end
+	if InCombatLockdown() then
+		return ns.Print("can't open the group finder in combat.")
+	end
+	if not (tbl and messages) then
+		return ns.Print("the group finder isn't ready yet.")
+	end
+	if SettingsPanel and SettingsPanel.IsShown and SettingsPanel:IsShown() and SettingsPanel.HookScript then
+		return OpenAfterSettings()
+	end
+	if not LFGParentFrame:IsShown() then
+		if LFGVanilla_ShowFrame then
+			LFGVanilla_ShowFrame(BROWSE_TAB)
+		elseif LFGVanilla_ToggleFrame then
+			LFGVanilla_ToggleFrame(BROWSE_TAB)
+		end
+	end
+	-- last: the stock tabs' OnShow hooks hide Messages
+	ShowMessages()
 end

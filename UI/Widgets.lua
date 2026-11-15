@@ -62,29 +62,10 @@ W.LIGHTGRAY = LIGHTGRAY_FONT_COLOR or { r = 0.753, g = 0.753, b = 0.753 }
 W.GREEN = GREEN_FONT_COLOR or { r = 0.1, g = 1, b = 0.1 }
 W.NORMAL = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
 W.RED = RED_FONT_COLOR or { r = 1, g = 0.1, b = 0.1 }
+W.WHITE = HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }
 
 function W.SetColor(fs, c)
 	fs:SetTextColor(c.r, c.g, c.b)
-end
-
--- A gear score on the item level scale ("23.1"), coloured like item quality by how it
--- compares with a well geared player of that level (blues about five levels above it).
--- An outdated one (only known from an earlier session) takes its own dusty colour; an
--- unknown one reads as a grey dash.
-W.GS_OUTDATED = "|cffb08d57"
-function W.GS(gs, level, outdated)
-	if not gs then
-		return "|cff666666-|r"
-	end
-	if outdated then
-		return W.GS_OUTDATED .. string.format("%.1f", gs) .. "|r"
-	end
-	local share = gs / ((level or 60) + 5)
-	local code = share >= 1.05 and "|cffa335ee"
-		or share >= 0.95 and "|cff0070dd"
-		or share >= 0.8 and "|cff1eff00"
-		or "|cffffffff"
-	return code .. string.format("%.1f", gs) .. "|r"
 end
 
 -- Inline icons: the game's atlas or texture markup in the real client; short coloured
@@ -139,6 +120,70 @@ function W.Marks(m)
 		s = s .. " " .. W.Icon("recent")
 	end
 	return s
+end
+
+-- The plain text tag of an icon key, for where the client lacks the art.
+function W.IconTag(key)
+	local icon = ICONS[key]
+	return icon and icon[2] or ""
+end
+
+-- Name-cell icons drawn as textures: key -> atlas (or file) and size.
+local TEXTURE_ICONS = {
+	newPlayer = { atlas = "newplayerchat-chaticon-newcomer", size = 14 },
+	friend = { atlas = "friends-icon-friendsAvailable", size = 13 },
+	recent = { atlas = "friendslist-recentallies-yellow", size = 11 },
+	friendsIn = { atlas = "friends-icon-friendsInGroup", size = 14 },
+	discord = { atlas = "UI-ChatIcon-Discord", size = 16 },
+	bnet = { file = "Interface\\ChatFrame\\UI-ChatWhisperIcon", size = 12 },
+}
+
+-- Draws a name-cell icon onto a texture and sizes it. False when the client lacks the art
+-- (the caller then uses the text tag).
+function W.SetIcon(tex, key)
+	local icon = TEXTURE_ICONS[key]
+	if not icon or not W.Rich() then
+		return false
+	end
+	if icon.file then
+		local c = ChatTypeInfo and ChatTypeInfo.BN_WHISPER
+		tex:SetTexture(icon.file)
+		if c and c.r then
+			tex:SetVertexColor(c.r, c.g, c.b, 1)
+		else
+			tex:SetVertexColor(0, 1, 0.96, 1)
+		end
+	elseif tex.SetAtlas and W.HasAtlas(icon.atlas) then
+		tex:SetAtlas(icon.atlas)
+		tex:SetVertexColor(1, 1, 1, 1)
+	else
+		return false
+	end
+	tex:SetSize(icon.size, icon.size)
+	return true
+end
+
+-- Mouse events reach the frame beneath: hover, click-select and menus keep working over it.
+-- Never give such a frame click scripts of its own.
+function W.Propagate(frame)
+	frame:EnableMouse(true)
+	if frame.SetPropagateMouseMotion then
+		frame:SetPropagateMouseMotion(true)
+	end
+	if frame.SetPropagateMouseClicks then
+		frame:SetPropagateMouseClicks(true)
+	end
+	return frame
+end
+
+-- A hover area over a region, created once per row; its tooltip belongs to row (tgfRow).
+function W.HitFrame(parent, region, row)
+	local hit = CreateFrame("Frame", nil, parent)
+	hit:SetAllPoints(region)
+	W.Propagate(hit)
+	hit.tgfRow = row
+	hit:Hide()
+	return hit
 end
 
 -- Name colours for the "Friends in group" tooltip line, as the retail finder colours them.
@@ -253,6 +298,32 @@ function W.Inset(parent)
 	return f
 end
 
+-- Shows the tooltip on owner: title (gold with opts.gold), body, grey opts.note (a string
+-- here). False, leaving the tooltip alone, without a title.
+function W.ShowTip(owner, title, body, opts)
+	if not title then
+		return false
+	end
+	GameTooltip:SetOwner(owner, "ANCHOR_RIGHT")
+	if opts and opts.gold then
+		local gold = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
+		GameTooltip:SetText(title, gold.r, gold.g, gold.b)
+	else
+		GameTooltip:SetText(title, 1, 1, 1)
+	end
+	if body then
+		local white = opts and opts.gold and (HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }) or nil
+		GameTooltip:AddLine(body, white and white.r, white and white.g, white and white.b, true)
+	end
+	local note = opts and opts.note
+	if note then
+		local gray = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
+		GameTooltip:AddLine(note, gray.r, gray.g, gray.b, true)
+	end
+	GameTooltip:Show()
+	return true
+end
+
 -- title / body: a string, or a function of the frame (read when the tooltip opens).
 -- opts (optional): gold = gold title and white body; note = function of the frame giving a
 -- grey extra line (or nil).
@@ -266,23 +337,8 @@ local function Tooltip(f, title, body, opts)
 			return
 		end
 		local b = type(body) == "function" and body(self) or body
-		GameTooltip:SetOwner(self, "ANCHOR_RIGHT")
-		if opts and opts.gold then
-			local gold = NORMAL_FONT_COLOR or { r = 1, g = 0.82, b = 0 }
-			GameTooltip:SetText(t, gold.r, gold.g, gold.b)
-		else
-			GameTooltip:SetText(t, 1, 1, 1)
-		end
-		if b then
-			local white = opts and opts.gold and (HIGHLIGHT_FONT_COLOR or { r = 1, g = 1, b = 1 }) or nil
-			GameTooltip:AddLine(b, white and white.r, white and white.g, white and white.b, true)
-		end
 		local note = opts and opts.note and opts.note(self)
-		if note then
-			local gray = GRAY_FONT_COLOR or { r = 0.5, g = 0.5, b = 0.5 }
-			GameTooltip:AddLine(note, gray.r, gray.g, gray.b, true)
-		end
-		GameTooltip:Show()
+		W.ShowTip(self, t, b, { gold = opts and opts.gold, note = note })
 	end)
 	f:HookScript("OnLeave", function()
 		GameTooltip:Hide()
@@ -464,7 +520,13 @@ function W.RoleIcon(parent, size)
 	f.letter = W.Text(f, "GameFontHighlightSmall", 10, "CENTER")
 	f.letter:SetPoint("CENTER", 0, 0)
 	-- micro: Forever's solo-player icon (MICRO px); otherwise the large one (the creation size).
-	function f:SetRole(role, micro)
+	-- openRole: the role an empty slot stands for, when known (kept for its tooltip); guess:
+	-- that role is our estimate, not the server's count.
+	function f:SetRole(role, micro, openRole, guess)
+		self.tgfRole = role
+		self.tgfMicro = micro and true or nil
+		self.tgfOpenRole = (not role) and openRole or nil
+		self.tgfOpenGuess = (not role and openRole and guess) and true or nil
 		self.letter:SetText("")
 		self:SetSize(size, size)
 		if not role then
@@ -675,11 +737,28 @@ function W.List(parent, kinds, kindOf, fillItem)
 			frame:SetHeight(h)
 			fillItem(frame, item)
 			frame:Show()
+			-- A tooltip on this frame (or a hit frame of it) may describe the item it held
+			-- before: shown again for the new item while the mouse is over it, else hidden.
+			local owner = GameTooltip:IsShown() and GameTooltip:GetOwner() or nil
+			if owner and (owner == frame or owner.tgfRow == frame) then
+				local onEnter = frame:GetScript("OnEnter")
+				if onEnter and frame:IsMouseOver() then
+					onEnter(frame)
+				else
+					GameTooltip:Hide()
+				end
+			end
 			shown[#shown + 1] = { frame, item }
 			y, count = y + h, count + 1
 		end
 		for kind, pool in pairs(self.pools) do
 			for i = (taken[kind] or 0) + 1, #pool do
+				-- A frame put away never keeps alpha 0 or a running animation (the
+				-- ScrollBox's resetter does the same for its frames).
+				if ns.Motion and pool[i].tgfMotionKey then
+					ns.Motion.ResetRow(pool[i])
+				end
+				pool[i].tgfMotionKey = nil
 				pool[i]:Hide()
 			end
 		end

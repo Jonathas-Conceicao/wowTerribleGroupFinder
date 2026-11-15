@@ -1,5 +1,44 @@
 # Milestones
 
+## v0.2 ILvL Info and Improved Refresh (Shipped: 2026-11-15)
+
+**Delivered:** item level from the game's own data wherever players look (replacing gear
+score), region flags, a refresh that keeps the list and updates it in place, tooltips on every
+row icon, and a settings page to turn each extra on or off.
+
+**Phases completed:** 6 phases (6-11), 15 plans
+**Requirements:** 24/24 (GSR, ILV, SET, REF, REG, ICO, REL); REG-02 adjusted (region named by
+the game's shard group, US1 / US2 / AU1, no West / East assumed)
+**Git:** 116 commits on `milestone/v0.2-ilvl-info-and-improved-refresh`, 2026-11-12 →
+2026-11-15; 22 shipped/source files changed (+3494 / −637, outside `.planning/`); ~8.0k lines of
+Lua/XML shipped
+**Tag:** `v0.2.0`
+
+**Key accomplishments:**
+
+- Gear score removed for good (code, UI, inspects; saved data cleared by a schema-2 migration)
+  and a settings registry (`ns.Settings`) with seven toggles, all on by default
+- Item level on friendly player tooltips (guarded quiet inspect), weapon and armor tooltips, a
+  native-looking row under Movement Speed on the character sheet (taint-free: our own frame,
+  Blizzard's rows' anchors moved only), and the Inspect window; `{ilvl}` whisper key
+- Region flags from the listing's hidden shard (seeded and learned shards, own listing =
+  leader's region), generic for any region group; a tooltip on every row icon; raid groups
+  show role counts with icons
+- Dynamic refresh: a same-filter refresh keeps the list, swipes rows out and in and slides the
+  rest into place (`ns.Motion`), also simulated in the preview
+- Settings page in the game's Settings (AddOns), `/tgf settings`, `/tgf set`, and a button to
+  the Messages tab
+
+**Audit:** [milestones/v0.2-MILESTONE-AUDIT.md](milestones/v0.2-MILESTONE-AUDIT.md), status
+tech_debt (no blockers): unused `SP.ID()`, the `searchOut` reset edge case, tooltip spots
+without change listeners.
+
+**Known deferred items at close:** the v0.1 cleanup list stays deferred; README screenshots
+kept from v0.1 (no flags, row icons or raid role counts shown); backlog 999.5 (quest log LFG
+button).
+
+---
+
 ## v0.1 Initial Release (Shipped: 2026-11-12)
 
 **Delivered:** the first public release: Forever's own group finder, improved in place, with a

@@ -313,17 +313,21 @@ local function BuildBrowse(parent)
 	activityDrop:SetPoint("LEFT", categoryDrop, "RIGHT", 15, 0)
 
 	local refresh = W.Button(panel, "", 26, 22, function()
-		ns.Table.RelistOneHidden(ns.state.listings)
-		ns.Table.ClearSelection()
-		ns.Print("preview: in game this is Forever's own refresh button, which searches again.")
-		RefreshBrowse()
+		ns.Preview.Refresh()
+		if ns.state.previewSearching then
+			RefreshBrowse()
+		end
 	end)
 	refresh:SetPoint("LEFT", activityDrop, "RIGHT", 9, 0)
 	local icon = refresh:CreateTexture(nil, "OVERLAY")
 	icon:SetSize(16, 16)
 	icon:SetPoint("CENTER")
 	icon:SetTexture("Interface\\Buttons\\UI-RefreshButton")
-	W.Tooltip(refresh, "Refresh", "Search again.")
+	W.Tooltip(
+		refresh,
+		"Refresh",
+		"Search again. In the preview, some listings leave and new ones arrive (a simulated Dynamic refresh)."
+	)
 
 	tbl = ns.Table.Attach(panel, art, {
 		listings = function()
@@ -337,6 +341,9 @@ local function BuildBrowse(parent)
 		end,
 		failed = function()
 			return false
+		end,
+		searching = function()
+			return ns.state.previewSearching == true
 		end,
 		refreshAnchor = refresh,
 	})
