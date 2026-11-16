@@ -1,5 +1,40 @@
 # Milestones
 
+## v0.2.1 Reset Details reminder, more region flags and spec points (Shipped: 2026-11-16)
+
+**Delivered:** a damage meter reset prompt (Details! or the game's own meter) on joining a group
+or entering an instance, region flags for every region from real flag art with a two-letter
+fallback, and talent points per tree on friendly players' tooltips.
+
+**Phases completed:** 4 phases (12-15), 7 plans
+**Requirements:** 11/11 (MTR, REG, SPC, REL); MTR-02 adjusted (no prompt on a same-instance
+run-back within 15 min, nor when Details! erases on its own)
+**Git:** 59 commits on `milestone/v0.2.1-reset-details-reminder-more-region-flags-and-spec-points`
+(from `topic/dev`), 2026-11-16; 26 shipped/source files changed (+1116 / −199, outside
+`.planning/`); ~8.9k lines of Lua/XML shipped
+**Tag:** `v0.2.1`
+
+**Key accomplishments:**
+
+- `MeterReset.lua`: a "[TGF] Reset …?" Yes / No prompt of our own (never a StaticPopup entry),
+  Details! first, else the game's meter while it's on; two settings, `/tgf meter`; same-run,
+  Details! auto-erase and 10 s merge rules; placed below game popups and the zone name text
+- Region flags for US, AU, EU, CN, KR, TW from the author's flagpedia.net PNGs (converted by
+  `png2tga.js`, no art generated; the script-drawn flags removed); groups like `EU` / `EU3` get the
+  flag, any other shard text a two-letter tag, the full text in the tooltip
+- Talent points per tree ("Talents 31/20/0") on friendly players' tooltips from the same guarded
+  quiet inspect, read as Forever's talent frame does (`C_Traits` group currency `spent`), with
+  its own setting; the inspect also stays away from Forever's Inspect Talents view
+- Settings sections "Item level and talents" and "Damage meter" (ten options, all on by default)
+
+**Audit:** [milestones/v0.2.1-MILESTONE-AUDIT.md](milestones/v0.2.1-MILESTONE-AUDIT.md), status
+tech_debt (no blockers).
+
+**Known deferred items at close:** README screenshots and wording kept from v0.2 (the author's
+call); the audit's open items; v0.1 cleanup list, v0.2 audit tech debt, backlog 999.5.
+
+---
+
 ## v0.2 ILvL Info and Improved Refresh (Shipped: 2026-11-15)
 
 **Delivered:** item level from the game's own data wherever players look (replacing gear

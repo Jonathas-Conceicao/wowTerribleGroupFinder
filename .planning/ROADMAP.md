@@ -4,6 +4,7 @@
 
 - ✅ **v0.1 Initial Release** — Phases 1-5 (shipped 2026-11-12, tag `v0.1.0`) — [archive](milestones/v0.1-ROADMAP.md)
 - ✅ **v0.2 ILvL Info and Improved Refresh** — Phases 6-11 (shipped 2026-11-15, tag `v0.2.0`) — [archive](milestones/v0.2-ROADMAP.md)
+- ✅ **v0.2.1 Reset Details reminder, more region flags and spec points** — Phases 12-15 (shipped 2026-11-16, tag `v0.2.1`) — [archive](milestones/v0.2.1-ROADMAP.md)
 
 ## Phases
 
@@ -31,16 +32,27 @@
 
 </details>
 
+<details>
+<summary>✅ v0.2.1 Reset Details reminder, more region flags and spec points (Phases 12-15) — SHIPPED 2026-11-16</summary>
+
+- [x] Phase 12: Damage Meter Reset Prompt (1/1 plan) — completed 2026-11-16
+- [x] Phase 13: Region Flags for Every Region (2/2 plans) — completed 2026-11-16
+- [x] Phase 14: Spec Points (2/2 plans) — completed 2026-11-16
+- [x] Phase 15: Release Review (2/2 plans) — completed 2026-11-16
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
 |-------|-----------|----------------|--------|-----------|
 | 1-5 (with 04.1) | v0.1 | 19/19 | Complete | 2026-11-12 |
 | 6-11 | v0.2 | 15/15 | Complete | 2026-11-15 |
+| 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 
 ## Backlog
 
-The v0.1-era backlog items went into v0.2: 999.1 (gear score) closed by Phase 6, 999.2 (item tooltips) into Phase 7, 999.4 (quiet refresh and swipes) into Phase 9, 999.3 (settings window) into Phase 10; their notes are folded into those phase details.
+The v0.1-era backlog items went into v0.2: 999.1 (gear score) closed by Phase 6, 999.2 (item tooltips) into Phase 7, 999.4 (quiet refresh and swipes) into Phase 9, 999.3 (settings window) into Phase 10; their notes are folded into those phase details. 999.6 (region flags for every region) went into v0.2.1 Phase 13.
 
 ### Phase 999.5: Quest log LFG button for elite quests (BACKLOG)
 

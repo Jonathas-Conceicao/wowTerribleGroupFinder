@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.1
+
+A damage meter reset prompt, talent points on player tooltips, and region flags for more regions.
+
+### Added
+
+- Damage meter reset prompt: joining a group or entering a dungeon, raid or battleground asks whether to reset Details! (or the game's own damage meter when Details! isn't loaded); each prompt can be turned off in Settings
+- Talent points per tree (for example 31/20/0) on friendly players' tooltips, under the item level, with its own setting
+- Region flags for EU, China and Korea
+
+### Changed
+
+- The US and Oceania flags have proper art
+- The settings section "Item level" is now "Item level and talents"
+
 ## v0.2.0
 
 Item level across the game's UI, region flags, a refresh that keeps the list, and a settings page.

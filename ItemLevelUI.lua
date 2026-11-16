@@ -30,6 +30,19 @@ function UI.Text(n)
 	return "Item Level " .. n
 end
 
+--- "Talents 36/12/3": the game's TALENTS label and the points per tree.
+function UI.TalentText(list)
+	local label = "Talents"
+	if type(TALENTS) == "string" and not Secret(TALENTS) and not TALENTS:find("%", 1, true) then
+		label = TALENTS
+	end
+	local parts = {}
+	for i, n in ipairs(list) do
+		parts[i] = tostring(math.floor(n))
+	end
+	return label .. " " .. table.concat(parts, "/")
+end
+
 --- The gold of the tooltip titles: r, g, b.
 function UI.Gold()
 	if type(NORMAL_FONT_COLOR) == "table" and type(NORMAL_FONT_COLOR.r) == "number" then
@@ -59,40 +72,51 @@ function UI.Install(name, fn)
 end
 
 -------------------------------------------------------------------------------
---  Player tooltip: a friendly player's gold "Item Level N" (yourself included)
+--  Player tooltip: a friendly player's gold "Item Level N" and "Talents a/b/c"
+--  (yourself included), each line gated by its own setting
 -------------------------------------------------------------------------------
-local lineFor = nil -- the GUID GameTooltip got our line for, in its current build
-local lineText, lineIndex = nil, nil -- that line's text and its index (nil when unknown)
+local lineFor = nil -- the GUID GameTooltip got our lines for, in its current build
+-- each line's text and its index (nil when unknown); ilvl first, talents last
+local lines = { ilvl = {}, talents = {} }
+local builds = 0 -- runs of our post-call (tells that a rebuild ran it)
+local rebuilding = false -- inside our own RefreshData call
 
-local function PlayerOn()
-	return ns.Settings.Get("ilvlPlayerTooltip")
+local function ResetLines()
+	lineFor = nil
+	lines.ilvl.text, lines.ilvl.index = nil, nil
+	lines.talents.text, lines.talents.index = nil, nil
 end
 
-local function AddLine(tooltip, ilvl)
-	lineText = UI.Text(ilvl)
-	tooltip:AddLine(lineText, UI.Gold())
+-- Adds one of our lines, once per build.
+local function AddLine(tooltip, which, text)
+	local l = lines[which]
+	if l.text ~= nil then
+		return
+	end
+	l.text = text
+	tooltip:AddLine(text, UI.Gold())
 	local n = tooltip.NumLines and tooltip:NumLines()
-	lineIndex = type(n) == "number" and not Secret(n) and n or nil
+	l.index = type(n) == "number" and not Secret(n) and n or nil
 end
 
 -- A later inspect changed the value while our line shows: rewrite our own line in place
 -- (only when that line still holds the text we put there).
-local function UpdateLine(tooltip, ilvl)
-	local text = UI.Text(ilvl)
-	if text == lineText or not lineIndex or not tooltip.GetName then
+local function UpdateLine(tooltip, which, text)
+	local l = lines[which]
+	if text == l.text or not l.index or not tooltip.GetName then
 		return
 	end
 	local name = tooltip:GetName()
-	local fs = type(name) == "string" and _G[name .. "TextLeft" .. lineIndex]
+	local fs = type(name) == "string" and _G[name .. "TextLeft" .. l.index]
 	if not (fs and fs.GetText and fs.SetText) then
 		return
 	end
 	local current = fs:GetText()
-	if Secret(current) or current ~= lineText then
+	if Secret(current) or current ~= l.text then
 		return
 	end
 	fs:SetText(text)
-	lineText = text
+	l.text = text
 	tooltip:Show()
 end
 
@@ -100,20 +124,30 @@ local function OnTooltipUnit(tooltip)
 	if tooltip ~= GameTooltip or not tooltip.GetUnit then
 		return
 	end
-	lineFor, lineText, lineIndex = nil, nil, nil
-	if not PlayerOn() then
+	builds = builds + 1
+	ResetLines()
+	local ilvlOn = ns.Settings.Get("ilvlPlayerTooltip")
+	local specOn = ns.Settings.Get("specPoints")
+	if not ilvlOn and not specOn then
 		return
 	end
 	local _, unit = tooltip:GetUnit()
 	if Secret(unit) or not unit or not ns.ILvl.Yes(UnitIsPlayer(unit)) or ns.ILvl.Hostile(unit) then
 		return
 	end
-	local ilvl = ns.ILvl.Of(unit)
+	local guid = UnitGUID(unit)
+	lineFor = not Secret(guid) and guid or nil
+	local ilvl = ilvlOn and ns.ILvl.Of(unit)
 	if ilvl then
-		AddLine(tooltip, ilvl)
-		local guid = UnitGUID(unit)
-		lineFor = not Secret(guid) and guid or nil
-	else
+		AddLine(tooltip, "ilvl", UI.Text(ilvl))
+	end
+	local talents = specOn and ns.ILvl.TalentsOf(unit)
+	if talents then
+		AddLine(tooltip, "talents", UI.TalentText(talents))
+	end
+	local wantIlvl = ilvlOn and not ilvl
+	local wantTalents = specOn and not ns.ILvl.TalentsKnown(unit)
+	if wantIlvl or wantTalents then
 		local me = UnitIsUnit(unit, "player")
 		if not Secret(me) and not me then -- unreadable: no inspect
 			ns.ILvl.RequestInspect(unit)
@@ -121,10 +155,36 @@ local function OnTooltipUnit(tooltip)
 	end
 end
 
--- The value came in after the tooltip was built: add the line if it still shows that player
--- (or update it, when a later inspect changed the value).
+-- Rebuilds GameTooltip from its own data (the game's RefreshData), so our post-call adds both
+-- lines in order, once. Out of combat only (a rebuild from our code can't handle secret line
+-- data). True when our post-call ran.
+local function Rebuild()
+	local tip = GameTooltip
+	if not (tip.RefreshData and tip.GetPrimaryTooltipInfo) or (InCombatLockdown and InCombatLockdown()) then
+		return false
+	end
+	local okInfo, info = pcall(tip.GetPrimaryTooltipInfo, tip)
+	if not okInfo or not info then
+		return false -- nothing to rebuild from
+	end
+	local before = builds
+	rebuilding = true
+	local ok = pcall(tip.RefreshData, tip)
+	rebuilding = false
+	return ok and builds ~= before
+end
+
+-- The value came in after the tooltip was built and it still shows that player: rebuild it
+-- (both lines in order), or where the game can't, add the lines (or update them, when a later
+-- inspect changed a value). Fallback order rule: the talents line always goes last, and the
+-- item level line is never added under it.
 local function RefreshTooltip(guid)
-	if not PlayerOn() then
+	if rebuilding then
+		return -- our own rebuild's post-call draws the lines
+	end
+	local ilvlOn = ns.Settings.Get("ilvlPlayerTooltip")
+	local specOn = ns.Settings.Get("specPoints")
+	if not ilvlOn and not specOn then
 		return
 	end
 	if not (GameTooltip and GameTooltip:IsShown() and GameTooltip.GetUnit) then
@@ -138,16 +198,40 @@ local function RefreshTooltip(guid)
 	if Secret(g) or not g or g ~= guid or ns.ILvl.Hostile(unit) then
 		return
 	end
-	local ilvl = ns.ILvl.Of(unit)
-	if not ilvl then
+	if lineFor ~= guid then
+		ResetLines()
+		lineFor = guid
+	end
+	local ilvl = ilvlOn and ns.ILvl.Of(unit)
+	local talents = specOn and ns.ILvl.TalentsOf(unit)
+	local ilvlText = ilvl and UI.Text(ilvl) or nil
+	local talentText = talents and UI.TalentText(talents) or nil
+	if ilvlText == lines.ilvl.text and talentText == lines.talents.text then
+		return -- the tooltip already shows these
+	end
+	if Rebuild() then
 		return
 	end
-	if lineFor == guid then
-		return UpdateLine(GameTooltip, ilvl)
+	local added = false
+	if ilvlText then
+		if lines.ilvl.text then
+			UpdateLine(GameTooltip, "ilvl", ilvlText)
+		elseif not lines.talents.text then
+			AddLine(GameTooltip, "ilvl", ilvlText)
+			added = true
+		end
 	end
-	AddLine(GameTooltip, ilvl)
-	lineFor = guid
-	GameTooltip:Show()
+	if talentText then
+		if lines.talents.text then
+			UpdateLine(GameTooltip, "talents", talentText)
+		else
+			AddLine(GameTooltip, "talents", talentText)
+			added = true
+		end
+	end
+	if added then
+		GameTooltip:Show()
+	end
 end
 
 local function PlayerTooltip()

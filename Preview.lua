@@ -99,9 +99,14 @@ local target = listings
 -- which is what brings a hidden player back. acts are the activities themselves, as the
 -- live reader gives them (name, size, level range, category). As on Forever, one member
 -- is a solo player and more is a group.
--- Sample shards, one per listing in turn (US2, US1, AU1); one listing (Delas
--- Moonfang) has an unknown shard, so no flag.
+-- Sample shards, one per listing in turn (US2, US1, AU1); six samples use the preview
+-- groups below, and one listing (Delas Moonfang) has an unknown shard, so no flag.
 local SHARDS = { 6934, 6925, 6801, 6934 }
+-- Preview-only region groups (read by Region.lua's R.Of while the preview shows, never
+-- saved): every case, with EU / KR / CN / TW flags, a free-text name and a country
+-- without art as two-letter text.
+P.shardGroups =
+	{ [99101] = "EU1", [99102] = "KR1", [99103] = "CN", [99104] = "TW1", [99105] = "EU Paris", [99106] = "BR1" }
 
 local function Add(l, minutes)
 	nextId = nextId + 1
@@ -280,7 +285,7 @@ Group(
 	45
 )
 
-Solo("DM", "Archbishop Benedictus:PRIEST:20", "HD", "Holy", "Westfall", "Healer LF DM group", 3)
+Solo("DM", "Archbishop Benedictus:PRIEST:20", "HD", "Holy", "Westfall", "Healer LF DM group", 3, { shard = 99106 })
 Solo(
 	"DM",
 	"Genn Greymane:WARRIOR:21",
@@ -292,9 +297,9 @@ Solo(
 	{ voiceMode = ns.VOICE.Discord, playstyle = 2 }
 )
 Solo("DM", "Delas Moonfang:DRUID:20", "HD", nil, "Stormwind City", nil, 2, { shard = 9999 })
-Solo("DM", "Archmage Arugal:MAGE:22", "D", "Fire", "Westfall", "Have water for everyone", 4)
-Solo({ "DM", "WC" }, "Tess Greymane:ROGUE:19", "D", nil, "The Barrens", "Need the Defias quest", 6)
-Solo("DM", "Keeper Remulos:DRUID:21", "THD", "Restoration", "Duskwood", "Any role", 7)
+Solo("DM", "Archmage Arugal:MAGE:22", "D", "Fire", "Westfall", "Have water for everyone", 4, { shard = 99101 })
+Solo({ "DM", "WC" }, "Tess Greymane:ROGUE:19", "D", nil, "The Barrens", "Need the Defias quest", 6, { shard = 99102 })
+Solo("DM", "Keeper Remulos:DRUID:21", "THD", "Restoration", "Duskwood", "Any role", 7, { shard = 99103 })
 Solo(
 	{ "DM", "SFK" },
 	"Halduron Brightwing:HUNTER:23",
@@ -304,7 +309,7 @@ Solo(
 	"Pet tanks too lol",
 	9
 )
-Solo("DM", "Saidan Dathrohan:PALADIN:22", "THD", nil, "Westfall", nil, 13)
+Solo("DM", "Saidan Dathrohan:PALADIN:22", "THD", nil, "Westfall", nil, 13, { shard = 99104 })
 Solo(
 	"DM",
 	"Ritssyn Flamescowl:WARLOCK:20",
@@ -315,7 +320,7 @@ Solo(
 	16,
 	{ newPlayerFriendly = true }
 )
-Solo("DM", "Gryan Stoutmantle:WARRIOR:24", "TD", "Arms", "Westfall", "Can tank if needed", 20)
+Solo("DM", "Gryan Stoutmantle:WARRIOR:24", "TD", "Arms", "Westfall", "Can tank if needed", 20, { shard = 99105 })
 Solo(
 	{ "SMGY", "SMLIB", "SMARM" },
 	"Brigitte Abbendis:WARRIOR:35",

@@ -16,11 +16,12 @@
 --  - another player's: the first time their tooltip shows, we inspect them quietly (one
 --    inspect at a time, 1.5 s apart, out of combat) and tell the spots when it answers.
 --    The guard: never while the Inspect window is shown or pending, nor within 2 s of an
---    inspect that isn't ours; ours is dropped (stores nothing, clears nothing) when
+--    inspect that isn't ours or while it awaits its answer (at most 4 s); ours is dropped (stores nothing, clears nothing) when
 --    another one starts after it; a value is stored only for the GUID of the latest
 --    inspect, checked when it answers and again when it is read; ClearInspectPlayer only
 --    when no later inspect started and the window is closed. One that brings nothing
---    waits 30 s to be tried again. A known value is kept for the session, never looked up again, and only
+--    waits 30 s to be tried again; talents with nothing to show (none readable, no points
+--    yet) are read again after 10 minutes. A known value is kept for the session, never looked up again, and only
 --    updated by a later inspect (the probe's, or the game's Inspect window). The value:
 --    the game's figure (C_PaperDollInfo.GetInspectItemLevel, a whole number), else our
 --    own average by the same rule, rounded
@@ -83,6 +84,7 @@ local INSPECT_GAP = 1.5 -- seconds between two inspects
 local INSPECT_WAIT = 4 -- seconds an inspect is waited on
 local ITEM_RETRIES = 3 -- tries (a second apart) for item data to load
 local RETRY_AFTER = 30 -- seconds before a tooltip inspect that brought nothing is tried again
+local NOTHING_KEPT = 600 -- seconds a talents answer with nothing to show counts as known
 local MATCH = 0.001 -- how close our average must come to your exact figure
 local SLOTS = 16
 
@@ -90,7 +92,10 @@ local GetItemLevel = C_Item and C_Item.GetDetailedItemLevelInfo or GetDetailedIt
 local GetItemInfoInstant = C_Item and C_Item.GetItemInfoInstant or GetItemInfoInstant
 local GetItemInfo = C_Item and C_Item.GetItemInfo or GetItemInfo
 
-local known = {} -- guid -> { ilvl, source, name, at }, this session only
+-- guid -> { ilvl, source, talents, talentsAt, name, at }, this session only. talents is a
+-- list of points per tree, or false (an inspect answered, nothing readable); ilvl may be
+-- missing when only the talents were stored.
+local known = {}
 
 local function Print(...)
 	ns.Print("|cffffd100ilvl|r", ...)
@@ -158,6 +163,168 @@ local function ShownMine()
 	end
 	least = ok and Number(least) or 0
 	return math.max(least, equipped)
+end
+
+-------------------------------------------------------------------------------
+--  Talent points per tree, as Forever's own talent frame counts them: the config's
+--  tree, its groups in the game's order, each group's currency `spent`.
+-------------------------------------------------------------------------------
+local INSPECT_CONFIG = -1 -- the config of whoever the latest inspect answered
+do
+	local id = Constants and Constants.TraitConsts and Constants.TraitConsts.INSPECT_TRAIT_CONFIG_ID
+	if type(id) == "number" then
+		INSPECT_CONFIG = id
+	end
+end
+
+-- Points spent per tree in the game's order, or nil when the config can't be read (any
+-- secret value fails closed).
+local function ReadTalents(configID)
+	if
+		Secret(configID)
+		or type(configID) ~= "number"
+		or not (
+			C_Traits
+			and C_Traits.GetConfigInfo
+			and C_Traits.GetGroupDisplayInfoByTreeID
+			and C_Traits.GetGroupCurrencyInfo
+		)
+	then
+		return nil
+	end
+	local ok, info = pcall(C_Traits.GetConfigInfo, configID)
+	if not ok or Secret(info) or type(info) ~= "table" or Secret(info.treeIDs) or type(info.treeIDs) ~= "table" then
+		return nil
+	end
+	local treeID = info.treeIDs[1]
+	if Secret(treeID) or type(treeID) ~= "number" then
+		return nil
+	end
+	local ok2, groups = pcall(C_Traits.GetGroupDisplayInfoByTreeID, treeID)
+	if not ok2 or Secret(groups) or type(groups) ~= "table" or #groups == 0 then
+		return nil
+	end
+	local ids = {}
+	for i, g in ipairs(groups) do
+		if Secret(g) or type(g) ~= "table" or Secret(g.groupID) then
+			return nil
+		end
+		ids[i] = g.groupID
+	end
+	local ok3, currency = pcall(C_Traits.GetGroupCurrencyInfo, configID, ids)
+	if not ok3 or Secret(currency) or type(currency) ~= "table" then
+		return nil
+	end
+	local out = {}
+	for i, id in ipairs(ids) do
+		local spent = 0 -- a group with no currency entry counts 0, as the game's header shows
+		for _, c in ipairs(currency) do
+			if Secret(c) or type(c) ~= "table" or Secret(c.traitNodeGroupID) then
+				return nil
+			end
+			if c.traitNodeGroupID == id then
+				local infos = c.currencyInfos
+				if Secret(infos) then
+					return nil
+				end
+				local first = type(infos) == "table" and infos[1] or nil
+				if Secret(first) then
+					return nil
+				end
+				local v = type(first) == "table" and first.spent or nil
+				if Secret(v) then
+					return nil
+				end
+				spent = type(v) == "number" and math.floor(v) or 0
+				break
+			end
+		end
+		out[i] = spent
+	end
+	return out
+end
+
+-- The inspected player's points per tree when the game says the inspect config holds valid
+-- data (C_Traits.HasValidInspectData, where the client has it): a list, or false (valid,
+-- nothing readable). nil = not valid or unreadable: unknown, so a later inspect can fill it.
+local function ReadInspectTalents()
+	if C_Traits and C_Traits.HasValidInspectData then
+		local ok, valid = pcall(C_Traits.HasValidInspectData)
+		if not ok or Secret(valid) or not valid then
+			return nil
+		end
+	end
+	return ReadTalents(INSPECT_CONFIG) or false
+end
+
+-- Your own active talent config, or nil: a candidate whose type reads CamelotCombat; one whose
+-- type can't be read only when it is the only candidate.
+local function OwnConfigID()
+	local candidates, seen = {}, {}
+	local function Add(id)
+		if not seen[id] then
+			seen[id] = true
+			candidates[#candidates + 1] = id
+		end
+	end
+	local S = C_SpecializationInfo
+	if S and S.GetCombatConfigIDForSpecGroup and S.GetActiveSpecGroup then
+		local ok, group = pcall(S.GetActiveSpecGroup)
+		if ok and not Secret(group) and group then
+			local ok2, id = pcall(S.GetCombatConfigIDForSpecGroup, group)
+			if ok2 and not Secret(id) and type(id) == "number" then
+				Add(id)
+			end
+		end
+	end
+	if C_ClassTalents and C_ClassTalents.GetActiveConfigID then
+		local ok, id = pcall(C_ClassTalents.GetActiveConfigID)
+		if ok and not Secret(id) and type(id) == "number" then
+			Add(id)
+		end
+	end
+	local want = Enum and Enum.TraitConfigType and Enum.TraitConfigType.CamelotCombat
+	if want == nil or not (C_Traits and C_Traits.GetConfigInfo) then
+		return candidates[1] -- no type to check against
+	end
+	for _, id in ipairs(candidates) do
+		local ok, info = pcall(C_Traits.GetConfigInfo, id)
+		local t = ok and not Secret(info) and type(info) == "table" and info.type or nil
+		if not Secret(t) and type(t) == "number" then
+			if t == want then
+				return id
+			end
+		elseif #candidates == 1 then
+			return id -- its type can't be read, but there is nothing else to choose
+		end
+	end
+	return nil
+end
+
+-- The list when there is something to show (some tree above 0), else nil.
+local function Showable(t)
+	if Secret(t) or type(t) ~= "table" or #t == 0 then
+		return nil
+	end
+	for _, n in ipairs(t) do
+		if type(n) == "number" and n > 0 then
+			return t
+		end
+	end
+	return nil
+end
+
+-- Forever's talent frame shows an inspected player: its view is the inspect config, so
+-- we neither inspect nor clear. Read only; unreadable counts as busy.
+local function TalentsInspecting()
+	if PlayerSpellsFrame == nil or type(PlayerSpellsFrame.IsInspecting) ~= "function" then
+		return false
+	end
+	local ok, v = pcall(PlayerSpellsFrame.IsInspecting, PlayerSpellsFrame)
+	if not ok or Secret(v) then
+		return true
+	end
+	return v and true or false
 end
 
 --- Reads a unit's equipped items as the client knows them now: slots[slot] = { level,
@@ -233,18 +400,35 @@ function ILvl.OnLearned(fn)
 	end
 end
 
-local function Remember(unit, r)
+-- Stores what an inspect brought: the item level when the items are complete, the talents
+-- (a list, or false for "answered, nothing readable") whenever given; nil talents (the game
+-- said the inspect data isn't valid) store nothing for them. Returns ilvl, source only when
+-- the item level is known now.
+local function Remember(unit, r, talents)
 	local guid, name = UnitGUID(unit), UnitName(unit)
-	if Secret(guid) or not guid or not r.complete then
+	if Secret(guid) or not guid then
 		return nil
 	end
-	local ilvl, source = r.game, "game"
-	if not ilvl then
-		ilvl, source = math.floor(ILvl.Average(r) + 0.5), "ours" -- whole, as the game's
+	if not r.complete and talents == nil then
+		return nil -- nothing to store
 	end
-	known[guid] = { ilvl = ilvl, source = source, name = not Secret(name) and name or nil, at = time() }
+	local entry = known[guid] or {}
+	known[guid] = entry
+	local ilvl, source
+	if r.complete then
+		ilvl, source = r.game, "game"
+		if not ilvl then
+			ilvl, source = math.floor(ILvl.Average(r) + 0.5), "ours" -- whole, as the game's
+		end
+		entry.ilvl, entry.source = ilvl, source
+	end
+	if talents ~= nil then
+		entry.talents, entry.talentsAt = talents, GetTime()
+	end
+	entry.name = not Secret(name) and name or nil
+	entry.at = time()
 	for _, fn in ipairs(learned) do
-		local ok, err = pcall(fn, guid, ilvl)
+		local ok, err = pcall(fn, guid, entry.ilvl)
 		if not ok and geterrorhandler then
 			geterrorhandler()(err)
 		end
@@ -270,6 +454,53 @@ function ILvl.Of(unit)
 	end
 	local entry = known[guid]
 	return entry and entry.ilvl
+end
+
+-- The player's cache entry, or nil; isMe tells it is you (never cached).
+local function PlayerEntry(unit)
+	if Secret(unit) or not unit or not Yes(UnitIsPlayer(unit)) then
+		return nil, false
+	end
+	local me = UnitIsUnit(unit, "player")
+	if Secret(me) then
+		return nil, false
+	end
+	if me then
+		return nil, true
+	end
+	local guid = UnitGUID(unit)
+	if Secret(guid) or not guid then
+		return nil, false
+	end
+	return known[guid], false
+end
+
+--- A unit's talent points per tree (whole numbers, the game's order) when there is
+--- something to show (some tree above 0), else nil. Yours are read live; another
+--- player's are what an inspect answered this session.
+function ILvl.TalentsOf(unit)
+	local entry, me = PlayerEntry(unit)
+	if me then
+		return Showable(ReadTalents(OwnConfigID()))
+	end
+	return entry and Showable(entry.talents) or nil
+end
+
+--- True for you; for another player once an inspect answer recorded talents (a list or
+--- false), so the tooltip doesn't ask for another inspect for it. An answer with nothing to
+--- show (false, or no points yet) counts for NOTHING_KEPT only: a low-level player is read again.
+function ILvl.TalentsKnown(unit)
+	local entry, me = PlayerEntry(unit)
+	if me then
+		return true
+	end
+	if entry == nil or entry.talents == nil then
+		return false
+	end
+	if not Showable(entry.talents) then
+		return GetTime() - (entry.talentsAt or -math.huge) < NOTHING_KEPT
+	end
+	return true
 end
 
 -------------------------------------------------------------------------------
@@ -316,6 +547,84 @@ local function PrintRead(r, game)
 	Print(("  our average: %s%s"):format(Round(v), mark))
 end
 
+-- Everything the client gives for a talent config, and GetSpecializationInfo's
+-- pointsSpent for comparison. May error on odd data: call it through SafePrintTalents.
+local function PrintTalents(configID, isInspect)
+	local function Str(v)
+		return Secret(v) and "secret" or tostring(v)
+	end
+	Print("  talent config " .. Str(configID) .. ":")
+	local info
+	if C_Traits and C_Traits.GetConfigInfo then
+		local ok, got = pcall(C_Traits.GetConfigInfo, configID)
+		info = ok and not Secret(got) and type(got) == "table" and got or nil
+	else
+		Print("  " .. Has("C_Traits.GetConfigInfo", nil))
+	end
+	if info then
+		local want = Enum and Enum.TraitConfigType and Enum.TraitConfigType.CamelotCombat
+		local mark = ""
+		if want ~= nil and not Secret(info.type) then
+			mark = info.type == want and " = CamelotCombat" or " ~= CamelotCombat"
+		end
+		local trees = not Secret(info.treeIDs) and type(info.treeIDs) == "table" and info.treeIDs or nil
+		Print(("  config type %s%s, tree %s"):format(Str(info.type), mark, Str(trees and trees[1])))
+		if trees and trees[1] and not Secret(trees[1]) and C_Traits.GetGroupDisplayInfoByTreeID then
+			local ok, groups = pcall(C_Traits.GetGroupDisplayInfoByTreeID, trees[1])
+			if ok and not Secret(groups) and type(groups) == "table" then
+				local ids = {}
+				for i, g in ipairs(groups) do
+					ids[i] = type(g) == "table" and g.groupID or nil
+				end
+				local currency
+				if C_Traits.GetGroupCurrencyInfo then
+					local ok2, got = pcall(C_Traits.GetGroupCurrencyInfo, configID, ids)
+					currency = ok2 and not Secret(got) and type(got) == "table" and got or nil
+				end
+				for _, g in ipairs(groups) do
+					local spent
+					for _, c in ipairs(currency or {}) do
+						if type(c) == "table" and c.traitNodeGroupID == g.groupID then
+							local first = type(c.currencyInfos) == "table" and c.currencyInfos[1] or nil
+							spent = type(first) == "table" and first.spent or nil
+						end
+					end
+					Print(
+						("  group %s order %s %s: spent %s"):format(
+							Str(g.groupID),
+							Str(g.orderIndex),
+							Str(g.displayName),
+							Str(spent)
+						)
+					)
+				end
+			end
+		end
+	end
+	local read = ReadTalents(configID)
+	Print("  C_Traits per tree: " .. (read and table.concat(read, "/") or "nothing"))
+	local S = C_SpecializationInfo
+	if S and S.GetSpecializationInfo then
+		local parts = {}
+		for i = 1, 3 do
+			local ok, _, name, _, _, _, _, spent = pcall(S.GetSpecializationInfo, i, isInspect, false, nil, nil, nil)
+			parts[#parts + 1] = ok and (Str(name) .. " " .. Str(spent)) or "error"
+		end
+		Print("  GetSpecializationInfo pointsSpent: " .. table.concat(parts, ", "))
+	else
+		Print("  " .. Has("C_SpecializationInfo.GetSpecializationInfo", nil))
+	end
+end
+
+-- The talent printout under one pcall: a failure prints a line and never stops the caller
+-- (the inspect clean-up, the probe's group queue).
+local function SafePrintTalents(configID, isInspect)
+	local ok, err = pcall(PrintTalents, configID, isInspect)
+	if not ok then
+		Print("  talents probe failed: " .. tostring(err))
+	end
+end
+
 local function ProbeSelf()
 	local _, class = UnitClass("player")
 	Print(
@@ -341,6 +650,28 @@ local function ProbeSelf()
 	PrintRead(ILvl.Read("player"), GameMine())
 	local mine = ShownMine()
 	Print("  tooltip shows: " .. (mine and tostring(math.floor(mine)) or "nothing"))
+	local S = C_SpecializationInfo
+	local function Call(fn, ...)
+		if not fn then
+			return "missing"
+		end
+		local ok, v = pcall(fn, ...)
+		return ok and (Secret(v) and "secret" or tostring(v)) or "error"
+	end
+	local group = S and S.GetActiveSpecGroup and select(2, pcall(S.GetActiveSpecGroup))
+	Print(
+		("  GetActiveSpecGroup %s, GetCombatConfigIDForSpecGroup %s, GetActiveConfigID %s, GetSpecialization %s"):format(
+			Call(S and S.GetActiveSpecGroup),
+			Call(S and S.GetCombatConfigIDForSpecGroup, group),
+			Call(C_ClassTalents and C_ClassTalents.GetActiveConfigID),
+			Call(S and S.GetSpecialization)
+		)
+	)
+	local own = OwnConfigID()
+	Print("  chosen config: " .. tostring(own))
+	SafePrintTalents(own, false)
+	local t = ILvl.TalentsOf("player")
+	Print("  talents tooltip shows: " .. (t and ("Talents " .. table.concat(t, "/")) or "nothing"))
 end
 
 -------------------------------------------------------------------------------
@@ -350,8 +681,11 @@ end
 --  The guard (the game has one inspect slot, shared with its Inspect window and other
 --  addons): we stay away while the window is shown or pending (InspectFrame.unit set
 --  before it shows, for at most INSPECT_WAIT after InspectUnit: the game never clears a
---  unit whose answer didn't come) and for OTHERS_BUSY seconds after an inspect that isn't ours; ours
---  is dropped when another starts after it. serial counts every NotifyInspect, lastTarget
+--  unit whose answer didn't come), for OTHERS_BUSY seconds after an inspect that isn't ours, and
+--  while that inspect is pending (until its INSPECT_READY, at most INSPECT_WAIT: Forever's
+--  "Inspect Talents" opens its view only when the answer comes); ours is dropped when another
+--  starts after it. We also stay away (no inspect, no clear) while
+--  Forever's talent frame shows an inspected player. serial counts every NotifyInspect, lastTarget
 --  is the latest one's GUID, readyGUID / readySerial the latest answer to it.
 -------------------------------------------------------------------------------
 local OTHERS_BUSY = 2 -- seconds an inspect that is not ours keeps us away
@@ -361,6 +695,8 @@ local tried = {} -- guid -> GetTime() of a quiet inspect that brought nothing
 local serial = 0 -- bumped on every NotifyInspect, ours or not
 local lastTarget = nil -- GUID of the latest NotifyInspect target (nil when unreadable)
 local othersAt = -math.huge -- GetTime() of the latest inspect that is not ours
+local othersPendingAt = -math.huge -- GetTime() of an inspect not ours that awaits its answer
+local othersGUID = nil -- its GUID (nil when unreadable: pending until INSPECT_WAIT)
 local inspectUnitAt = -math.huge -- GetTime() of the latest InspectUnit (the Inspect window)
 local sending = false -- true while our own NotifyInspect runs
 local readyGUID, readySerial = nil, nil -- the latest INSPECT_READY that answered the latest inspect
@@ -417,8 +753,17 @@ local function InspectOpen()
 	return InspectFrame.unit ~= nil and GetTime() - inspectUnitAt < INSPECT_WAIT
 end
 
+-- An inspect that isn't ours hasn't answered yet (for at most INSPECT_WAIT).
+local function OthersPending()
+	return GetTime() - othersPendingAt < INSPECT_WAIT
+end
+
 local function Busy()
-	return InCombatLockdown() or InspectOpen() or GetTime() - othersAt < OTHERS_BUSY
+	return InCombatLockdown()
+		or InspectOpen()
+		or TalentsInspecting()
+		or OthersPending()
+		or GetTime() - othersAt < OTHERS_BUSY
 end
 
 -- Another inspect started after ours: ours stores nothing and clears nothing.
@@ -439,6 +784,7 @@ local function OnNotify(unit)
 	lastTarget = not Secret(guid) and guid or nil
 	if not sending then
 		othersAt = GetTime()
+		othersPendingAt, othersGUID = othersAt, lastTarget
 		if current then
 			Displaced(current)
 		end
@@ -451,8 +797,19 @@ local function OnInspectUnit()
 end
 
 local function Done(c, gotValue)
-	if ClearInspectPlayer and not InspectOpen() and serial == c.serial and othersAt < c.sentAt then
+	if
+		ClearInspectPlayer
+		and not InspectOpen()
+		and not TalentsInspecting()
+		and not OthersPending()
+		and serial == c.serial
+		and othersAt < c.sentAt
+	then
 		ClearInspectPlayer()
+		if not c.quiet then
+			local after = ReadTalents(INSPECT_CONFIG)
+			Print("  after clear: " .. (after and table.concat(after, "/") or "nothing"))
+		end
 		-- Ours is over and cleared: a late answer to it is stale, never "someone else's".
 		lastTarget, readyGUID = nil, nil
 	end
@@ -471,6 +828,13 @@ local function ReadCurrent(tries)
 	if serial ~= c.serial or lastTarget ~= c.guid then
 		return Displaced(c)
 	end
+	-- The inspect config is whoever the latest inspect answered: read it here, in the first
+	-- pass of this answer, never on a retry. false = answered, nothing readable; nil = the
+	-- game says the data isn't valid (unknown, a later inspect may fill it).
+	if tries == 0 and not c.talentsRead then
+		c.talents = ReadInspectTalents()
+		c.talentsRead = true
+	end
 	local unit = FindUnit(c.guid, c.unit)
 	if not unit then
 		if not c.quiet then
@@ -480,7 +844,7 @@ local function ReadCurrent(tries)
 	end
 	local r = ILvl.Read(unit)
 	if r.complete or tries >= ITEM_RETRIES then
-		local ilvl, source = Remember(unit, r)
+		local ilvl, source = Remember(unit, r, c.talents)
 		if not c.quiet then
 			local _, class = UnitClass(unit)
 			Print(
@@ -493,8 +857,14 @@ local function ReadCurrent(tries)
 			)
 			PrintRead(r)
 			Print("  tooltip shows: " .. (ilvl and (math.floor(ilvl) .. " (" .. source .. ")") or "nothing"))
+			SafePrintTalents(INSPECT_CONFIG, true)
+			Print("  talents captured: " .. (c.talents and table.concat(c.talents, "/") or "nothing"))
 		end
-		return Done(c, ilvl ~= nil)
+		-- Got a value: an item level that wasn't known, or talents when the item level was
+		-- already known. Items still missing wait RETRY_AFTER even when talents came, so a
+		-- player whose gear doesn't load isn't inspected again on every hover.
+		local gotIlvl = ilvl ~= nil and not c.hadIlvl
+		return Done(c, gotIlvl or (c.hadIlvl and type(c.talents) == "table"))
 	end
 	C_Timer.After(1, function()
 		if current == c then
@@ -506,6 +876,7 @@ end
 -- Sends one inspect; its answer (INSPECT_READY) or INSPECT_WAIT ends it.
 local function Inspect(unit, guid, name, quiet)
 	local c = { unit = unit, guid = guid, name = name, quiet = quiet }
+	c.hadIlvl = known[guid] ~= nil and known[guid].ilvl ~= nil
 	current = c
 	sending = true
 	pcall(NotifyInspect, unit)
@@ -530,7 +901,7 @@ function Next()
 	end
 	while #queue > 0 do
 		if Busy() then
-			Print("waiting: in combat or the Inspect window is open.")
+			Print("waiting: in combat, another inspect is out, or the Inspect window or inspected talents are open.")
 			return ScheduleNext(INSPECT_GAP * 2)
 		end
 		local unit = table.remove(queue, 1)
@@ -615,7 +986,7 @@ function ILvl.Inspected(unit)
 		end
 	end
 	local entry = known[guid]
-	return entry and math.floor(entry.ilvl + 0.5) or nil
+	return entry and entry.ilvl and math.floor(entry.ilvl + 0.5) or nil
 end
 
 --- /tgf ilvl: prints what we know about your item level, then inspects your group.
@@ -627,6 +998,11 @@ function ILvl.Probe()
 		Has("GetInventoryItemID", GetInventoryItemID),
 		Has("NotifyInspect", NotifyInspect),
 		Has("CanInspect", CanInspect),
+		Has("C_Traits.GetGroupCurrencyInfo", C_Traits and C_Traits.GetGroupCurrencyInfo),
+		Has(
+			"C_SpecializationInfo.GetCombatConfigIDForSpecGroup",
+			C_SpecializationInfo and C_SpecializationInfo.GetCombatConfigIDForSpecGroup
+		),
 	}, ", "))
 	if ns.ILvlUI and ns.ILvlUI.failed then
 		for name, err in pairs(ns.ILvlUI.failed) do
@@ -676,6 +1052,9 @@ local function OnInspectReady(guid)
 	if Secret(guid) then
 		return
 	end
+	if othersGUID ~= nil and guid == othersGUID then
+		othersPendingAt = -math.huge -- the other inspect answered
+	end
 	if guid == lastTarget then
 		readyGUID, readySerial = guid, serial
 	else
@@ -698,9 +1077,13 @@ local function OnInspectReady(guid)
 		return
 	end
 	local s, tries = serial, 0
+	local talents -- read once, on the first pass; false = answered, nothing readable; nil = not valid
 	local function Try()
 		if serial ~= s or lastTarget ~= guid then
 			return
+		end
+		if tries == 0 then
+			talents = ReadInspectTalents()
 		end
 		local u = FindUnit(guid, unit)
 		if not u then
@@ -708,7 +1091,7 @@ local function OnInspectReady(guid)
 		end
 		local r = ILvl.Read(u)
 		if r.complete or tries >= ITEM_RETRIES then
-			return Remember(u, r)
+			return Remember(u, r, talents)
 		end
 		tries = tries + 1
 		C_Timer.After(1, Try)

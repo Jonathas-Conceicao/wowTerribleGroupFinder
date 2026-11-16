@@ -8,7 +8,8 @@ can sort by role, level, activity and listed time, showing where each player or 
 with one-click whispers (and invites) from preset messages, friend / recent ally marks and
 region flags, while looking and behaving like the stock finder; the list refreshes in place.
 Beyond the finder it shows item level, from the game's own data, on player and item tooltips,
-the character sheet and the Inspect window, with a settings page for every extra. It is for
+the character sheet and the Inspect window, talent points on player tooltips, and asks to reset
+the damage meter on joining a group or entering an instance, with a settings page for every extra. It is for
 Forever players looking for groups or members who find the stock bulletin board hard to scan.
 
 ## Core Value
@@ -19,17 +20,51 @@ group finder.
 
 ## Current State
 
-**Shipped v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15)**, after v0.1.0 "Initial
-Release" (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
-[milestones/](milestones/). ~8.0k lines of Lua/XML; checked in the live Forever client by the
+**Shipped v0.2.1 "Reset Details reminder, more region flags and spec points" (2026-11-16)**,
+after v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial Release"
+(2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
+[milestones/](milestones/). ~8.9k lines of Lua/XML; checked in the live Forever client by the
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
-## Next Milestone Goals
+## Next Milestone Goals (candidates)
 
-Not defined yet (`/gsd-new-milestone`). Candidates: backlog 999.5 (quest log LFG button), the
-deferred v0.1 cleanup list, the v0.2 audit's tech debt, remembered sort / filters,
-localization-ready strings, EU and other regions from bug reports.
+Backlog 999.5 (quest log LFG button), the deferred v0.1 cleanup list, the v0.2 and v0.2.1
+audits' tech debt, EU / Asia shard IDs from players' `/tgf region` output, remembered sort /
+filters, localization-ready strings.
+
+<details>
+<summary>v0.2.1 Reset Details reminder, more region flags and spec points — milestone brief (archived)</summary>
+
+**Goal:** Ship the damage meter reset prompt as a feature, give every region a flag (from real
+flag art, with a readable fallback for shard names we don't expect), and show friendly players'
+talent points on their tooltip.
+
+**Target features:**
+- Damage meter reset prompt (built on `topic/dev`: `MeterReset.lua`, two settings, `/tgf meter`)
+  ships; the popup text starts with `[TGF]` so players know where it comes from (and where to
+  turn it off)
+- Region flags for US, AU, EU, CN, KR and TW from the author's flagpedia.net PNGs (40 px wide,
+  each its own height), converted to the game's texture format; no art generated
+- Region rule: a shard group of two letters with an optional number (`AU`, `EU`, `EU1`..`EU9`,
+  `US2`, `KR1`) whose country has a flag shows that flag, the full group in the tooltip; any other
+  shard text (e.g. `EU Paris`) shows its first two letters as text on the row, the full text in
+  the tooltip
+- The flag-drawing script (`Media/Source/flags.js`) and its generated textures removed; an
+  internal note records that the flags come from flagpedia.net (not in the README)
+- Spec points: friendly players' tooltips show talent points per tree ("36/12/3") on a line
+  under the item level line, from the same quiet inspect (`C_SpecializationInfo.
+  GetSpecializationInfo(i, isInspect)` → `pointsSpent`); its own setting, on by default
+- Release Review phase, tag `v0.2.1`
+
+**Starting point:** branched from `topic/dev` (`6d2fe02`): the meter reset prompt and backlog
+999.6 (folded into this milestone).
+
+**Adjusted at close:** talent points come from `C_Traits` group currency `spent` per tree (as
+Forever's talent frame), not `pointsSpent`; the line reads "Talents 31/20/0". The meter prompt
+skips a same-instance run-back within 15 min and instances Details! erases on its own.
+
+</details>
 
 <details>
 <summary>v0.2 ILvL Info and Improved Refresh — milestone brief (archived)</summary>
@@ -146,6 +181,10 @@ migration was later dropped, and all in-game checks passed at close.
 - ✓ Dynamic refresh: same-filter refresh updates the list in place, swipes, rows slide up, dropped listings stay out until a new search; simulated in the preview (REF-01..04) — v0.2
 - ✓ Settings page in the game's Settings (item level spots, Dynamic refresh, swipes, region flags, "Edit whisper messages"), `/tgf settings` / `set` (SET-01..07) — v0.2
 - ✓ Release Review for v0.2.0 (REL-05) — v0.2
+- ✓ Damage meter reset prompt on joining a group / entering an instance, "[TGF]" text, two settings, `/tgf meter` (MTR-01..04) — v0.2.1
+- ✓ Region flags for US, AU, EU, CN, KR, TW from flagpedia.net art, a two-letter tag otherwise, the full group in the tooltip; generated flags removed (REG-05..08) — v0.2.1
+- ✓ Talent points per tree on friendly players' tooltips with its own setting (SPC-01..02) — v0.2.1
+- ✓ Release Review for v0.2.1 (REL-06) — v0.2.1
 
 <!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
@@ -161,13 +200,14 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-None until the next milestone defines them. Archived: [v0.1](milestones/v0.1-REQUIREMENTS.md),
-[v0.2](milestones/v0.2-REQUIREMENTS.md).
+None: the next milestone defines its own with `/gsd-new-milestone`. Archived:
+[v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
+[v0.2.1](milestones/v0.2.1-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
+- v0.2.1 audit open items (talents need valid inspect data, a later game popup can overlap the meter prompt, possible soft flag edges, region groups over 32 bytes): `milestones/v0.2.1-MILESTONE-AUDIT.md`
 - v0.2 audit tech debt (unused `SP.ID()`, `searchOut` reset edge case, tooltip spots without change listeners): `milestones/v0.2-MILESTONE-AUDIT.md`
-- Regions outside US / AU: shard names assumed to follow `CAMWOW <group> Realm …`; no flag art beyond US / AU; fix from bug reports
 - v0.1 release-review cleanup list (tooltip blank lines, raw status colours, feedback for clicks during the lock, header label width, and more: `milestones/v0.1-phases/05-release-review/05-HUMAN-UAT.md` item 11)
 - Remembered sort / filters, localization-ready strings
 
@@ -208,6 +248,7 @@ None until the next milestone defines them. Archived: [v0.1](milestones/v0.1-REQ
 | Region tooltip names the game's shard group (US1 / US2 / AU1), no West / East | The mapping could not be confirmed; a confidently wrong label is worse than the game's own name; generic for any region | ✓ Good (v0.2) |
 | Raid-sized groups show the game's role count (count + role icon) | Matches Forever's own and retail's raid display; slot icons can't fit 40 | ✓ Good (v0.2) |
 | Changelog written for players, against the last release | Players read it; nothing they never saw (e.g. gear score) | ✓ Good (v0.2) |
+| No art is generated (code or AI); the author draws or sources every image | The v0.2 flags were drawn by a script, contradicting the README's art note; v0.2.1 replaced them with flagpedia.net flags | ✓ Good (v0.2.1) |
 | Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Good (v0.1) |
 | Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Good (v0.1) |
 | The preset follows your group state: in a group always the invite preset; on your own, request to groups and invite to solo players | You offer your group when you have one; you ask for a spot when you don't | ✓ Good (v0.1) |
@@ -285,4 +326,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-15 after the v0.2 milestone*
+*Last updated: 2026-11-16 at the start of milestone v0.2.1*

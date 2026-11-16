@@ -289,12 +289,13 @@ function ns:ADDON_LOADED(name)
 	ns.ILvl.Init()
 	ns.ILvlUI.Init()
 	ns.Region.Init(ns.db)
+	ns.MeterReset.Init()
 	ns.Messages.Init(ns.db)
 	ns.InPlace.Init()
 	ns.SettingsPanel.Init()
 end
 
-local USAGE = "/tgf [preview | reset | version | ilvl | region | settings|config | set <key> on|off]"
+local USAGE = "/tgf [preview | reset | version | ilvl | region | meter | settings|config | set <key> on|off]"
 
 SLASH_TERRIBLEGROUPFINDER1 = "/tgf"
 SLASH_TERRIBLEGROUPFINDER2 = "/terriblegroupfinder"
@@ -321,6 +322,10 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 		ns.ILvl.Probe()
 	elseif command == "region" then
 		ns.Region.Probe()
+	elseif command == "meter" then
+		if not ns.MeterReset.Ask() then
+			Print("no damage meter to reset: Details! isn't loaded and the game's meter is off.")
+		end
 	elseif command == "settings" or command == "config" then
 		ns.SettingsPanel.Open()
 	elseif command == "set" or command:sub(1, 4) == "set " then

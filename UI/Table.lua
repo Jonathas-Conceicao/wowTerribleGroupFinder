@@ -17,6 +17,8 @@
 --  The icons on a row (region flag, friend marks, new player friendly, Discord, and the
 --  class / leader icon) are textures with hit frames that pass mouse motion and clicks to the
 --  row; each shows its own tooltip, and the row's tooltip returns when the mouse leaves it.
+--  The region shows as a flag texture or, without art, its two letters as grey text in the
+--  same slot (same gap and drop rules).
 --
 --  Columns can't overlap: Name, Lvl, Roles have fixed widths from the left, Listed and the
 --  row's buttons are anchored to the right, and Activity takes what is left between them;
@@ -27,7 +29,7 @@ local W = ns.W
 local wipe = W.wipe
 
 local lower, find, format = string.lower, string.find, string.format
-local max, min, floor = math.max, math.min, math.floor
+local max, min, floor, ceil = math.max, math.min, math.floor, math.ceil
 
 local T = { instances = {} }
 ns.Table = T
@@ -1001,7 +1003,12 @@ function Instance:BuildRow(row)
 		local hit = W.HitFrame(cells.name, tex, row)
 		hit.tgfKind = kind
 		HitScripts(hit)
-		row.tgfIcons[kind] = { tex = tex, hit = hit }
+		local icon = { tex = tex, hit = hit, obj = tex }
+		if kind == "flag" then
+			icon.tag = W.Text(cells.name, "GameFontNormalSmall", 10)
+			icon.tag:Hide()
+		end
+		row.tgfIcons[kind] = icon
 	end
 	row.iconHit = W.HitFrame(cells.name, row.icon, row)
 	HitScripts(row.iconHit)
@@ -1282,10 +1289,28 @@ function Instance:FillRow(row, item)
 		local ok = false
 		if wanted[kind] then
 			if kind == "flag" then
-				icon.tex:SetTexture(flag.file)
-				icon.tex:SetTexCoord(unpack(flag.coords))
-				icon.tex:SetVertexColor(1, 1, 1, 1)
-				icon.tex:SetSize(flag.width, flag.height)
+				if flag.file then
+					icon.tex:SetTexture(flag.file)
+					icon.tex:SetTexCoord(unpack(flag.coords))
+					icon.tex:SetVertexColor(1, 1, 1, 1)
+					icon.tex:SetSize(flag.width, flag.height)
+					icon.obj = icon.tex
+					icon.tag:Hide()
+				else
+					-- Width 0 first, then measured unbounded: the tag is sized by its own text.
+					icon.tag:SetWidth(0)
+					icon.tag:SetText(flag.text)
+					local tw = icon.tag.GetUnboundedStringWidth and icon.tag:GetUnboundedStringWidth()
+					if type(tw) ~= "number" then
+						tw = icon.tag:GetStringWidth()
+					end
+					icon.tag:SetSize(ceil(tw) + 1, 12)
+					W.SetColor(icon.tag, greyed and W.DELISTED or W.GRAY)
+					icon.obj = icon.tag
+					icon.tex:Hide()
+				end
+				icon.hit:ClearAllPoints()
+				icon.hit:SetAllPoints(icon.obj)
 				ok = true
 			else
 				ok = W.SetIcon(icon.tex, kind)
@@ -1296,9 +1321,12 @@ function Instance:FillRow(row, item)
 		end
 		if ok then
 			drawn[#drawn + 1] = icon
-			iconsW = iconsW + icon.tex:GetWidth() + ICON_GAP
+			iconsW = iconsW + icon.obj:GetWidth() + ICON_GAP
 		else
 			icon.tex:Hide()
+			if icon.tag then
+				icon.tag:Hide()
+			end
 			icon.hit:Hide()
 		end
 	end
@@ -1323,7 +1351,7 @@ function Instance:FillRow(row, item)
 		for _, d in ipairs(drawn) do
 			if d == icon then
 				dropped[icon] = true
-				iconsW = iconsW - icon.tex:GetWidth() - gap
+				iconsW = iconsW - icon.obj:GetWidth() - gap
 			end
 		end
 	end
@@ -1331,16 +1359,22 @@ function Instance:FillRow(row, item)
 	row.name:SetWidth(nameW)
 	local x = 20 + min(row.name:GetStringWidth(), nameW) + gap
 	for _, icon in ipairs(drawn) do
-		local w, h = icon.tex:GetWidth(), icon.tex:GetHeight()
+		local obj = icon.obj
+		local w, h = obj:GetWidth(), obj:GetHeight()
 		if dropped[icon] or x + w > 20 + NAME_W then
 			icon.tex:Hide()
+			if icon.tag then
+				icon.tag:Hide()
+			end
 			icon.hit:Hide()
 		else
-			icon.tex:ClearAllPoints()
-			icon.tex:SetPoint("TOPLEFT", x, h >= 16 and -3 or (-4 - floor((12 - h) / 2)))
-			icon.tex:SetDesaturated(greyed)
-			icon.tex:SetAlpha(greyed and 0.5 or 1)
-			icon.tex:Show()
+			obj:ClearAllPoints()
+			obj:SetPoint("TOPLEFT", x, h >= 16 and -3 or (-4 - floor((12 - h) / 2)))
+			if obj.SetDesaturated then
+				obj:SetDesaturated(greyed)
+				obj:SetAlpha(greyed and 0.5 or 1)
+			end
+			obj:Show()
 			icon.hit:Show()
 			x = x + w + gap
 		end

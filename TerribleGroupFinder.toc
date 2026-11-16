@@ -17,6 +17,7 @@ Preview.lua
 ItemLevel.lua
 ItemLevelUI.lua
 Region.lua
+MeterReset.lua
 Messages.lua
 Listings.lua
 UI\Widgets.lua

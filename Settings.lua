@@ -121,25 +121,31 @@ end
 local OPTIONS = {
 	{
 		key = "ilvlPlayerTooltip",
-		section = "Item level",
+		section = "Item level and talents",
 		label = "Player tooltips",
 		tooltip = 'Show "Item Level N" on friendly players\' tooltips.',
 	},
 	{
+		key = "specPoints",
+		section = "Item level and talents",
+		label = "Talent points",
+		tooltip = "Show talent points per tree (e.g. 31/20/0) on friendly players' tooltips.",
+	},
+	{
 		key = "ilvlItemTooltip",
-		section = "Item level",
+		section = "Item level and talents",
 		label = "Item tooltips",
 		tooltip = 'Show "Item Level N" under the name of weapons and armor.',
 	},
 	{
 		key = "ilvlCharacterSheet",
-		section = "Item level",
+		section = "Item level and talents",
 		label = "Character sheet",
 		tooltip = "Show your item level in a row under Movement Speed on the character sheet.",
 	},
 	{
 		key = "ilvlInspect",
-		section = "Item level",
+		section = "Item level and talents",
 		label = "Inspect window",
 		tooltip = "Show the inspected player's item level in the Inspect window.",
 	},
@@ -160,7 +166,19 @@ local OPTIONS = {
 		key = "regionFlags",
 		section = "Group finder",
 		label = "Region flags",
-		tooltip = "Show a region flag (US or Oceania) after each listing's name.",
+		tooltip = "Show each listing's region after its name: a flag where there is one, else the region's letters.",
+	},
+	{
+		key = "meterResetOnGroup",
+		section = "Damage meter",
+		label = "Ask to reset on joining a group",
+		tooltip = "When you join a group, ask whether to reset your damage meter: Details! when it's loaded, else the game's own meter while it's turned on.",
+	},
+	{
+		key = "meterResetOnInstance",
+		section = "Damage meter",
+		label = "Ask to reset on entering an instance",
+		tooltip = "When you enter a dungeon, raid, battleground or any other instance, ask whether to reset your damage meter: Details! when it's loaded, else the game's own meter while it's turned on.",
 	},
 }
 for _, o in ipairs(OPTIONS) do

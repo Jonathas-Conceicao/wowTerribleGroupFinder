@@ -1,5 +1,5 @@
 -------------------------------------------------------------------------------
---  Region.lua -- region flags and probe (ns.Region): a flag (US / Oceania) on each
+--  Region.lua -- region flags and probe (ns.Region): a flag or two letters on each
 --  listing, from the shard ID in its partyGUID. Forever's shards are hidden, but
 --  Battle.net friends' game accounts name them and GUIDs carry a server ID. /tgf region
 --  prints the IDs it finds: your own, your friends', the group's and the listings'.
@@ -12,21 +12,33 @@ ns.Region = R
 -------------------------------------------------------------------------------
 --  Region flags: a listing's partyGUID ("Party-<shard>-...") names the hidden shard its
 --  leader plays on, the same ID as the shard's realm ID. A shard's name
---  ("CAMWOW US2 Realm 8 PvP") gives its group (US1, US2, AU1 and so on). Rules:
---    * the tooltip names the group as the game does ("US1"); where it is isn't assumed
---    * the flag is the group's country (its first two letters): one US flag for both US
---      groups, the Oceania flag for AU; no flag for a country we have no art for (its
---      tooltip line still shows) nor for an unknown shard
+--  ("CAMWOW US2 Realm 8 PvP") gives its group: the free text between CAMWOW and Realm
+--  ("US2", "EU Paris"); names not starting with CAMWOW are unknown. Rules:
+--    * the tooltip names the full group as the game does ("US1", "EU Paris")
+--    * a group that is two letters plus an optional number and whose country we have art
+--      for (US, AU, EU, CN, KR, TW; the author's flagpedia.net PNGs) shows that flag
+--    * any other group (EU Paris, a country without art) shows its first two letters as
+--      text in the flag's slot; an unknown shard shows nothing
 --    * the seeded table wins; learned shards (your own, Battle.net friends', saved in
---      DB.shards) only fill gaps
+--      DB.shards) only fill gaps; the preview has its own groups, never saved
 --    * your own listing shows the group leader's region (yours when solo or leading)
 --    * all of it is gated by the regionFlags setting, read where it acts
 --  Only shards seen live are seeded (US and AU); other regions' (EU and so on) are learned
 --  from your own realm and your Battle.net friends', so they show once seen.
 -------------------------------------------------------------------------------
+local floor = math.floor
 local FLAGS = "Interface\\AddOns\\TerribleGroupFinder\\Media\\Textures\\flag_"
--- The flag art each country has (Media/Textures/flag_<name>).
-local FLAG_ART = { US = "us", AU = "au" }
+-- The flag art each country has: the author's flagpedia.net PNG (40 px wide, h tall) at the
+-- top-left of a 64x32 canvas in Media/Textures/flag_<file>.tga (made by
+-- Media/Source/png2tga.js); drawn 10 px high.
+local FLAG_ART = {
+	US = { file = "us", h = 21 },
+	AU = { file = "au", h = 20 },
+	EU = { file = "eu", h = 27 },
+	CN = { file = "cn", h = 27 },
+	KR = { file = "kr", h = 27 },
+	TW = { file = "tw", h = 27 },
+}
 -- Seen with /tgf region on live Forever (2026-11-14): realm ID = GUID server ID.
 local KNOWN = { [6925] = "US1", [6930] = "US2", [6933] = "US2", [6934] = "US2", [6801] = "AU1" }
 
@@ -45,12 +57,37 @@ local function Server(guid)
 end
 R.Server = Server
 
---- The group ("US2") a shard name gives, or nil when it isn't a Forever shard name.
+-- Free-text group check: non-empty, at most 32 bytes, no control characters and no "|"
+-- (UI escape sequences).
+local function SaneGroup(g)
+	return type(g) == "string" and #g > 0 and #g <= 32 and not g:find("[%c|]")
+end
+
+--- The group ("US2", "EU Paris") a shard name gives: the trimmed text between CAMWOW and
+--- Realm. Nil when it isn't a Forever shard name.
 function R.Group(name)
 	if type(name) ~= "string" or not Plain(name) then
 		return nil
 	end
-	return (name:gsub("%s", "")):upper():match("^CAMWOW(%a%a%d*)REALM")
+	local up = name:upper()
+	local _, e = up:find("^%s*CAMWOW")
+	if not e then
+		return nil
+	end
+	local s = up:find("REALM", e + 1, true)
+	if not s then
+		return nil
+	end
+	local group = name:sub(e + 1, s - 1):match("^%s*(.-)%s*$")
+	return SaneGroup(group) and group or nil
+end
+
+-- The group's first two characters (UTF-8 safe), upper-cased, or nil.
+local function Tag(group)
+	local g = group:gsub("%s", "")
+	local c = "[%z\1-\127\194-\244][\128-\191]*"
+	local tag = g:match("^(" .. c .. c .. ")") or g:match("^(" .. c .. ")")
+	return tag and tag:upper() or nil
 end
 
 --- Remember a shard's group; a seeded shard is never overridden. True when it is new.
@@ -64,8 +101,8 @@ function R.Learn(id, name)
 	return false
 end
 
---- Where a shard is ({ flag, label, group, source }), or nil when unknown. label is the group
---- ("US1"); flag is nil for a country we have no art for.
+--- Where a shard is ({ flag, tag, label, group, source }), or nil when unknown. label is the
+--- full group ("US1"); flag is the art entry, or nil and tag the two letters.
 function R.Of(shard)
 	if not Plain(shard) then
 		return nil
@@ -77,10 +114,17 @@ function R.Of(shard)
 		group = id and learned[id]
 		source = "learned"
 	end
+	if not group and id and ns.UsingPreview() and ns.Preview and ns.Preview.shardGroups then
+		group = ns.Preview.shardGroups[id]
+		source = "preview"
+	end
 	if not group then
 		return nil
 	end
-	return { flag = FLAG_ART[group:sub(1, 2)], label = group, group = group, source = source }
+	local key = (group:gsub("%s", "")):upper()
+	local cc = key:match("^(%a%a)%d*$")
+	local art = cc and FLAG_ART[cc]
+	return { flag = art, tag = (not art) and Tag(group) or nil, label = group, group = group, source = source }
 end
 
 function R.Enabled()
@@ -139,22 +183,30 @@ function R.Line(l)
 	return (group and "Leader's region: " or "Region: ") .. place.label
 end
 
---- The flag texture to draw ({ file, coords, width, height, place }), or nil.
+--- The flag texture ({ file, coords, width, height, place }) or the region's two-letter text
+--- ({ text, place }), or nil.
 function R.Flag(l)
 	if not R.Enabled() then
 		return nil
 	end
 	local place = R.ForListing(l)
-	if not place or not place.flag then
+	if not place then
 		return nil
 	end
-	return {
-		file = FLAGS .. place.flag,
-		coords = { 0, 1, 12 / 64, 52 / 64 },
-		width = 16,
-		height = 10,
-		place = place,
-	}
+	if place.flag then
+		local h = place.flag.h
+		return {
+			file = FLAGS .. place.flag.file,
+			coords = { 0, 40 / 64, 0, h / 32 },
+			width = floor(400 / h + 0.5),
+			height = 10,
+			place = place,
+		}
+	end
+	if place.tag then
+		return { text = place.tag, place = place }
+	end
+	return nil
 end
 
 -- Your own shard and the ones Battle.net friends in game are on. A newly learned shard
@@ -199,7 +251,7 @@ end
 local hooked = false
 
 local function Sane(id, group)
-	return type(id) == "number" and type(group) == "string" and group:match("^%u%u%d*$") ~= nil and not KNOWN[id]
+	return type(id) == "number" and SaneGroup(group) and not KNOWN[id]
 end
 
 function R.Init(db)

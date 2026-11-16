@@ -81,6 +81,41 @@
 
 ---
 
+## Milestone: v0.2.1 — Reset Details reminder, more region flags and spec points
+
+**Shipped:** 2026-11-16
+**Phases:** 4 | **Plans:** 7
+
+### What Was Built
+- Damage meter reset prompt (Details! or the game's meter), two triggers with their own settings, `/tgf meter`
+- Region flags for every region from the author's flagpedia.net PNGs, a two-letter fallback, the generated flags removed
+- Talent points per tree on friendly players' tooltips from the guarded quiet inspect
+
+### What Worked
+- Autonomous phases 12-15 with the in-game checks in one pass at the end, again
+- Research changed the talent source to what Forever's own talent frame reads before any code was written
+- Code review caught real in-game issues ahead of testing (popup overlap, double prompts with Details! auto-erase, foreign inspects)
+
+### What Was Inefficient
+- The v0.2 flags had been drawn by a script, against the author's art rule; they had to be replaced here
+- The meter prompt was placed against game popups but not the zone name text, found only in game
+- A suspected sheet bug got a fix before the author confirmed it; it was reverted
+
+### Patterns Established
+- No art is ever generated; image work only re-encodes the author's own pixels, and only when asked
+- Small in-game reports: confirm the bug with the author before changing code that already works
+
+### Key Lessons
+1. Check the screen spots the game itself uses at the moment a frame of ours appears (zone text on entering an instance)
+2. A fix for something the author hasn't seen break waits for the author's call
+
+### Cost Observations
+- Model mix: Opus (main session and agents)
+- Sessions: 1 (with context compactions)
+- Notable: a short milestone; most review findings were fixed before the author's in-game pass
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -89,6 +124,7 @@
 |-----------|----------|--------|------------|
 | v0.1 | 1 | 6 | First GSD milestone; autonomous run, then author polish in game |
 | v0.2 | 1 | 6 | Autonomous run with all in-game checks deferred to one pass at the end |
+| v0.2.1 | 1 | 4 | Same flow; research before talents; no generated art |
 
 ### Cumulative Quality
 
@@ -96,6 +132,7 @@
 |-----------|-------|----------|-------------------|
 | v0.1 | fengari smoke harness, 4 modes, all passing | stubbed client API | 0 |
 | v0.2 | same harness, 3 modes, all passing (settings, item level, region, motion, raid probes added) | stubbed client API | 0 |
+| v0.2.1 | same harness, 3 modes, all passing (meter, region tags, talents added) | stubbed client API | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
