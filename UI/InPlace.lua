@@ -407,8 +407,9 @@ function IP.Open(keepOpen)
 end
 
 -- Asked while the game's Settings panel was open: the Messages tab opens once it hides.
--- The panel (HIGH strata, no UIPanelWindows entry) would cover the finder, and we never
--- close it ourselves; a one-time HookScript is all that's added to it.
+-- The panel (HIGH strata, no UIPanelWindows entry) would cover the finder, and nothing
+-- here closes it (the Settings button does, through its own Close: SP.CloseThen); a
+-- one-time HookScript is all that's added to it.
 local messagesAfterSettings, settingsHooked = false, false
 
 local function OpenAfterSettings()
@@ -429,7 +430,7 @@ end
 
 --- Opens the group finder on our Messages tab (the stand-in's only where the game has no
 --- group finder API). Out of combat only; with the game's Settings panel open, it opens
---- once that panel closes (never closed by us).
+--- once that panel closes.
 function IP.OpenMessages()
 	if not ns.Listings.HasAPI() then
 		ns.state.preview = true

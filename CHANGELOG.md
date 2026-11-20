@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.2.2
+
+A damage meter prompt you can move, a choice of activity when whispering, and Settings buttons that act at once.
+
+### Added
+
+- Move the damage meter prompt: Settings > Damage meter > Move shows it so you can drag it; Lock keeps the spot, Default puts it back below the zone name
+- Whispering a listing with several activities asks which one to name in the message; Edit fills in the whisper box with all of them, to write it yourself
+
+### Changed
+
+- The damage meter prompt shows the addon's icon and the game's own buttons
+- Move and Edit whisper messages close the Settings window themselves
+- "Ask to reset on joining a group" is off by default for new installs; existing settings are kept
+
 ## v0.2.1
 
 A damage meter reset prompt, talent points on player tooltips, and region flags for more regions.

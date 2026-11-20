@@ -1,42 +1,41 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.2.1
-milestone_name: Reset Details reminder, more region flags and spec points
-status: complete
-stopped_at: Milestone v0.2.1 complete
-last_updated: "2026-11-16T00:00:00.000Z"
-last_activity: 2026-11-16 — Milestone v0.2.1 shipped
+milestone: v0.2.2
+milestone_name: Small Improvements
+status: Awaiting next milestone
+stopped_at: Milestone v0.2.2 shipped
+last_updated: "2026-11-20T03:58:46.350Z"
+last_activity: 2026-11-20 — Milestone v0.2.2 completed and archived
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_phases: 3
+  completed_phases: 2
+  total_plans: 4
+  completed_plans: 4
+  percent: 67
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-11-16)
+See: .planning/PROJECT.md (updated 2026-11-20)
 
 **Core value:** Finding the right players or group fast: the listing must be easy to read and order (role, level, activity, location) and quick to act on, without leaving or replacing Forever's own group finder.
-**Current focus:** between milestones; next with `/gsd-new-milestone`
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: — (v0.2.1 shipped)
+Phase: Milestone v0.2.2 complete
 Plan: —
-Status: Milestone v0.2.1 complete, tagged `v0.2.1` on `main`
-Last activity: 2026-11-16 — v0.2.1 archived
-
-Progress: [██████████] 100%
+Status: Awaiting next milestone
+Last activity: 2026-11-20 — Milestone v0.2.2 completed and archived
 
 ## Performance Metrics
 
 **v0.1:** 6 phases (1, 2, 3, 4, 04.1, 5), 19 plans, 159 commits, 2026-11-11 → 2026-11-12.
 **v0.2:** 6 phases (6-11), 15 plans, 116 commits, 2026-11-12 → 2026-11-15.
 **v0.2.1:** 4 phases (12-15), 7 plans, 59 commits, 2026-11-16.
+**v0.2.2:** 2 phases (16-17), 4 plans, 25 commits, 2026-11-19 → 2026-11-20.
 Details in `milestones/` and `MILESTONES.md`.
 
 ## Accumulated Context
@@ -44,6 +43,7 @@ Details in `milestones/` and `MILESTONES.md`.
 ### Decisions
 
 Decisions are logged in PROJECT.md Key Decisions.
+
 
 ### Pending Todos
 
@@ -57,22 +57,22 @@ None.
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close on 2026-11-16:
+Items acknowledged and deferred at milestone close (2026-11-16, carried over at the v0.2.2 close on 2026-11-20):
 
 | Category | Item | Status |
 |----------|------|--------|
 | cleanup | v0.1 release-review cleanup list (`milestones/v0.1-phases/05-release-review/05-HUMAN-UAT.md` item 11) | deferred |
 | tech_debt | v0.2 audit items (`milestones/v0.2-MILESTONE-AUDIT.md`) | deferred |
 | tech_debt | v0.2.1 audit open items (`milestones/v0.2.1-MILESTONE-AUDIT.md`) | deferred |
-| docs | README screenshots and wording kept from v0.2 | deferred (author's call) |
+| docs | README wording proposals (v0.2.1 and v0.2.2, `milestones/v0.2.2-phases/17-release-review/17-HUMAN-UAT.md` item 3) and prints of the meter prompt / activity menu | deferred (author's call) |
 | backlog | 999.5 quest log LFG button | backlog |
 
 ## Session Continuity
 
-Last session: 2026-11-16
-Stopped at: Milestone v0.2.1 complete
+Last session: 2026-11-20
+Stopped at: Milestone v0.2.2 shipped (tag v0.2.2)
 Resume file: None
 
 ## Operator Next Steps
 
-- `/gsd-new-milestone`
+- Start the next milestone with /gsd-new-milestone

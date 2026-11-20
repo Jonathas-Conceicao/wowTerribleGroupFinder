@@ -3,7 +3,7 @@
 --  ns.Settings.List(). Proxy settings keep the registry the one source of truth: a value
 --  is saved only once the player sets it, and the registry's listeners fire on a change.
 --  Taint: only Blizzard's public registration calls; no field is written on the Settings
---  panel and our button never closes it.
+--  panel; our two buttons close it through its own Close (SP.CloseThen).
 -------------------------------------------------------------------------------
 local _, ns = ...
 
@@ -65,21 +65,68 @@ function SP.Init()
 			end)
 		end
 	end
-	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Messages"))
+	-- Last of the options' sections is Damage meter: the prompt's position goes under it.
 	layout:AddInitializer(
 		CreateSettingsButtonInitializer(
-			"Whisper presets",
-			"Edit whisper messages",
+			"Prompt position",
+			"Move",
 			function()
-				ns.InPlace.OpenMessages()
+				SP.CloseThen(ns.MeterReset.Move)
 			end,
-			"Opens the group finder's Messages tab, where the whisper presets are edited, when you close Settings.",
+			"Closes Settings and shows the damage meter prompt, to drag where you want it. Lock saves the spot, Default puts it back below the game's own popups; both open this page again.",
 			true
 		)
 	)
+	layout:AddInitializer(CreateSettingsListSectionHeaderInitializer("Messages"))
+	layout:AddInitializer(CreateSettingsButtonInitializer("Whisper presets", "Edit whisper messages", function()
+		SP.CloseThen(ns.InPlace.OpenMessages)
+	end, "Closes Settings and opens the group finder's Messages tab, where the whisper presets are edited.", true))
 	S.RegisterAddOnCategory(cat)
 	category = cat
 	categoryID = cat:GetID()
+end
+
+-- Run once the game's Settings panel hides (the latest asked wins); a one-time HookScript
+-- is all that's added to it (SP.CloseThen closes it through its own Close).
+local afterClose, closeHooked = nil, false
+
+--- Calls fn on the next frame after the Settings panel hides.
+function SP.AfterClose(fn)
+	afterClose = fn
+	if closeHooked or not (SettingsPanel and SettingsPanel.HookScript) then
+		return
+	end
+	closeHooked = true
+	SettingsPanel:HookScript("OnHide", function()
+		local run = afterClose
+		afterClose = nil
+		if run then
+			C_Timer.After(0, run) -- out of the panel's own hide
+		end
+	end)
+end
+
+--- Closes the Settings panel the way its own Close does (unapplied game settings still ask
+--- first), then calls fn once it has hidden. In combat, or where the panel isn't shown or
+--- has no Close, fn is called now (it waits for the panel itself, or refuses, as it would).
+function SP.CloseThen(fn)
+	local panel = SettingsPanel
+	if
+		InCombatLockdown()
+		or not (panel and panel.IsShown and panel:IsShown() and panel.HookScript and type(panel.Close) == "function")
+	then
+		return fn()
+	end
+	SP.AfterClose(fn)
+	local ok = pcall(panel.Close, panel, true) -- true: don't fall back to the game menu
+	if panel:IsShown() then
+		-- Unapplied game settings: the game asks to discard them and the panel stays; the
+		-- action is dropped, to click again. Where Close failed, fn runs now, as in combat.
+		afterClose = nil
+		if not ok then
+			fn()
+		end
+	end
 end
 
 --- The registered category's ID; nil while unregistered.

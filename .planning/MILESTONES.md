@@ -1,5 +1,43 @@
 # Milestones
 
+## v0.2.2 Small Improvements (Shipped: 2026-11-20)
+
+**Delivered:** a damage meter prompt the player can move, with the addon's icon and the game's
+own buttons; Settings buttons that close the options window and act at once; an activity menu
+when whispering a listing with several activities; and the group-join meter prompt off by
+default for new installs.
+
+**Phases completed:** 2 phases (16-17), 4 plans
+**Requirements:** 8/8 (MTR, SET, MSG, REL)
+**Git:** 25 commits on `milestone/v0.2.2-small-improvements` (from `topic/dev`), 2026-11-19 to
+2026-11-20; 12 shipped/source files changed (+356 / −50, outside `.planning/`); ~9.2k lines of
+Lua/XML shipped
+**Tag:** `v0.2.2`
+
+**Key accomplishments:**
+
+- Damage meter prompt: Settings > Damage meter > Move shows it to drag, Lock saves the spot
+  (`DB.meterPos`), Default goes back to the automatic one; the addon's icon on the left and
+  Yes / No in the game menu's style (`SharedButtonTemplate`)
+
+- `SP.CloseThen`: Move and Edit whisper messages close the Settings panel through its own
+  `Close(true)` and act once it hides; unapplied game settings still ask (the action is dropped)
+
+- Whisper activity menu at the cursor (`MenuUtil.CreateContextMenu`) for listings with several
+  activities, with Edit (fills the whisper box with every activity, never sends)
+
+- `ns.Migrate` schema 3: "Ask to reset on joining a group" off for new installs, kept on for
+  players with saved data
+
+- Release Review: the refresh gif leads the README; changelog drafted and approved as is
+
+**Audit:** skipped at the author's call (reviewed and tested in game; all UAT passed).
+
+**Known deferred items at close:** README wording proposals (17-HUMAN-UAT.md item 3) not applied,
+the author's call; no new prints of the meter prompt or the activity menu.
+
+---
+
 ## v0.2.1 Reset Details reminder, more region flags and spec points (Shipped: 2026-11-16)
 
 **Delivered:** a damage meter reset prompt (Details! or the game's own meter) on joining a group
@@ -19,12 +57,15 @@ run-back within 15 min, nor when Details! erases on its own)
 - `MeterReset.lua`: a "[TGF] Reset …?" Yes / No prompt of our own (never a StaticPopup entry),
   Details! first, else the game's meter while it's on; two settings, `/tgf meter`; same-run,
   Details! auto-erase and 10 s merge rules; placed below game popups and the zone name text
+
 - Region flags for US, AU, EU, CN, KR, TW from the author's flagpedia.net PNGs (converted by
   `png2tga.js`, no art generated; the script-drawn flags removed); groups like `EU` / `EU3` get the
   flag, any other shard text a two-letter tag, the full text in the tooltip
+
 - Talent points per tree ("Talents 31/20/0") on friendly players' tooltips from the same guarded
   quiet inspect, read as Forever's talent frame does (`C_Traits` group currency `spent`), with
   its own setting; the inspect also stays away from Forever's Inspect Talents view
+
 - Settings sections "Item level and talents" and "Damage meter" (ten options, all on by default)
 
 **Audit:** [milestones/v0.2.1-MILESTONE-AUDIT.md](milestones/v0.2.1-MILESTONE-AUDIT.md), status
@@ -53,14 +94,18 @@ Lua/XML shipped
 
 - Gear score removed for good (code, UI, inspects; saved data cleared by a schema-2 migration)
   and a settings registry (`ns.Settings`) with seven toggles, all on by default
+
 - Item level on friendly player tooltips (guarded quiet inspect), weapon and armor tooltips, a
   native-looking row under Movement Speed on the character sheet (taint-free: our own frame,
   Blizzard's rows' anchors moved only), and the Inspect window; `{ilvl}` whisper key
+
 - Region flags from the listing's hidden shard (seeded and learned shards, own listing =
   leader's region), generic for any region group; a tooltip on every row icon; raid groups
   show role counts with icons
+
 - Dynamic refresh: a same-filter refresh keeps the list, swipes rows out and in and slides the
   rest into place (`ns.Motion`), also simulated in the preview
+
 - Settings page in the game's Settings (AddOns), `/tgf settings`, `/tgf set`, and a button to
   the Messages tab
 
@@ -89,14 +134,19 @@ files changed (+2623 / −600, outside `.planning/`); ~5.3k lines of Lua/XML
 
 - Gear score switched off behind one flag (`ns.GEAR_SCORE`), code and notes kept for a later
   decision (backlog 999.1)
+
 - Browse list rebuilt on Blizzard's ScrollBox with stock section headers, selection, layout,
   row art and search states; stock-style sort headers sized to fit their arrow
+
 - Rows and tooltip like Forever's own: role icons, your listing with its delist button, the
   stock tooltip order, friend marks, Discord icon, and the game's own right-click menu
+
 - Messages tab: `[TGF]` presets with key buttons, Auto-send / Auto-invite, a 1 s contact lock
   against spam; the invite preset is used whenever you're in a group
+
 - Player location (inserted phase 04.1): the solo player's or leader's zone on each row and
   each member's zone in a group's tooltip
+
 - Release plumbing: CurseForge / Wago IDs in the TOC, the in-game icon, LICENSE in the zip,
   README with screenshots and an AI usage section, the v0.1.0 changelog
 

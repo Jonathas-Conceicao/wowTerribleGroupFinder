@@ -17,7 +17,8 @@ local listeners = {} -- key -> { fn, ... }
 local db -- the saved table, held by reference (never copied or replaced)
 
 -- Keys other modules keep in the same saved table: never an option's key.
-local RESERVED = { schema = true, invite = true, request = true, shards = true, gs = true, autoRefresh = true }
+local RESERVED =
+	{ schema = true, invite = true, request = true, shards = true, meterPos = true, gs = true, autoRefresh = true }
 
 -- A saved value that isn't a boolean is dropped, so Get falls back to the default.
 local function Clean(opt)
@@ -172,6 +173,7 @@ local OPTIONS = {
 		key = "meterResetOnGroup",
 		section = "Damage meter",
 		label = "Ask to reset on joining a group",
+		default = false, -- off for new installs; Migrate's schema 3 keeps it on for earlier users
 		tooltip = "When you join a group, ask whether to reset your damage meter: Details! when it's loaded, else the game's own meter while it's turned on.",
 	},
 	{
@@ -182,6 +184,8 @@ local OPTIONS = {
 	},
 }
 for _, o in ipairs(OPTIONS) do
-	o.default = true
+	if o.default == nil then
+		o.default = true
+	end
 	S.Register(o)
 end

@@ -8,7 +8,7 @@
 --  added to the game's StaticPopup tables) and its question starts with the addon's [TGF]
 --  tag; nothing is reset without a click on Yes.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local addonName, ns = ...
 
 local M = {}
 ns.MeterReset = M
@@ -89,23 +89,44 @@ function M.Reset(target)
 end
 
 -------------------------------------------------------------------------------
---  The dialog: a StaticPopup-sized frame of our own. It never covers the game's popups nor
---  the zone name shown on entering an instance: each time it opens it sits below the lowest
---  of those (only read), and it is not raised above them.
+--  The dialog: a StaticPopup-sized frame of our own with the addon's icon. Where the player
+--  placed it (Settings > Move, saved in DB.meterPos) it opens there; else it never covers the
+--  game's popups nor the zone name shown on entering an instance: each time it opens it sits
+--  below the lowest of those (only read), and it is not raised above them.
 -------------------------------------------------------------------------------
 local dialog
 local lastPromptAt -- GetTime() of the last prompt shown or answered
+local db
 
 local POPUP_GAP = 8
 local ZONE_TEXT_BOTTOM = 256 -- below the zone name and subzone text (ZoneTextFrame: top -128, 128 tall)
+local ICON = "Interface\\AddOns\\" .. addonName .. "\\Media\\Textures\\tgf_icon_64x64"
 
 local function Bottom(frame)
 	local b = type(frame) == "table" and frame.GetBottom and frame:GetBottom()
 	return type(b) == "number" and b or nil
 end
 
+local function Finite(v)
+	return type(v) == "number" and v == v and v > -1e6 and v < 1e6
+end
+
+-- The saved spot (the dialog's top left, in UIParent's coordinates), or nil.
+local function SavedPos()
+	local p = db and db.meterPos
+	if type(p) == "table" and Finite(p.left) and Finite(p.top) then
+		return p
+	end
+	return nil
+end
+
 local function Place(f)
 	f:ClearAllPoints()
+	local saved = SavedPos()
+	if saved then
+		f:SetPoint("TOPLEFT", UIParent, "BOTTOMLEFT", saved.left, saved.top)
+		return
+	end
 	-- Never over the zone name shown on entering an instance: at least below where it shows,
 	-- shown or not (it may come after us).
 	local top = UIParent:GetTop()
@@ -136,13 +157,37 @@ local function Place(f)
 	end
 end
 
+-- A button in the game menu's style (the red three-slice SharedButtonTemplate); the
+-- plain panel button where that template is missing.
+local function MenuButton(parent, text, onClick)
+	local ok, b = pcall(CreateFrame, "Button", nil, parent, "SharedButtonTemplate")
+	if ok and b then
+		b:SetSize(120, 26)
+		b:SetText(text)
+		b:SetScript("OnClick", onClick)
+		return b
+	end
+	return ns.W.Button(parent, text, 120, 24, onClick)
+end
+
 local function Build()
 	local W = ns.W
 	local f = W.Create("Frame", UIParent, "BackdropTemplate")
-	f:SetSize(320, 80)
+	f:SetSize(380, 112)
 	f:SetPoint("TOP", UIParent, "TOP", 0, -(ZONE_TEXT_BOTTOM + POPUP_GAP))
 	f:SetFrameStrata("DIALOG")
 	f:EnableMouse(true)
+	f:SetClampedToScreen(true)
+	f:SetMovable(true)
+	f:RegisterForDrag("LeftButton")
+	f:SetScript("OnDragStart", function(self)
+		if self.moving then
+			self:StartMoving()
+		end
+	end)
+	f:SetScript("OnDragStop", function(self)
+		self:StopMovingOrSizing()
+	end)
 	f:Hide()
 	-- The game's dialog border and background (StaticPopup's look); a plain backdrop where missing.
 	local ok, border = pcall(CreateFrame, "Frame", nil, f, "DialogBorderTemplate")
@@ -159,26 +204,72 @@ local function Build()
 		})
 	end
 
-	f.text = W.Text(f, "GameFontHighlight", 12, "CENTER")
-	f.text:SetPoint("TOP", 0, -18)
-	f.text:SetWidth(290)
+	-- The addon's icon (the purple eye) on the left, the full height; the question and the
+	-- buttons both beside it, in the body.
+	local icon = f:CreateTexture(nil, "ARTWORK")
+	icon:SetSize(76, 76)
+	icon:SetPoint("LEFT", 18, 0)
+	icon:SetTexture(ICON)
+	local body = CreateFrame("Frame", nil, f)
+	body:SetPoint("TOPLEFT", icon, "TOPRIGHT", 10, 4)
+	body:SetPoint("BOTTOMRIGHT", f, "BOTTOMRIGHT", -20, 16)
 
-	local yes = W.Button(f, YES or "Yes", 128, 21, function()
+	f.text = W.Text(f, "GameFontHighlight", 12, "CENTER")
+	f.text:SetPoint("TOPLEFT", body, "TOPLEFT", 0, 0)
+	f.text:SetPoint("BOTTOMRIGHT", body, "BOTTOMRIGHT", 0, 30)
+
+	local yes = MenuButton(f, YES or "Yes", function()
 		lastPromptAt = GetTime()
 		f:Hide()
 		M.Reset(f.target)
 	end)
-	yes:SetPoint("BOTTOMRIGHT", f, "BOTTOM", -6, 16)
-	local no = W.Button(f, NO or "No", 128, 21, function()
+	yes:SetPoint("BOTTOMRIGHT", body, "BOTTOM", -4, 0)
+	local no = MenuButton(f, NO or "No", function()
 		lastPromptAt = GetTime()
 		f:Hide()
 	end)
-	no:SetPoint("BOTTOMLEFT", f, "BOTTOM", 6, 16)
+	no:SetPoint("BOTTOMLEFT", body, "BOTTOM", 4, 0)
+
+	-- Move mode (Settings > Move): drag the dialog; Lock saves the spot, Default goes back
+	-- to the automatic spot; both reopen the Settings page.
+	local default = MenuButton(f, DEFAULT or "Default", function()
+		if db then
+			db.meterPos = nil
+		end
+		M.EndMove()
+	end)
+	default:SetPoint("BOTTOMRIGHT", body, "BOTTOM", -4, 0)
+	local lock = MenuButton(f, LOCK or "Lock", function()
+		local left, top = f:GetLeft(), f:GetTop()
+		if db and Finite(left) and Finite(top) then
+			db.meterPos = { left = left, top = top }
+		end
+		M.EndMove()
+	end)
+	lock:SetPoint("BOTTOMLEFT", body, "BOTTOM", 4, 0)
+	f.askButtons = { yes, no }
+	f.moveButtons = { default, lock }
 	return f
 end
 
+local function ShowButtons(f, moving)
+	for _, b in ipairs(f.askButtons) do
+		b:SetShown(not moving)
+	end
+	for _, b in ipairs(f.moveButtons) do
+		b:SetShown(moving)
+	end
+end
+
+-- The question for a meter, with Yes / No: Yes resets this meter, the one it names.
+local function SetQuestion(f, target)
+	f.target = target
+	f.text:SetText("[TGF] Reset " .. NAMES[target] .. "?")
+	ShowButtons(f, false)
+end
+
 --- Ask whether to reset the meter. Does nothing without a meter, and keeps a dialog that
---- already shows.
+--- already shows (a question, or the dialog being moved).
 function M.Ask()
 	local target = M.Target()
 	if not target then
@@ -186,14 +277,64 @@ function M.Ask()
 	end
 	dialog = dialog or Build()
 	if dialog:IsShown() then
-		return true
+		return not dialog.moving
 	end
-	dialog.target = target -- Yes resets this meter, the one the question names
-	dialog.text:SetText("[TGF] Reset " .. NAMES[target] .. "?")
+	SetQuestion(dialog, target)
 	Place(dialog)
 	dialog:Show()
 	lastPromptAt = GetTime()
 	return true
+end
+
+local function StartMove()
+	dialog = dialog or Build()
+	-- A question showing now is asked again once the move ends.
+	if dialog:IsShown() and not dialog.moving then
+		dialog.pending = dialog.target
+	end
+	dialog.moving = true
+	dialog.target = nil
+	dialog.text:SetText("[TGF] Drag to move the damage meter prompt, then Lock.")
+	ShowButtons(dialog, true)
+	Place(dialog)
+	dialog:Show()
+end
+
+--- Settings > Move: shows the dialog to drag. The Settings button closes the panel first
+--- (SP.CloseThen); where it is still shown (in combat nothing closes it) the dialog shows
+--- once it hides.
+function M.Move()
+	if SettingsPanel and SettingsPanel.IsShown and SettingsPanel:IsShown() and ns.SettingsPanel.AfterClose then
+		ns.SettingsPanel.AfterClose(StartMove)
+		ns.Print("the damage meter prompt shows to be moved when you close the Settings.")
+		return
+	end
+	StartMove()
+end
+
+--- Ends move mode (Lock or Default) and reopens the Settings page.
+function M.EndMove()
+	if not dialog then
+		return
+	end
+	if dialog.StopMovingOrSizing then
+		dialog:StopMovingOrSizing()
+	end
+	dialog.moving = false
+	dialog:Hide()
+	Place(dialog)
+	local pending = dialog.pending
+	dialog.pending = nil
+	if pending and M.Target() == pending then
+		SetQuestion(dialog, pending)
+		dialog:Show()
+	end
+	ns.SettingsPanel.Open()
+end
+
+--- Whether the dialog is being moved (Settings > Move).
+function M.Moving()
+	return dialog ~= nil and dialog.moving == true and dialog:IsShown()
 end
 
 local MERGE = 10 -- seconds: both triggers firing close together ask once
@@ -275,7 +416,11 @@ local function OnEvent(_, event, isInitialLogin, isReloadingUi)
 	end
 end
 
-function M.Init()
+function M.Init(saved)
+	db = saved
+	if db and db.meterPos ~= nil and not SavedPos() then
+		db.meterPos = nil -- not a spot we saved
+	end
 	local f = CreateFrame("Frame")
 	f:RegisterEvent("PLAYER_ENTERING_WORLD")
 	f:RegisterEvent("GROUP_ROSTER_UPDATE")

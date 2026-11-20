@@ -23,18 +23,26 @@ function ns.Short(name)
 end
 
 local DEFAULTS = {
-	schema = 2,
+	schema = 3,
 }
 
--- Saved data from an older version, brought up to schema 2 in place (the table is never
+-- Saved data from an older version, brought up to schema 3 in place (the table is never
 -- replaced: the settings registry, the presets and the shard table all hold it). Runs
 -- before every module's Init. The obsolete keys go on every load, so a trip back to an
 -- older version that wrote them again leaves nothing behind.
+-- Schema 3: meterResetOnGroup defaults off for new installs; saved data from an earlier
+-- schema gets it saved on, unless the player set it. "Saved data" is whether the table
+-- held any key when the addon loaded, which is why Migrate runs before DEFAULTS are
+-- filled in.
 function ns.Migrate(db)
+	local existing = next(db) ~= nil
 	db.gs = nil -- v0.1 gear score cache
 	db.autoRefresh = nil -- an unused key from a development build, cleared
-	if (tonumber(db.schema) or 0) < 2 then
-		db.schema = 2
+	if (tonumber(db.schema) or 0) < 3 then
+		if existing and type(db.meterResetOnGroup) ~= "boolean" then
+			db.meterResetOnGroup = true
+		end
+		db.schema = 3
 	end
 end
 
@@ -289,7 +297,7 @@ function ns:ADDON_LOADED(name)
 	ns.ILvl.Init()
 	ns.ILvlUI.Init()
 	ns.Region.Init(ns.db)
-	ns.MeterReset.Init()
+	ns.MeterReset.Init(ns.db)
 	ns.Messages.Init(ns.db)
 	ns.InPlace.Init()
 	ns.SettingsPanel.Init()
@@ -323,7 +331,9 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 	elseif command == "region" then
 		ns.Region.Probe()
 	elseif command == "meter" then
-		if not ns.MeterReset.Ask() then
+		if ns.MeterReset.Moving() then
+			Print("the damage meter prompt is being moved: Lock or Default first.")
+		elseif not ns.MeterReset.Ask() then
 			Print("no damage meter to reset: Details! isn't loaded and the game's meter is off.")
 		end
 	elseif command == "settings" or command == "config" then

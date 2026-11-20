@@ -5,6 +5,7 @@
 - ✅ **v0.1 Initial Release** — Phases 1-5 (shipped 2026-11-12, tag `v0.1.0`) — [archive](milestones/v0.1-ROADMAP.md)
 - ✅ **v0.2 ILvL Info and Improved Refresh** — Phases 6-11 (shipped 2026-11-15, tag `v0.2.0`) — [archive](milestones/v0.2-ROADMAP.md)
 - ✅ **v0.2.1 Reset Details reminder, more region flags and spec points** — Phases 12-15 (shipped 2026-11-16, tag `v0.2.1`) — [archive](milestones/v0.2.1-ROADMAP.md)
+- ✅ **v0.2.2 Small Improvements** — Phases 16-17 (shipped 2026-11-20, tag `v0.2.2`) — [archive](milestones/v0.2.2-ROADMAP.md)
 
 ## Phases
 
@@ -42,6 +43,14 @@
 
 </details>
 
+<details>
+<summary>✅ v0.2.2 Small Improvements (Phases 16-17) — SHIPPED 2026-11-20</summary>
+
+- [x] Phase 16: Small Improvements (2/2 plans) — completed 2026-11-19
+- [x] Phase 17: Release Review (2/2 plans) — completed 2026-11-20
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -49,6 +58,7 @@
 | 1-5 (with 04.1) | v0.1 | 19/19 | Complete | 2026-11-12 |
 | 6-11 | v0.2 | 15/15 | Complete | 2026-11-15 |
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
+| 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 
 ## Backlog
 

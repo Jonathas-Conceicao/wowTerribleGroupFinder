@@ -20,6 +20,7 @@ stylua.toml text eol=lf
 
 # Binary. Never convert.
 *.png binary
+*.gif binary
 *.blp binary
 *.tga binary
 *.ase binary

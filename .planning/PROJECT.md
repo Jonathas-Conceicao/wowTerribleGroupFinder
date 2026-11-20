@@ -20,18 +20,40 @@ group finder.
 
 ## Current State
 
-**Shipped v0.2.1 "Reset Details reminder, more region flags and spec points" (2026-11-16)**,
-after v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial Release"
+**Shipped v0.2.2 "Small Improvements" (2026-11-20)**, after v0.2.1 "Reset Details reminder,
+more region flags and spec points" (2026-11-16), v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial Release"
 (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
-[milestones/](milestones/). ~8.9k lines of Lua/XML; checked in the live Forever client by the
+[milestones/](milestones/). ~9.2k lines of Lua/XML; checked in the live Forever client by the
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
 ## Next Milestone Goals (candidates)
 
-Backlog 999.5 (quest log LFG button), the deferred v0.1 cleanup list, the v0.2 and v0.2.1
-audits' tech debt, EU / Asia shard IDs from players' `/tgf region` output, remembered sort /
-filters, localization-ready strings.
+Backlog 999.5 (quest log LFG button), the README wording proposals left out of v0.2.2
+(`milestones/v0.2.2-phases/17-release-review/17-HUMAN-UAT.md` item 3), the deferred v0.1
+cleanup list, the v0.2 and v0.2.1 audits' tech debt, EU / Asia shard IDs from players'
+`/tgf region` output, remembered sort / filters, localization-ready strings.
+
+<details>
+<summary>v0.2.2 Small Improvements — milestone brief (archived)</summary>
+
+**Goal:** Wrap up the small improvements prototyped on `topic/dev` after v0.2.1 into a release.
+
+**Target features:**
+- Damage meter prompt: movable from Settings (Damage meter > Move: the prompt shows to drag;
+  Lock saves the spot, Default goes back to the automatic one; both reopen Settings), Yes / No
+  in the game menu's button style, the addon's purple-eye icon on its left with the question and
+  buttons beside it
+- The Settings page's Move and Edit whisper messages buttons close the options window themselves
+  (its own `Close`, never in combat) so their action happens at once
+- Whisper activity picker: where the preset uses `{activity}` and the listing has several, a
+  menu at the cursor picks one (sent as Auto-send says), or Edit (fills the whisper box only)
+- "Reset on joining a group" off by default for new installs; existing users keep it as it was
+
+**Key context:** all of it is prototyped and harness-tested, uncommitted, on the milestone branch
+(from `topic/dev`); no research. Two phases: the prototype work, then the Release Review.
+
+</details>
 
 <details>
 <summary>v0.2.1 Reset Details reminder, more region flags and spec points — milestone brief (archived)</summary>
@@ -185,6 +207,11 @@ migration was later dropped, and all in-game checks passed at close.
 - ✓ Region flags for US, AU, EU, CN, KR, TW from flagpedia.net art, a two-letter tag otherwise, the full group in the tooltip; generated flags removed (REG-05..08) — v0.2.1
 - ✓ Talent points per tree on friendly players' tooltips with its own setting (SPC-01..02) — v0.2.1
 - ✓ Release Review for v0.2.1 (REL-06) — v0.2.1
+- ✓ Movable damage meter prompt (Move / Lock / Default), the addon's icon, the game menu's buttons (MTR-05..07) — v0.2.2
+- ✓ "Ask to reset on joining a group" off for new installs, kept for existing players (MTR-08) — v0.2.2
+- ✓ Settings' Move and Edit whisper messages close the options window and act at once (SET-01) — v0.2.2
+- ✓ Whisper activity menu for listings with several activities, with Edit (MSG-01..02) — v0.2.2
+- ✓ Release Review for v0.2.2 (REL-07) — v0.2.2
 
 <!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
@@ -200,9 +227,9 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-None: the next milestone defines its own with `/gsd-new-milestone`. Archived:
+None until the next milestone (`/gsd-new-milestone`). Archived:
 [v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
-[v0.2.1](milestones/v0.2.1-REQUIREMENTS.md).
+[v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
@@ -249,6 +276,8 @@ None: the next milestone defines its own with `/gsd-new-milestone`. Archived:
 | Raid-sized groups show the game's role count (count + role icon) | Matches Forever's own and retail's raid display; slot icons can't fit 40 | ✓ Good (v0.2) |
 | Changelog written for players, against the last release | Players read it; nothing they never saw (e.g. gear score) | ✓ Good (v0.2) |
 | No art is generated (code or AI); the author draws or sources every image | The v0.2 flags were drawn by a script, contradicting the README's art note; v0.2.1 replaced them with flagpedia.net flags | ✓ Good (v0.2.1) |
+| The Settings page's Move and Edit whisper messages buttons close the game's Settings panel through its own `Close(true)` | Their action (drag the prompt, the Messages tab) needs the panel gone; the panel's own Close keeps the unapplied-settings prompt and writes nothing on it | ✓ Good (v0.2.2) |
+| A new default reaches new installs only (`ns.Migrate` saves the old value for existing players) | Players who had the prompt keep what they knew; settings saved only once set would otherwise flip silently | ✓ Good (v0.2.2) |
 | Auto-sends lock all contact buttons for 1 s | Keeps the addon from being used to spam whispers / invites | ✓ Good (v0.1) |
 | Auto-invite only after a real auto-send, never during chat lockdown | The invite always follows a sent whisper; lockdown only prefills | ✓ Good (v0.1) |
 | The preset follows your group state: in a group always the invite preset; on your own, request to groups and invite to solo players | You offer your group when you have one; you ask for a spot when you don't | ✓ Good (v0.1) |
@@ -326,4 +355,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-16 at the start of milestone v0.2.1*
+*Last updated: 2026-11-20 after the v0.2.2 milestone*

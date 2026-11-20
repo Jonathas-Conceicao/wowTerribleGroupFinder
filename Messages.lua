@@ -26,7 +26,10 @@ M.KEYS = {
 		tip = "Marks the message as sent with TerribleGroupFinder. Always placed first, once.",
 	},
 	{ key = "{name}", tip = "The player you whisper: the solo player or the group's leader." },
-	{ key = "{activity}", tip = "The first activity of their listing." },
+	{
+		key = "{activity}",
+		tip = "The activity of their listing. When it lists several, Whisper asks which, or Edit to fill in the whisper box with them all.",
+	},
 	{ key = "{players}", tip = "Your current group size, counting you." },
 	{ key = "{class}", tip = "Your class." },
 	{ key = "{level}", tip = "Your level." },
@@ -136,12 +139,13 @@ function M.Normalize(text)
 	return "{addon} " .. rest
 end
 
---- The text for a listing: the preset with its keys filled in.
-function M.Format(kind, l, text)
+--- The text for a listing: the preset with its keys filled in. `activity` (optional) is
+--- the {activity} text; else the listing's first activity.
+function M.Format(kind, l, text, activity)
 	local values = {
 		addon = M.ADDON_KEY,
 		name = l and l.leader.name or "Name",
-		activity = l and l.acts[1] and l.acts[1].name or "the dungeon",
+		activity = activity or (l and l.acts[1] and l.acts[1].name) or "the dungeon",
 		players = tostring(ns.GroupSize()),
 		role = MyRoleText(),
 		class = ns.W.ClassName(ns.PlayerClass()),
@@ -204,18 +208,97 @@ function M.StartLock(id, source)
 	end)
 end
 
+-- The listing's activity names, in its order, where the preset uses {activity} and there
+-- is more than one to choose from; else nil.
+local function ActivityChoices(kind, l)
+	if not (l and l.acts and #l.acts > 1) then
+		return nil
+	end
+	if not M.Normalize(db[kind].text):find("{activity}", 1, true) then
+		return nil
+	end
+	local names = {}
+	for _, a in ipairs(l.acts) do
+		if a.name then
+			names[#names + 1] = a.name
+		end
+	end
+	return #names > 1 and names or nil
+end
+
+local function Redraw()
+	if ns.Table and ns.Table.RefreshAll then
+		ns.Table.RefreshAll()
+	end
+end
+
+-- A menu entry acts later than the click that opened it: the rows may be moving, or a
+-- refresh or a new search may have taken the listing away meanwhile.
+local function StillThere(l)
+	if ns.Motion and ns.Motion.Busy and ns.Motion.Busy() then
+		return false
+	end
+	if not (ns.Table and ns.Table.CurrentKeys and ns.Listings and ns.Listings.Key) then
+		return true
+	end
+	if ns.Table.CurrentKeys()[ns.Listings.Key(l)] then
+		return true
+	end
+	ns.Print("that listing is gone; whisper from the list again.")
+	return false
+end
+
+-- The activity menu at the cursor (the game's context menu): one entry per activity, which
+-- whispers as the preset says (Auto-send or not), and Edit, which only fills the whisper
+-- box with every activity in {activity}, to cut down by hand. Returns false where the
+-- client has no menu API.
+local function ChooseActivity(l, preview, from, names)
+	if not (MenuUtil and MenuUtil.CreateContextMenu) then
+		return false
+	end
+	local function Pick(choice)
+		return function()
+			if not StillThere(l) then
+				return
+			end
+			M.Send(l, preview, from, choice)
+			Redraw()
+		end
+	end
+	local ok = pcall(MenuUtil.CreateContextMenu, UIParent, function(_, root)
+		root:CreateTitle("Whisper for which activity?")
+		for _, name in ipairs(names) do
+			root:CreateButton(name, Pick({ activity = name }))
+		end
+		root:CreateDivider()
+		root:CreateButton(EDIT or "Edit", Pick({ activity = table.concat(names, ", "), edit = true }))
+	end)
+	return ok
+end
+
 --- The message button (runs from a click): opens the whisper with the text, or sends it
---- (and, for a solo player with Auto-invite, invites them). Returns true after a real
---- auto-send, which starts the lock.
-function M.Send(l, preview, from)
+--- (and, for a solo player with Auto-invite, invites them). Where the preset uses
+--- {activity} and the listing has several, a menu at the cursor asks which first
+--- (`choice`: { activity = text, edit = true to only fill the whisper box }). Returns true
+--- after a real auto-send, which starts the lock.
+function M.Send(l, preview, from, choice)
 	if M.Locked() then
 		return false
 	end
 	local kind = KindFor(l)
-	local text = M.Format(kind, l)
+	if not choice then
+		local names = ActivityChoices(kind, l)
+		if names and ChooseActivity(l, preview, from, names) then
+			return false
+		end
+	end
+	local text = M.Format(kind, l, nil, choice and choice.activity)
 	-- Forever lists only your own mega-realm: whisper by plain character name.
 	local target = l.leader.name
 	local _, auto, autoInvite = M.Get(kind)
+	if choice and choice.edit then
+		auto, autoInvite = false, false
+	end
 	-- Auto-invite only reaches solo players: a group's leader is already in a group.
 	local invite = kind == "invite" and l.solo and autoInvite and ns.CanInvite()
 	if auto and preview then

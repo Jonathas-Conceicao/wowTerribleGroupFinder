@@ -116,6 +116,40 @@
 
 ---
 
+## Milestone: v0.2.2 — Small Improvements
+
+**Shipped:** 2026-11-20
+**Phases:** 2 | **Plans:** 4
+
+### What Was Built
+- A movable damage meter prompt with the addon's icon and the game menu's buttons
+- Settings buttons that close the options window through its own Close and then act
+- A whisper activity menu at the cursor, with Edit
+- The group-join meter prompt off by default for new installs only (Migrate schema 3)
+
+### What Worked
+- Prototyping in a live session with the author, then wrapping it into a short milestone
+- Code review found pending-action edge cases (a refused close, a listing gone before the menu pick) before release
+
+### What Was Inefficient
+- gsd-tools `commit` put planning commits on a stray branch; they had to be rebased back
+- The installed build was overwritten once by the author's addon manager and had to be reinstalled
+
+### Patterns Established
+- Plain `git add` / `git commit` for planning commits on milestone branches
+- New defaults reach new installs only, through a Migrate step for existing saved data
+
+### Key Lessons
+1. An action armed for "after the panel hides" must be dropped when the panel refuses to hide
+2. A menu entry chosen later must re-check what it acts on
+
+### Cost Observations
+- Model mix: Opus (main session and agents)
+- Sessions: 1 (with context compactions)
+- Notable: no research and no audit; two phases on top of an already tested prototype
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -125,6 +159,7 @@
 | v0.1 | 1 | 6 | First GSD milestone; autonomous run, then author polish in game |
 | v0.2 | 1 | 6 | Autonomous run with all in-game checks deferred to one pass at the end |
 | v0.2.1 | 1 | 4 | Same flow; research before talents; no generated art |
+| v0.2.2 | 1 | 2 | Live prototype first, then a short wrap-up milestone; no research, no audit |
 
 ### Cumulative Quality
 
@@ -133,6 +168,7 @@
 | v0.1 | fengari smoke harness, 4 modes, all passing | stubbed client API | 0 |
 | v0.2 | same harness, 3 modes, all passing (settings, item level, region, motion, raid probes added) | stubbed client API | 0 |
 | v0.2.1 | same harness, 3 modes, all passing (meter, region tags, talents added) | stubbed client API | 0 |
+| v0.2.2 | same harness, 3 modes, all passing (meter move, settings close, activity menu, migrate added) | stubbed client API | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
