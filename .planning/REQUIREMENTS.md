@@ -11,22 +11,22 @@ Forever's own group finder.
 
 ### Opt-in defaults and Settings (OPT)
 
-- [ ] **OPT-01**: On a new install only Elite quest button, Dynamic refresh, Swipe animations
+- [x] **OPT-01**: On a new install only Elite quest button, Dynamic refresh, Swipe animations
   and Region flags are on by default; every other option (item level spots, talent points, slot
   item level, slot enchants, both damage meter prompts) is off, so the addon doesn't clash with
   similar addons
 
-- [ ] **OPT-02**: A player with saved data from before v0.3.0 keeps the options they had: the
+- [x] **OPT-02**: A player with saved data from before v0.3.0 keeps the options they had: the
   six options on by default in v0.2.2 (`ilvlPlayerTooltip`, `specPoints`, `ilvlItemTooltip`,
   `ilvlCharacterSheet`, `ilvlInspect`, `meterResetOnInstance`) stay on unless they turned them
   off (an `ns.Migrate` schema-4 step from a frozen list, never from the registry); the new
   options take the new defaults
 
-- [ ] **OPT-03**: The Settings page shows its sections in this order: Group finder (Elite quest
+- [x] **OPT-03**: The Settings page shows its sections in this order: Group finder (Elite quest
   button, Dynamic refresh > Swipe animations, Region flags), Player inspection (item level spots,
   talent points, slot item level, slot enchants), Damage meter, Messages
 
-- [ ] **OPT-04**: Elite quest button, Slot item level and Slot enchants can be turned on or off
+- [x] **OPT-04**: Elite quest button, Slot item level and Slot enchants can be turned on or off
   from the Settings page and with `/tgf set <key> on|off`; the change shows at once
 
 ### Elite quest eye (QST)
@@ -91,10 +91,10 @@ Forever's own group finder.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OPT-01 | Phase 18 | Pending |
-| OPT-02 | Phase 18 | Pending |
-| OPT-03 | Phase 18 | Pending |
-| OPT-04 | Phase 18 | Pending |
+| OPT-01 | Phase 18 | Complete |
+| OPT-02 | Phase 18 | Complete |
+| OPT-03 | Phase 18 | Complete |
+| OPT-04 | Phase 18 | Complete |
 | QST-01 | Phase 19 | Pending |
 | QST-02 | Phase 19 | Pending |
 | QST-03 | Phase 19 | Pending |

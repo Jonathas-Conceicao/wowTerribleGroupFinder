@@ -54,7 +54,7 @@
 
 ### 🚧 v0.3.0 Elite Quests finder and more inspect data (In Progress)
 
-- [ ] **Phase 18: Opt-in Defaults and Settings Sections** - only the finder's options on by default for new installs, existing players keep theirs, the page in its new order with the new keys
+- [x] **Phase 18: Opt-in Defaults and Settings Sections** - only the finder's options on by default for new installs, existing players keep theirs, the page in its new order with the new keys (completed 2026-11-24)
 - [ ] **Phase 19: Elite Quest Eye** - an eye on tracked elite quests that opens the finder's Listing tab with a hint for that quest
 - [ ] **Phase 20: Per-slot Gear Info** - item level and enchant (or "No enchant") on each slot of the character sheet and the Inspect window
 - [ ] **Phase 21: Release Review** - cleanup, docs, changelog draft, author review, tag `v0.3.0`
@@ -81,7 +81,7 @@
 **Plans**: 1 plan
 
 Plans:
-- [ ] 18-01-PLAN.md — explicit opt-in defaults and the new section order in the registry, Migrate schema 4 from the frozen v0.2.2 list, CLAUDE.md
+- [x] 18-01-PLAN.md — explicit opt-in defaults and the new section order in the registry, Migrate schema 4 from the frozen v0.2.2 list, CLAUDE.md
 
 ### Phase 19: Elite Quest Eye
 
@@ -151,7 +151,7 @@ load-on-demand); no inspects of our own, the quiet queue untouched
 | 6-11 | v0.2 | 15/15 | Complete | 2026-11-15 |
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
-| 18. Opt-in Defaults and Settings Sections | v0.3.0 | 0/? | Not started | - |
+| 18. Opt-in Defaults and Settings Sections | v0.3.0 | 1/1 | Complete    | 2026-11-24 |
 | 19. Elite Quest Eye | v0.3.0 | 0/? | Not started | - |
 | 20. Per-slot Gear Info | v0.3.0 | 0/? | Not started | - |
 | 21. Release Review | v0.3.0 | 0/? | Not started | - |
