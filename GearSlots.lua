@@ -1,7 +1,8 @@
 -------------------------------------------------------------------------------
 --  GearSlots.lua -- per-slot gear data (ns.GearSlots): one equipped slot's item level and
 --  enchant, for the character sheet and the Inspect window (slotItemLevel, slotEnchants).
---  Nothing here draws.
+--  The data half (down to /tgf gear) is stateless and draws nothing; the overlay half
+--  below it draws one frame of ours per slot button, with per-kind state.
 --
 --  - the level comes from C_Item.GetDetailedItemLevelInfo(link), the same source
 --    ILvl.Read uses, so a slot's level and the overall figure agree
@@ -13,7 +14,7 @@
 --  - a slot whose item data hasn't loaded reads as pending, never as "no enchant"
 --
 --  No inspects of its own (no NotifyInspect, no ClearInspectPlayer, no use of the quiet
---  queue), and nothing is cached: every read asks the game.
+--  queue), and no gear data is cached: every read asks the game.
 -------------------------------------------------------------------------------
 local _, ns = ...
 
