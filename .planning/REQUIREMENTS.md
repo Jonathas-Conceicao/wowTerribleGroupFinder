@@ -91,16 +91,16 @@ Forever's own group finder.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| OPT-01 | — | Pending |
-| OPT-02 | — | Pending |
-| OPT-03 | — | Pending |
-| OPT-04 | — | Pending |
-| QST-01 | — | Pending |
-| QST-02 | — | Pending |
-| QST-03 | — | Pending |
-| QST-04 | — | Pending |
-| GEAR-01 | — | Pending |
-| GEAR-02 | — | Pending |
-| GEAR-03 | — | Pending |
-| GEAR-04 | — | Pending |
-| REL-08 | — | Pending |
+| OPT-01 | Phase 18 | Pending |
+| OPT-02 | Phase 18 | Pending |
+| OPT-03 | Phase 18 | Pending |
+| OPT-04 | Phase 18 | Pending |
+| QST-01 | Phase 19 | Pending |
+| QST-02 | Phase 19 | Pending |
+| QST-03 | Phase 19 | Pending |
+| QST-04 | Phase 19 | Pending |
+| GEAR-01 | Phase 20 | Pending |
+| GEAR-02 | Phase 20 | Pending |
+| GEAR-03 | Phase 20 | Pending |
+| GEAR-04 | Phase 20 | Pending |
+| REL-08 | Phase 21 | Pending |
