@@ -20,14 +20,14 @@ progress:
 See: .planning/PROJECT.md (updated 2026-11-24)
 
 **Core value:** Finding the right players or group fast: the listing must be easy to read and order (role, level, activity, location) and quick to act on, without leaving or replacing Forever's own group finder.
-**Current focus:** Phase 18 — Opt-in Defaults and Settings Sections
+**Current focus:** Phase 21 — Release Review
 
 ## Current Position
 
-Phase: 20 of 21 (per slot gear info)
+Phase: 21 of 21 (Release Review)
 Plan: Not started
-Status: Ready to plan
-Last activity: 2026-11-24
+Status: Ready to plan (Phases 18-20 complete; their in-game checks deferred to the end)
+Last activity: 2026-11-24 — Phases 18, 20 and 19 executed (autonomous run)
 
 ## Performance Metrics
 
