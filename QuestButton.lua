@@ -8,6 +8,11 @@
 --  The only change to Blizzard's tracker is the HeaderText's RIGHT anchor, moved only when
 --  the title keeps its line count and set again by the block's own layout. Nothing of the
 --  finder is selected or written. Gated by eliteQuestButton, read where it acts.
+--
+--  The hint box is our own frame parented to the Listing tab; the finder is widened for it
+--  (IP.WidenListing). Our outline is parented to the Quests & Zones category button. Both
+--  only read Blizzard's frames: nothing is selected, filled or clicked, the player picks,
+--  types and posts.
 -------------------------------------------------------------------------------
 local _, ns = ...
 
@@ -24,6 +29,14 @@ local EYE_ATLAS = "socialqueuing-icon-eye"
 local EYE_FALLBACK = "Interface\\Icons\\INV_Misc_Spyglass_03" -- a stock game icon
 local TIP_TITLE = "Find a group for this quest"
 local TIP_NOTE = "Opens the group finder's Listing tab with this quest's details."
+local QUEST_CATEGORY = 116 -- Forever's file-local LFGLISTING_QUEST_CATEGORY_ID, carried as our own
+local HINT_W = 240
+local HINT_EXTRA = HINT_W + 12
+local HINT_TOP = -26 -- just under the title bar, the roles band's top
+local HINT_PAD = 12
+local HINT_MAX_HEIGHT = 100 -- the category buttons start about 106 px below the hint's top
+local GAP = 3
+local OUTLINE_ATLAS = "groupfinder-button-cover-hover"
 
 local eyes = setmetatable({}, { __mode = "k" }) -- block -> our button
 local moved = setmetatable({}, { __mode = "k" }) -- blocks whose header anchor we moved
@@ -316,6 +329,347 @@ function Q.Init()
 	end
 end
 
+-------------------------------------------------------------------------------
+--  The hint (our own box on the Listing tab) and the category outline
+-------------------------------------------------------------------------------
+local function PlainString(v)
+	if type(v) == "string" and not Secret(v) and v ~= "" then
+		return v
+	end
+	return nil
+end
+
+local function QuestName(id)
+	if type(C_QuestLog) ~= "table" or type(C_QuestLog.GetTitleForQuestID) ~= "function" then
+		return nil
+	end
+	local ok, value = pcall(C_QuestLog.GetTitleForQuestID, id)
+	return ok and PlainString(value) or nil
+end
+
+local function MapName(mapID)
+	if not PlainNumber(mapID) or mapID <= 0 or type(C_Map) ~= "table" or type(C_Map.GetMapInfo) ~= "function" then
+		return nil
+	end
+	local ok, info = pcall(C_Map.GetMapInfo, mapID)
+	if ok and type(info) == "table" then
+		return PlainString(info.name)
+	end
+	return nil
+end
+
+-- Forever's quest log groups quests under zone headers: the nearest header above the quest.
+local function ZoneFromLog(id)
+	if type(C_QuestLog) ~= "table" or type(C_QuestLog.GetLogIndexForQuestID) ~= "function" then
+		return nil
+	end
+	local ok, index = pcall(C_QuestLog.GetLogIndexForQuestID, id)
+	if not ok or not PlainNumber(index) or index < 1 or type(C_QuestLog.GetInfo) ~= "function" then
+		return nil
+	end
+	for i = index, 1, -1 do
+		local okInfo, info = pcall(C_QuestLog.GetInfo, i)
+		if okInfo and type(info) == "table" and not Secret(info.isHeader) and info.isHeader then
+			return PlainString(info.title)
+		end
+	end
+	return nil
+end
+
+local function ZoneFromTask(id)
+	if type(C_TaskQuest) ~= "table" or type(C_TaskQuest.GetQuestZoneID) ~= "function" then
+		return nil
+	end
+	local ok, mapID = pcall(C_TaskQuest.GetQuestZoneID, id)
+	return ok and MapName(mapID) or nil
+end
+
+local function ZoneFromMap(id)
+	if type(GetQuestUiMapID) ~= "function" then
+		return nil
+	end
+	local ok, mapID = pcall(GetQuestUiMapID, id)
+	return ok and MapName(mapID) or nil
+end
+
+--- The three zone answers (quest log header, task quest zone, quest UI map), for the probe.
+function Q.ZoneSources(id)
+	return ZoneFromLog(id), ZoneFromTask(id), ZoneFromMap(id)
+end
+
+local function Zone(id)
+	return ZoneFromLog(id) or ZoneFromTask(id) or ZoneFromMap(id)
+end
+
+local function CategoryName()
+	if type(C_LFGList) == "table" and type(C_LFGList.GetLfgCategoryInfo) == "function" then
+		local ok, info = pcall(C_LFGList.GetLfgCategoryInfo, QUEST_CATEGORY)
+		if ok and type(info) == "table" and PlainString(info.name) then
+			return info.name
+		end
+	end
+	return "Quests & Zones"
+end
+
+local function EliteTag()
+	return PlainString(ELITE) or "Elite"
+end
+
+-- The four strings, or nil when the quest's name can't be read.
+local function HintText(id)
+	local name = QuestName(id)
+	if not name then
+		return nil
+	end
+	local zone = Zone(id)
+	return "[" .. EliteTag() .. "] " .. name,
+		"Category: " .. CategoryName(),
+		zone and ("Zone: " .. zone) or nil,
+		'Description: type "' .. name .. '"'
+end
+
+--- The hint as one chat line (the stand-in, or when the box can't show). Nil without a name.
+function Q.HintLine(id)
+	local name = QuestName(id)
+	if not name then
+		return nil
+	end
+	local zone = Zone(id)
+	return name
+		.. " ("
+		.. EliteTag()
+		.. "): list a group under "
+		.. CategoryName()
+		.. (zone and (", " .. zone) or "")
+		.. ', description "'
+		.. name
+		.. '".'
+end
+
+local hint, outline
+
+local function Cleanup()
+	if outline then
+		if outline.pulse then
+			outline.pulse:Stop()
+		end
+		outline:Hide()
+	end
+	ns.InPlace.WidenListing(0)
+end
+
+-- Our own pulsing outline on the Quests & Zones category button (read only use of it).
+local function PlaceOutline()
+	local view = LFGListingFrame and LFGListingFrame.CategoryView
+	local buttons = view and view.CategoryButtons
+	local target
+	if type(buttons) == "table" then
+		for _, button in ipairs(buttons) do
+			if type(button) == "table" and button.categoryID == QUEST_CATEGORY and button:IsShown() then
+				target = button
+				break
+			end
+		end
+	end
+	if not target then
+		if outline then
+			if outline.pulse then
+				outline.pulse:Stop()
+			end
+			outline:Hide()
+		end
+		return
+	end
+	if not outline then
+		outline = CreateFrame("Frame", nil, target)
+		outline:EnableMouse(false)
+		if ns.W.HasAtlas(OUTLINE_ATLAS) then
+			local tex = outline:CreateTexture(nil, "OVERLAY")
+			tex:SetAtlas(OUTLINE_ATLAS, true)
+			tex:SetBlendMode("ADD")
+			tex:SetPoint("CENTER")
+		else
+			local c = NORMAL_FONT_COLOR
+			local r, g, b = 1, 0.82, 0
+			if c then
+				r, g, b = c.r, c.g, c.b
+			end
+			local function Edge(p1, p2, w, h)
+				local t = outline:CreateTexture(nil, "OVERLAY")
+				t:SetColorTexture(r, g, b, 1)
+				t:SetBlendMode("ADD")
+				t:SetPoint(p1)
+				t:SetPoint(p2)
+				if w then
+					t:SetWidth(w)
+				end
+				if h then
+					t:SetHeight(h)
+				end
+			end
+			Edge("TOPLEFT", "TOPRIGHT", nil, 2)
+			Edge("BOTTOMLEFT", "BOTTOMRIGHT", nil, 2)
+			Edge("TOPLEFT", "BOTTOMLEFT", 2, nil)
+			Edge("TOPRIGHT", "BOTTOMRIGHT", 2, nil)
+		end
+		local group = outline:CreateAnimationGroup()
+		local alpha = group:CreateAnimation("Alpha")
+		alpha:SetFromAlpha(0.35)
+		alpha:SetToAlpha(1)
+		alpha:SetDuration(0.8)
+		group:SetLooping("BOUNCE")
+		outline.pulse = group
+	end
+	outline:SetParent(target)
+	outline:ClearAllPoints()
+	outline:SetAllPoints(target)
+	outline:SetFrameLevel(target:GetFrameLevel() + 5)
+	outline:Show()
+	outline.pulse:Play()
+end
+
+local function HasActiveListing()
+	if type(C_LFGList) == "table" and type(C_LFGList.HasActiveEntryInfo) == "function" then
+		local ok, value = pcall(C_LFGList.HasActiveEntryInfo)
+		return ok and not Secret(value) and value == true
+	end
+	return false
+end
+
+local function BuildHint()
+	if hint then
+		return hint
+	end
+	if not LFGListingFrame then
+		return nil
+	end
+	local W = ns.W
+	local f = W.Create("Frame", LFGListingFrame, "BackdropTemplate")
+	local ok, border = pcall(CreateFrame, "Frame", nil, f, "DialogBorderTemplate")
+	if ok and border then
+		border:SetAllPoints()
+	elseif f.SetBackdrop then
+		f:SetBackdrop({
+			bgFile = "Interface\\DialogFrame\\UI-DialogBox-Background",
+			edgeFile = "Interface\\DialogFrame\\UI-DialogBox-Border",
+			tile = true,
+			tileSize = 32,
+			edgeSize = 32,
+			insets = { left = 11, right = 12, top = 12, bottom = 11 },
+		})
+	end
+	f:SetWidth(HINT_W)
+	f:SetPoint("TOPRIGHT", LFGListingFrame, "TOPRIGHT", -6, HINT_TOP)
+	f:SetFrameLevel(math.max(LFGListingFrame:GetFrameLevel() + 10, 510))
+	f:EnableMouse(true)
+	f:Hide()
+
+	local close
+	local okClose, made = pcall(W.Create, "Button", f, "UIPanelCloseButton")
+	if okClose and made then
+		close = made
+		close:SetPoint("TOPRIGHT", -2, -2)
+	else
+		close = W.Button(f, "x", 20, 20)
+		close:SetPoint("TOPRIGHT", -2, -2)
+	end
+	close:SetScript("OnClick", function()
+		f:Hide()
+	end)
+
+	local inner = HINT_W - 2 * HINT_PAD
+	f.title = W.Text(f, "GameFontNormal", 12)
+	f.title:SetWidth(inner - 20)
+	f.category = W.Text(f, "GameFontHighlightSmall", 11)
+	f.category:SetWidth(inner)
+	f.zone = W.Text(f, "GameFontHighlightSmall", 11)
+	f.zone:SetWidth(inner)
+	f.desc = W.Text(f, "GameFontHighlightSmall", 11)
+	f.desc:SetWidth(inner)
+	for _, fs in ipairs({ f.title, f.category, f.zone, f.desc }) do
+		fs:SetJustifyH("LEFT")
+		fs:SetWordWrap(false) -- width-bound: a long name is cut, never wrapped
+		if fs.SetMaxLines then
+			fs:SetMaxLines(1)
+		end
+	end
+	f.title:SetTextColor(1, 0.82, 0)
+	f.title:SetPoint("TOPLEFT", HINT_PAD, -HINT_PAD)
+	f.category:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -GAP)
+
+	f:SetScript("OnHide", Cleanup)
+	hint = f
+
+	LFGListingFrame:HookScript("OnHide", function()
+		if hint:IsShown() then
+			hint:Hide()
+		end
+	end)
+	local view = LFGListingFrame.CategoryView
+	if view then
+		view:HookScript("OnShow", function()
+			if hint:IsShown() then
+				PlaceOutline()
+			end
+		end)
+	end
+	local events = CreateFrame("Frame")
+	events:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
+	events:RegisterEvent("PLAYER_REGEN_DISABLED")
+	events:SetScript("OnEvent", function(_, event)
+		if not hint:IsShown() then
+			return
+		end
+		if event == "PLAYER_REGEN_DISABLED" or HasActiveListing() then
+			hint:Hide()
+		end
+	end)
+	return hint
+end
+
+--- Shows the hint box and the outline on the Listing tab. False when it only printed a chat
+--- line (no name, an active listing, no finder to widen) or showed nothing.
+function Q.ShowHint(id)
+	local title, category, zone, desc = HintText(id)
+	if not title or not LFGListingFrame or not LFGListingFrame:IsShown() then
+		return false
+	end
+	if HasActiveListing() then
+		-- the Listing tab shows the active listing, no categories
+		ns.Print(Q.HintLine(id))
+		return false
+	end
+	local f = BuildHint()
+	if not f then
+		return false
+	end
+	if not ns.InPlace.WidenListing(HINT_EXTRA) then
+		ns.Print(Q.HintLine(id))
+		return false
+	end
+	f.title:SetText(title)
+	f.category:SetText(category)
+	f.desc:SetText(desc)
+	f.desc:ClearAllPoints()
+	local height = HINT_PAD * 2 + f.title:GetStringHeight() + f.category:GetStringHeight() + f.desc:GetStringHeight()
+	if zone then
+		f.zone:SetText(zone)
+		f.zone:ClearAllPoints()
+		f.zone:SetPoint("TOPLEFT", f.category, "BOTTOMLEFT", 0, -GAP)
+		f.zone:Show()
+		f.desc:SetPoint("TOPLEFT", f.zone, "BOTTOMLEFT", 0, -GAP)
+		height = height + f.zone:GetStringHeight() + GAP * 3
+	else
+		f.zone:Hide()
+		f.desc:SetPoint("TOPLEFT", f.category, "BOTTOMLEFT", 0, -GAP)
+		height = height + GAP * 2
+	end
+	f:SetHeight(math.min(height, HINT_MAX_HEIGHT))
+	f:Show()
+	PlaceOutline()
+	return true
+end
+
 --- The eye's click: the quest is read now (blocks are recycled). Out of combat only.
 function Q.Click(eye)
 	local block = eye:GetParent()
@@ -327,5 +681,15 @@ function Q.Click(eye)
 		ns.Print("can't open the group finder in combat.")
 		return
 	end
-	ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB)
+	if not ns.Listings.HasAPI() then
+		-- the stand-in / preview has no finder: the hint as one chat line
+		local line = Q.HintLine(id)
+		if line then
+			ns.Print(line)
+		end
+		return
+	end
+	if ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
+		Q.ShowHint(id)
+	end
 end

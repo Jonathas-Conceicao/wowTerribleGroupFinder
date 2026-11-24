@@ -38,6 +38,7 @@ local EVENTS = {
 local IsLoaded = C_AddOns and C_AddOns.IsAddOnLoaded or IsAddOnLoaded
 
 local tbl, baseWidth
+local listingExtra = 0
 local pending = false
 
 -------------------------------------------------------------------------------
@@ -318,7 +319,7 @@ local function Attach()
 		Read()
 	end)
 	f:HookScript("OnHide", function()
-		LFGParentFrame:SetWidth(baseWidth)
+		LFGParentFrame:SetWidth(baseWidth + ((LFGListingFrame and LFGListingFrame:IsShown()) and listingExtra or 0))
 	end)
 	if f:IsShown() then
 		LFGParentFrame:SetWidth(WIDE)
@@ -428,6 +429,24 @@ local function OpenAfterSettings()
 		end)
 	end
 	ns.Print("the Messages tab opens when you close the Settings.")
+end
+
+--- The Listing tab widened by `extra` pixels while the quest hint shows, as Browse is widened;
+--- 0 or nil puts it back. False when the finder isn't attached.
+function IP.WidenListing(extra)
+	if not (tbl and baseWidth and LFGParentFrame) then
+		return false
+	end
+	listingExtra = (type(extra) == "number" and extra > 0) and extra or 0
+	if LFGBrowseFrame and LFGBrowseFrame:IsShown() then
+		return true -- Browse owns the width
+	end
+	if LFGListingFrame and LFGListingFrame:IsShown() then
+		LFGParentFrame:SetWidth(baseWidth + listingExtra)
+	else
+		LFGParentFrame:SetWidth(baseWidth)
+	end
+	return true
 end
 
 --- Opens Forever's group finder on the given side tab (1 Listing, 2 Browse), through the
