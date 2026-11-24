@@ -6,7 +6,7 @@
 --  Taint: post-hooks only (hooksecurefunc on the module instances' EndLayout). The eye is
 --  our own Button parented to the block, kept in a weak table, never a field on the block.
 --  The only change to Blizzard's tracker is the HeaderText's RIGHT anchor, moved only when
---  the title keeps its line count and set again by the block's own layout. Nothing of the
+--  the title still fits one line and set again by the block's own layout. Nothing of the
 --  finder is selected or written. Gated by eliteQuestButton, read where it acts.
 --
 --  The hint box is our own frame parented to the Listing tab; the finder is widened for it
@@ -103,22 +103,6 @@ local function CanUsePremade()
 	return ok and not Secret(value) and value == true
 end
 
--- Read only: is the block's right-edge frame Blizzard's own find-group eye?
-local function HasGameEye(block)
-	local r = block.rightEdgeFrame
-	if type(r) ~= "table" or not r.Icon then
-		return false
-	end
-	if type(r.GetAttribute) == "function" then
-		local ok, value = pcall(r.GetAttribute, r, "questID")
-		if ok and value ~= nil then
-			return true
-		end
-	end
-	local mixin = QuestObjectiveFindGroupButtonMixin
-	return mixin ~= nil and r.OnClick == mixin.OnClick
-end
-
 local function NewEye(block)
 	local eye = CreateFrame("Button", nil, block)
 	eye:SetSize(EYE_SIZE, EYE_SIZE)
@@ -189,18 +173,20 @@ end
 -- Header room: the title's right edge moves in for the eye only when it keeps its line count.
 local function MakeRoom(block, eye)
 	local text = block.HeaderText
-	if type(text) ~= "table" or not text.SetPoint or not text.GetNumLines then
+	if type(text) ~= "table" or not text.SetPoint or not text.GetWidth then
 		return
 	end
 	local base = HeaderBase(block)
 	local target = base + (block.rightEdgeFrame and 0 or OFFSET_X) - eye:GetWidth() - SPACING
-	local before = text:GetNumLines()
-	text:SetPoint("RIGHT", target, 0)
-	if text:GetNumLines() ~= before then
-		text:SetPoint("RIGHT", base, 0)
-		moved[block] = nil
-	else
+	-- measured, not re-wrapped: the unbounded title must fit the narrower width on one line
+	text:SetPoint("RIGHT", base, 0)
+	local lineWidth = text:GetWidth()
+	local textWidth = text.GetUnboundedStringWidth and text:GetUnboundedStringWidth() or text:GetStringWidth()
+	if PlainNumber(lineWidth) and PlainNumber(textWidth) and textWidth <= lineWidth + (target - base) then
+		text:SetPoint("RIGHT", target, 0)
 		moved[block] = true
+	else
+		moved[block] = nil
 	end
 end
 
@@ -229,7 +215,7 @@ local function UpdateBlock(block)
 		Restore(block)
 		return
 	end
-	local on = ns.Settings.Get("eliteQuestButton") and CanUsePremade() and Eligible(id) and not HasGameEye(block)
+	local on = ns.Settings.Get("eliteQuestButton") and CanUsePremade() and Eligible(id)
 	if not on then
 		HideEye(block)
 		Restore(block)
@@ -319,13 +305,12 @@ local function Install()
 end
 
 function Q.Init()
+	Q.failed = nil -- before Install: its load callback may record a failure at once
 	local ok, result = pcall(Install)
 	if not ok then
 		Q.failed = tostring(result)
 	elseif result == false then
 		Q.failed = "missing"
-	else
-		Q.failed = nil
 	end
 end
 
@@ -449,6 +434,7 @@ end
 local hint, outline
 
 local function Cleanup()
+	-- the hint and outline go at once; the finder's width restore waits for the end of combat
 	if outline then
 		if outline.pulse then
 			outline.pulse:Stop()
