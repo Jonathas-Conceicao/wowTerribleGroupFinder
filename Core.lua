@@ -331,7 +331,8 @@ function ns:ADDON_LOADED(name)
 	ns.SettingsPanel.Init()
 end
 
-local USAGE = "/tgf [preview | reset | version | ilvl | region | meter | gear | settings|config | set <key> on|off]"
+local USAGE =
+	"/tgf [preview | reset | version | ilvl | region | quest | meter | gear | settings|config | set <key> on|off]"
 
 SLASH_TERRIBLEGROUPFINDER1 = "/tgf"
 SLASH_TERRIBLEGROUPFINDER2 = "/terriblegroupfinder"
@@ -358,6 +359,8 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 		ns.ILvl.Probe()
 	elseif command == "region" then
 		ns.Region.Probe()
+	elseif command == "quest" then
+		ns.QuestButton.Probe()
 	elseif command == "gear" then
 		ns.GearSlots.Probe()
 	elseif command == "meter" then

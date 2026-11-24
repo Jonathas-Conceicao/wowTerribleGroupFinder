@@ -693,3 +693,133 @@ function Q.Click(eye)
 		Q.ShowHint(id)
 	end
 end
+
+-------------------------------------------------------------------------------
+--  /tgf quest: what the eye reads, per tracked quest (read only)
+-------------------------------------------------------------------------------
+local function Say(v)
+	if Secret(v) then
+		return "secret"
+	end
+	return tostring(v)
+end
+
+local function Call(fn, ...)
+	if type(fn) ~= "function" then
+		return "n/a"
+	end
+	local ok, a = pcall(fn, ...)
+	if not ok then
+		return "error"
+	end
+	return Say(a)
+end
+
+local function EyeShown(id)
+	for block, eye in pairs(eyes) do
+		if block.id == id and eye:IsShown() then
+			return true
+		end
+	end
+	return false
+end
+
+local function TrackedIDs()
+	local ids = {}
+	if
+		type(C_QuestLog) == "table"
+		and type(C_QuestLog.GetNumQuestWatches) == "function"
+		and type(C_QuestLog.GetQuestIDForQuestWatchIndex) == "function"
+	then
+		for i = 1, C_QuestLog.GetNumQuestWatches() do
+			local id = C_QuestLog.GetQuestIDForQuestWatchIndex(i)
+			if PlainNumber(id) then
+				ids[#ids + 1] = id
+			end
+		end
+		return ids
+	end
+	for _, module in ipairs(hookedList) do
+		for _, blocks in pairs(module.usedBlocks or {}) do
+			for _, block in pairs(blocks) do
+				if PlainNumber(block.id) then
+					ids[#ids + 1] = block.id
+				end
+			end
+		end
+	end
+	return ids
+end
+
+function Q.Probe()
+	local ok, err = pcall(function()
+		local names = {}
+		for _, name in ipairs(MODULES) do
+			if hooked[_G[name]] then
+				names[#names + 1] = name
+			end
+		end
+		ns.Print(
+			"quest eye: hooked "
+				.. (#names > 0 and table.concat(names, ", ") or "none")
+				.. (Q.failed and (", failed: " .. Q.failed) or "")
+				.. (Q.lastError and (", last error: " .. Q.lastError) or "")
+				.. ", eliteQuestButton "
+				.. Say(ns.Settings.Get("eliteQuestButton"))
+				.. ", premade "
+				.. (C_LFGInfo and Call(C_LFGInfo.CanPlayerUsePremadeGroup) or "n/a")
+		)
+		local ids = TrackedIDs()
+		if #ids == 0 then
+			ns.Print("no tracked quests")
+		end
+		for _, id in ipairs(ids) do
+			local tagID, tagName = "?", "?"
+			if type(C_QuestLog) == "table" and type(C_QuestLog.GetQuestTagInfo) == "function" then
+				local okTag, info = pcall(C_QuestLog.GetQuestTagInfo, id)
+				if okTag and type(info) == "table" then
+					tagID, tagName = Say(info.tagID), Say(info.tagName)
+				end
+			end
+			local log, task, map = Q.ZoneSources(id)
+			ns.Print(
+				id
+					.. " "
+					.. (QuestName(id) or "?")
+					.. ": elite "
+					.. Call(C_QuestLog and C_QuestLog.IsEliteQuest, id)
+					.. ", tag "
+					.. tagID
+					.. " "
+					.. tagName
+					.. ", CanCreateQuestGroup "
+					.. Call(C_LFGList and C_LFGList.CanCreateQuestGroup, id)
+					.. ", our eye "
+					.. (EyeShown(id) and "yes" or "no")
+					.. ", zone log "
+					.. Say(log)
+					.. " / task "
+					.. Say(task)
+					.. " / map "
+					.. Say(map)
+			)
+		end
+		local list = "n/a"
+		if type(C_LFGList) == "table" and type(C_LFGList.GetAvailableActivities) == "function" then
+			local okAct, acts = pcall(C_LFGList.GetAvailableActivities, QUEST_CATEGORY)
+			list = "none"
+			if okAct and type(acts) == "table" and #acts > 0 then
+				local out = {}
+				for _, actID in ipairs(acts) do
+					local okInfo, info = pcall(C_LFGList.GetActivityInfoTable, actID)
+					out[#out + 1] = okInfo and type(info) == "table" and Say(info.fullName) or Say(actID)
+				end
+				list = table.concat(out, ", ")
+			end
+		end
+		ns.Print("Quests & Zones (116) activities: " .. list)
+	end)
+	if not ok then
+		ns.Print("quest probe failed: " .. tostring(err))
+	end
+end
