@@ -45,8 +45,9 @@ nothing changes for existing players; the Settings page is ordered by what matte
 what they need to post a group for it
 **Depends on**: Phase 18 (`eliteQuestButton` key)
 **Requirements**: QST-01, QST-02, QST-03, QST-04
-**Research flags**: `/tgf quest` probe (stock eye / `CanCreateQuestGroup`, category 116
-activities, the eye atlas, header overlap); hook `EndLayout` on the Quest and Campaign tracker
+**Approach**: built straight from the Blizzard source pattern with fallbacks (plain texture where
+the eye atlas is missing, skip quests with a game eye, accept header overlap if the anchor move
+fails); a `/tgf quest` debug command ships alongside (no probe-first step), live checks at the end; hook `EndLayout` on the Quest and Campaign tracker
 instances, own button per pooled block (no `AddRightEdgeFrame`); `IP.ShowFinder(tab)` extracted
 from `IP.OpenMessages`
 **Success Criteria** (what must be TRUE):
@@ -67,8 +68,9 @@ from `IP.OpenMessages`
 a glance
 **Depends on**: Phase 18 (`slotItemLevel`, `slotEnchants` keys); independent of Phase 19
 **Requirements**: GEAR-01, GEAR-02, GEAR-03, GEAR-04
-**Research flags**: `/tgf gear` probe (enchant field in inspected links, tooltip enchant line,
-Forever's enchantable slots: neck and the other new slot); hooks on
+**Approach**: built straight away from the item link enchant field and the tooltip enchant line,
+with Forever's enchantable slots (vanilla's plus neck and the other new slot, researched while
+planning); a `/tgf gear` debug command ships alongside (no probe-first step), live checks at the end; hooks on
 `PaperDollItemSlotButton_Update` / `InspectPaperDollItemSlotButton_Update` (Inspect is
 load-on-demand); no inspects of our own, the quiet queue untouched
 **Success Criteria** (what must be TRUE):
