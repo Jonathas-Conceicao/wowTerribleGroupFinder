@@ -60,6 +60,8 @@ local SLOT_NAMES = {
 	[18] = "Ranged",
 	[19] = "Tabard",
 }
+-- Shared with GearSlots.lua (exported rather than copied).
+ILvl.SLOT_NAMES = SLOT_NAMES
 -- Every slot but the shirt, tabard, weapons and ranged. Ammo (slot 0) is never read.
 local ARMOR = { 1, 2, 3, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15 }
 local MAIN, OFF, RANGED = 16, 17, 18
@@ -987,6 +989,27 @@ function ILvl.Inspected(unit)
 	end
 	local entry = known[guid]
 	return entry and entry.ilvl and math.floor(entry.ilvl + 0.5) or nil
+end
+
+--- True when a unit's gear can be read now: you, or a unit the latest inspect answered
+--- for (its GUID matches and no inspect started since). Reads the guard's state only;
+--- never inspects and never clears.
+function ILvl.InspectReadyFor(unit)
+	if Secret(unit) or not unit then
+		return false
+	end
+	local guid = UnitGUID(unit)
+	if Secret(guid) or not guid then
+		return false
+	end
+	local me = UnitIsUnit(unit, "player")
+	if Secret(me) then
+		return false
+	end
+	if me then
+		return true
+	end
+	return readyGUID == guid and readySerial == serial
 end
 
 --- /tgf ilvl: prints what we know about your item level, then inspects your group.

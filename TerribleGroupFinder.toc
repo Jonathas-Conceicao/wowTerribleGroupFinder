@@ -16,6 +16,7 @@ Settings.lua
 Preview.lua
 ItemLevel.lua
 ItemLevelUI.lua
+GearSlots.lua
 Region.lua
 MeterReset.lua
 Messages.lua
