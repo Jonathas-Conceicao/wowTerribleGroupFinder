@@ -319,7 +319,7 @@ local function Attach()
 		Read()
 	end)
 	f:HookScript("OnHide", function()
-		LFGParentFrame:SetWidth(baseWidth + ((LFGListingFrame and LFGListingFrame:IsShown()) and listingExtra or 0))
+		LFGParentFrame:SetWidth(baseWidth)
 	end)
 	if f:IsShown() then
 		LFGParentFrame:SetWidth(WIDE)
@@ -431,21 +431,49 @@ local function OpenAfterSettings()
 	ns.Print("the Messages tab opens when you close the Settings.")
 end
 
---- The Listing tab widened by `extra` pixels while the quest hint shows, as Browse is widened;
---- 0 or nil puts it back. False when the finder isn't attached.
-function IP.WidenListing(extra)
-	if not (tbl and baseWidth and LFGParentFrame) then
-		return false
-	end
-	listingExtra = (type(extra) == "number" and extra > 0) and extra or 0
+local listingWidthPending = false
+local listingWidthEvents
+
+local function ApplyListingWidth()
 	if LFGBrowseFrame and LFGBrowseFrame:IsShown() then
-		return true -- Browse owns the width
+		return -- Browse owns the width
 	end
 	if LFGListingFrame and LFGListingFrame:IsShown() then
 		LFGParentFrame:SetWidth(baseWidth + listingExtra)
 	else
 		LFGParentFrame:SetWidth(baseWidth)
 	end
+end
+
+--- The Listing tab widened by `extra` pixels while the quest hint shows, as Browse is widened;
+--- 0 or nil puts it back. False when the finder isn't attached.
+--- In combat nothing is resized: a restore waits for the end of combat, a widen is refused.
+function IP.WidenListing(extra)
+	if not (tbl and baseWidth and LFGParentFrame) then
+		return false
+	end
+	listingExtra = (type(extra) == "number" and extra > 0) and extra or 0
+	if InCombatLockdown() then
+		-- never resize the finder in combat: the restore waits for the end of combat
+		if listingExtra > 0 then
+			listingExtra = 0
+			return false
+		end
+		listingWidthPending = true
+		if not listingWidthEvents then
+			listingWidthEvents = CreateFrame("Frame")
+			listingWidthEvents:RegisterEvent("PLAYER_REGEN_ENABLED")
+			listingWidthEvents:SetScript("OnEvent", function()
+				if listingWidthPending then
+					listingWidthPending = false
+					ApplyListingWidth()
+				end
+			end)
+		end
+		return true
+	end
+	listingWidthPending = false
+	ApplyListingWidth()
 	return true
 end
 
