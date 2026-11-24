@@ -31,20 +31,20 @@ Forever's own group finder.
 
 ### Elite quest eye (QST)
 
-- [ ] **QST-01**: A tracked elite quest in the objective tracker shows an eye button in retail's
+- [x] **QST-01**: A tracked elite quest in the objective tracker shows an eye button in retail's
   tracker style (the `socialqueuing-icon-eye` on a square button, a plain fallback where the art
   is missing) with a tooltip; other quests show none; elite is `C_QuestLog.IsEliteQuest` (tag ID
   fallback), never the localized title text
 
-- [ ] **QST-02**: Clicking the eye out of combat opens Forever's group finder on its Listing tab
+- [x] **QST-02**: Clicking the eye out of combat opens Forever's group finder on its Listing tab
   (`LFGVanilla_ShowFrame`, as the Messages button does); in combat it says so and does nothing
 
-- [ ] **QST-03**: The Listing tab then shows a hint of our own frame: the quest name (to type
+- [x] **QST-03**: The Listing tab then shows a hint of our own frame: the quest name (to type
   as the description), the Quests & Zones category and the quest's zone; the player picks,
   types and posts; the hint clears when the finder closes, the tab changes or a listing is made;
   nothing of Blizzard's finder is selected, filled or written
 
-- [ ] **QST-04**: The eye never doubles a game eye on the same quest, and after using it the
+- [x] **QST-04**: The eye never doubles a game eye on the same quest, and after using it the
   player's own Post and Search still work (no taint)
 
 ### Per-slot gear info (GEAR)
@@ -95,10 +95,10 @@ Forever's own group finder.
 | OPT-02 | Phase 18 | Complete |
 | OPT-03 | Phase 18 | Complete |
 | OPT-04 | Phase 18 | Complete |
-| QST-01 | Phase 19 | Pending |
-| QST-02 | Phase 19 | Pending |
-| QST-03 | Phase 19 | Pending |
-| QST-04 | Phase 19 | Pending |
+| QST-01 | Phase 19 | Complete |
+| QST-02 | Phase 19 | Complete |
+| QST-03 | Phase 19 | Complete |
+| QST-04 | Phase 19 | Complete |
 | GEAR-01 | Phase 20 | Complete |
 | GEAR-02 | Phase 20 | Complete |
 | GEAR-03 | Phase 20 | Complete |
