@@ -267,3 +267,371 @@ function GS.Probe()
 		end
 	end
 end
+
+-------------------------------------------------------------------------------
+--  Overlays: one frame of ours per slot button, never a field on Blizzard's button
+-------------------------------------------------------------------------------
+-- Layout numbers: first guesses, tuned in game.
+local GAP = 3 -- px between the icon and its text
+local LINE_GAP = 1
+local SIDE_WIDTH = 80 -- left and right columns
+local MAIN_WIDTH = 60 -- main hand, text left of its icon
+local ABOVE_WIDTH = 42 -- off hand and ranged: text above the icon
+local LEVEL_ABOVE = 5 -- our frame's level over the button's
+local ITEM_RETRIES = 3
+
+local LAYOUT = {
+	[1] = "left",
+	[2] = "left",
+	[3] = "left",
+	[15] = "left",
+	[5] = "left",
+	[9] = "left",
+	[10] = "right",
+	[6] = "right",
+	[7] = "right",
+	[8] = "right",
+	[11] = "right",
+	[12] = "right",
+	[13] = "right",
+	[14] = "right",
+	[16] = "main",
+	[17] = "above",
+	[18] = "above",
+}
+
+local overlays = setmetatable({}, { __mode = "k" })
+local kindOf = setmetatable({}, { __mode = "k" })
+local shownGuid = {}
+local retry = {
+	player = { token = 0, count = 0, waiting = false },
+	inspect = { token = 0, count = 0, waiting = false },
+}
+
+local function NewString(frame)
+	local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
+	fs:SetWordWrap(false)
+	if fs.SetMaxLines then
+		fs:SetMaxLines(1)
+	end
+	return fs
+end
+
+local function Overlay(button)
+	local o = overlays[button]
+	if o then
+		return o
+	end
+	o = CreateFrame("Frame", nil, button)
+	o:SetAllPoints(button)
+	o:SetFrameLevel(button:GetFrameLevel() + LEVEL_ABOVE)
+	o:EnableMouse(false)
+	local a, b = NewString(o), NewString(o)
+	local side = LAYOUT[Clear(button:GetID())] or "left"
+	if side == "left" then
+		a:SetPoint("TOPLEFT", button, "TOPRIGHT", GAP, -2)
+		a:SetJustifyH("LEFT")
+		a:SetWidth(SIDE_WIDTH)
+		b:SetPoint("TOPLEFT", a, "BOTTOMLEFT", 0, -LINE_GAP)
+		b:SetJustifyH("LEFT")
+		b:SetWidth(SIDE_WIDTH)
+	elseif side == "above" then
+		a:SetPoint("BOTTOM", button, "TOP", 0, GAP)
+		a:SetJustifyH("CENTER")
+		a:SetWidth(ABOVE_WIDTH)
+		b:SetPoint("BOTTOM", a, "TOP", 0, LINE_GAP)
+		b:SetJustifyH("CENTER")
+		b:SetWidth(ABOVE_WIDTH)
+	else
+		local w = side == "main" and MAIN_WIDTH or SIDE_WIDTH
+		a:SetPoint("TOPRIGHT", button, "TOPLEFT", -GAP, -2)
+		a:SetJustifyH("RIGHT")
+		a:SetWidth(w)
+		b:SetPoint("TOPRIGHT", a, "BOTTOMRIGHT", 0, -LINE_GAP)
+		b:SetJustifyH("RIGHT")
+		b:SetWidth(w)
+	end
+	o.a, o.b = a, b
+	o:Hide()
+	overlays[button] = o
+	return o
+end
+
+local function Blank(o)
+	o.a:SetText("")
+	o.b:SetText("")
+	o:Hide()
+end
+
+local function ClearKind(kind)
+	for button, o in pairs(overlays) do
+		if kindOf[button] == kind then
+			Blank(o)
+		end
+	end
+end
+
+local function QualityColor(q)
+	if type(q) == "number" and C_Item and C_Item.GetItemQualityColor then
+		local ok, r, g, b = pcall(C_Item.GetItemQualityColor, q)
+		r, g, b = Clear(r), Clear(g), Clear(b)
+		if ok and r and g and b then
+			return r, g, b
+		end
+	end
+	local c = type(q) == "number" and ITEM_QUALITY_COLORS and ITEM_QUALITY_COLORS[q]
+	if c then
+		return c.r, c.g, c.b
+	end
+	return 1, 1, 1
+end
+
+local function Rgb(color, r, g, b)
+	if color and color.GetRGB then
+		return color:GetRGB()
+	end
+	return r, g, b
+end
+
+--- The lines a known slot shows, in order: item level, then enchant.
+local function Lines(r)
+	local list = {}
+	if ns.Settings.Get("slotItemLevel") then
+		local cr, cg, cb = QualityColor(r.quality)
+		list[#list + 1] = { tostring(math.floor(r.level)), cr, cg, cb }
+	end
+	if ns.Settings.Get("slotEnchants") then
+		if r.enchantText then
+			list[#list + 1] = { r.enchantText, Rgb(GREEN_FONT_COLOR, 0.1, 1, 0.1) }
+		elseif r.enchantID > 0 then
+			list[#list + 1] = { "Enchanted", Rgb(GREEN_FONT_COLOR, 0.1, 1, 0.1) }
+		elseif r.enchantable then
+			list[#list + 1] = { "No enchant", Rgb(RED_FONT_COLOR, 1, 0.1, 0.1) }
+		end
+	end
+	return list
+end
+
+local function SetLine(fs, entry)
+	if entry then
+		fs:SetText(entry[1])
+		fs:SetTextColor(entry[2], entry[3], entry[4])
+	else
+		fs:SetText("")
+	end
+end
+
+local function Show(o, button, list)
+	if #list == 0 then
+		Blank(o)
+		return
+	end
+	local first, second = list[1], list[2]
+	if second and LAYOUT[Clear(button:GetID())] == "above" then
+		-- stacked upward: the enchant sits nearest the icon, the level on top
+		first, second = second, first
+	end
+	SetLine(o.a, first)
+	SetLine(o.b, second)
+	o:Show()
+end
+
+local RedrawKind
+
+local function WindowGuid()
+	local unit = InspectFrame and InspectFrame.unit
+	if Secret(unit) or not unit then
+		return nil
+	end
+	local g = UnitGUID(unit)
+	if Secret(g) or not g then
+		return nil
+	end
+	return g
+end
+
+local function Schedule(kind)
+	local rt = retry[kind]
+	if rt.waiting or rt.count >= ITEM_RETRIES then
+		return
+	end
+	rt.count = rt.count + 1
+	rt.waiting = true
+	rt.token = rt.token + 1
+	local token = rt.token
+	local guid = shownGuid[kind]
+	C_Timer.After(1, function()
+		pcall(function()
+			if token ~= rt.token then
+				return
+			end
+			rt.waiting = false
+			if kind == "inspect" and WindowGuid() ~= guid then
+				return
+			end
+			RedrawKind(kind)
+		end)
+	end)
+end
+
+local function Cancel(kind)
+	local rt = retry[kind]
+	rt.token = rt.token + 1
+	rt.waiting = false
+	rt.count = 0
+end
+
+--- Draws one slot button's overlay (always called under pcall).
+local function Draw(button)
+	local o, kind = overlays[button], kindOf[button]
+	if not o or not kind then
+		return
+	end
+	if not (ns.Settings.Get("slotItemLevel") or ns.Settings.Get("slotEnchants")) then
+		Blank(o)
+		return
+	end
+	local slot = Clear(button:GetID())
+	if not slot or not GS.SHOW[slot] then
+		Blank(o)
+		return
+	end
+	local unit = "player"
+	if kind == "inspect" then
+		unit = Clear(InspectFrame and InspectFrame.unit)
+		if not unit or not InspectFrame:IsShown() then
+			Blank(o)
+			return
+		end
+		local guid = WindowGuid()
+		if guid ~= shownGuid.inspect then
+			ClearKind("inspect")
+			Cancel("inspect")
+			shownGuid.inspect = guid
+		end
+		if not ns.ILvl.InspectReadyFor(unit) then
+			Blank(o)
+			Schedule("inspect")
+			return
+		end
+	end
+	local r = GS.Read(unit, slot)
+	if r.state == "known" then
+		Show(o, button, Lines(r))
+	elseif r.state == "pending" then
+		Blank(o)
+		Schedule(kind)
+	else
+		Blank(o)
+	end
+end
+
+function RedrawKind(kind)
+	for button in pairs(overlays) do
+		if kindOf[button] == kind then
+			pcall(Draw, button)
+		end
+	end
+end
+
+local function RedrawAll()
+	RedrawKind("player")
+	RedrawKind("inspect")
+end
+
+local function OnSlotUpdate(button, kind, namePattern)
+	pcall(function()
+		local name = button.GetName and button:GetName()
+		if type(name) ~= "string" or Secret(name) or not name:match(namePattern) then
+			return
+		end
+		local slot = Clear(button:GetID())
+		if not slot or not GS.SHOW[slot] then
+			return
+		end
+		Overlay(button)
+		kindOf[button] = kind
+		if not retry[kind].waiting then
+			retry[kind].count = 0
+		end
+		Draw(button)
+	end)
+end
+
+-- A slow inspect answer: one redraw after the inspect guard has recorded it.
+local readyFrame = CreateFrame("Frame")
+readyFrame:RegisterEvent("INSPECT_READY")
+readyFrame:SetScript("OnEvent", function(_, _, guid)
+	if guid ~= nil and not Secret(guid) and guid == WindowGuid() then
+		C_Timer.After(0, function()
+			pcall(RedrawKind, "inspect")
+		end)
+	end
+end)
+
+-------------------------------------------------------------------------------
+--  Installers
+-------------------------------------------------------------------------------
+local function SheetSlots()
+	if not hooksecurefunc or type(PaperDollItemSlotButton_Update) ~= "function" then
+		return false
+	end
+	hooksecurefunc("PaperDollItemSlotButton_Update", function(button)
+		OnSlotUpdate(button, "player", "^Character.+Slot$")
+	end)
+	return true
+end
+
+local inspectHooked = false
+
+local function OnInspectLoaded()
+	local ok, err = pcall(function()
+		if inspectHooked then
+			return
+		end
+		if type(InspectPaperDollItemSlotButton_Update) ~= "function" or not InspectFrame then
+			ns.ILvlUI.failed.slotsInspect = "missing"
+			return
+		end
+		hooksecurefunc("InspectPaperDollItemSlotButton_Update", function(button)
+			OnSlotUpdate(button, "inspect", "^Inspect.+Slot$")
+		end)
+		InspectFrame:HookScript("OnHide", function()
+			Cancel("inspect")
+			shownGuid.inspect = nil
+			ClearKind("inspect")
+		end)
+		inspectHooked = true
+	end)
+	if not ok then
+		ns.ILvlUI.failed.slotsInspect = tostring(err)
+	end
+end
+
+local function InspectSlots()
+	if not (EventUtil and EventUtil.ContinueOnAddOnLoaded) then
+		return false
+	end
+	EventUtil.ContinueOnAddOnLoaded("Blizzard_InspectUI", OnInspectLoaded)
+	ns.ILvl.OnLearned(function(guid)
+		if guid ~= nil and WindowGuid() == guid then
+			RedrawKind("inspect")
+		end
+	end)
+	return true
+end
+
+--- Installs the slot overlays and the redraw on both options' changes.
+function GS.Init()
+	ns.Settings.OnChange("slotItemLevel", RedrawAll)
+	ns.Settings.OnChange("slotEnchants", RedrawAll)
+	ns.ILvlUI.Install("slotsInspect", InspectSlots)
+	if not ns.ILvlUI.Install("slotsSheet", SheetSlots) then
+		local f = CreateFrame("Frame")
+		f:RegisterEvent("PLAYER_LOGIN")
+		f:SetScript("OnEvent", function(self)
+			self:UnregisterEvent("PLAYER_LOGIN")
+			ns.ILvlUI.Install("slotsSheet", SheetSlots)
+		end)
+	end
+end
