@@ -1,5 +1,20 @@
 # Changelog
 
+## v0.3.0
+
+A group finder eye on elite quests, item level and enchants beside each gear slot, and extras you turn on yourself.
+
+### Added
+
+- An eye beside elite quests in the quest tracker: clicking it opens the group finder's Listing tab and shows the quest's name, category and zone, so listing a group for it takes a moment (setting: Elite quest button)
+- Each item's level and enchant beside its slot on the character sheet and the Inspect window, with "No enchant" in red where the slot can take one; each has its own setting (Slot item level, Slot enchants)
+- `/tgf quest` and `/tgf gear` print what the addon reads for your tracked quests and your gear, handy for bug reports
+
+### Changed
+
+- New installs start with only the group finder's options on (Elite quest button, Dynamic refresh, Swipe animations, Region flags); item level, talents, slot info and the damage meter prompts are off until you turn them on in Settings > AddOns > TerribleGroupFinder. If you already use the addon, your settings are kept
+- The Settings page is now ordered Group finder, Player inspection, Damage meter, Messages; "Item level and talents" is now "Player inspection"
+
 ## v0.2.2
 
 A damage meter prompt you can move, a choice of activity when whispering, and Settings buttons that act at once.
