@@ -56,7 +56,7 @@
 
 - [x] **Phase 18: Opt-in Defaults and Settings Sections** - only the finder's options on by default for new installs, existing players keep theirs, the page in its new order with the new keys (completed 2026-11-24)
 - [ ] **Phase 19: Elite Quest Eye** - an eye on tracked elite quests that opens the finder's Listing tab with a hint for that quest
-- [ ] **Phase 20: Per-slot Gear Info** - item level and enchant (or "No enchant") on each slot of the character sheet and the Inspect window
+- [x] **Phase 20: Per-slot Gear Info** - item level and enchant (or "No enchant") on each slot of the character sheet and the Inspect window (completed 2026-11-24)
 - [ ] **Phase 21: Release Review** - cleanup, docs, changelog draft, author review, tag `v0.3.0`
 
 ## Phase Details
@@ -153,7 +153,7 @@ load-on-demand); no inspects of our own, the quiet queue untouched
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18. Opt-in Defaults and Settings Sections | v0.3.0 | 1/1 | Complete    | 2026-11-24 |
 | 19. Elite Quest Eye | v0.3.0 | 0/? | Not started | - |
-| 20. Per-slot Gear Info | v0.3.0 | 0/? | Not started | - |
+| 20. Per-slot Gear Info | v0.3.0 | 2/2 | Complete    | 2026-11-24 |
 | 21. Release Review | v0.3.0 | 0/? | Not started | - |
 
 ## Backlog

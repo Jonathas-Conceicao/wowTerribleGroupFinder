@@ -49,19 +49,19 @@ Forever's own group finder.
 
 ### Per-slot gear info (GEAR)
 
-- [ ] **GEAR-01**: With Slot item level on, each equipped slot on the character sheet and on the
+- [x] **GEAR-01**: With Slot item level on, each equipped slot on the character sheet and on the
   Inspect window shows that item's level
 
-- [ ] **GEAR-02**: With Slot enchants on, each slot shows its enchant's name, and a slot Forever
+- [x] **GEAR-02**: With Slot enchants on, each slot shows its enchant's name, and a slot Forever
   lets you enchant shows "No enchant" when it has none, at every level; the enchantable slots
   are Forever's (vanilla's plus the slots Forever added, neck and any other, checked against
   Forever)
 
-- [ ] **GEAR-03**: On the Inspect window a slot shows nothing until that player's data is
+- [x] **GEAR-03**: On the Inspect window a slot shows nothing until that player's data is
   known, and "No enchant" never shows while it is unknown; values only for the player the
   window shows
 
-- [ ] **GEAR-04**: The slot info is our own frames on the slot buttons (hooks only); the
+- [x] **GEAR-04**: The slot info is our own frames on the slot buttons (hooks only); the
   character sheet and the Inspect window keep working untainted, and turning an option off
   clears it from open windows
 
@@ -99,8 +99,8 @@ Forever's own group finder.
 | QST-02 | Phase 19 | Pending |
 | QST-03 | Phase 19 | Pending |
 | QST-04 | Phase 19 | Pending |
-| GEAR-01 | Phase 20 | Pending |
-| GEAR-02 | Phase 20 | Pending |
-| GEAR-03 | Phase 20 | Pending |
-| GEAR-04 | Phase 20 | Pending |
+| GEAR-01 | Phase 20 | Complete |
+| GEAR-02 | Phase 20 | Complete |
+| GEAR-03 | Phase 20 | Complete |
+| GEAR-04 | Phase 20 | Complete |
 | REL-08 | Phase 21 | Pending |
