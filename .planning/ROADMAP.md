@@ -78,7 +78,10 @@
    phases) and settable from the page and `/tgf set`
 4. CLAUDE.md's Core / Settings lines describe schema 4 and the new defaults
 
-**Plans**: TBD
+**Plans**: 1 plan
+
+Plans:
+- [ ] 18-01-PLAN.md — explicit opt-in defaults and the new section order in the registry, Migrate schema 4 from the frozen v0.2.2 list, CLAUDE.md
 
 ### Phase 19: Elite Quest Eye
 
