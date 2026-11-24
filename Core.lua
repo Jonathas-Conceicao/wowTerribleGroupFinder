@@ -327,6 +327,7 @@ function ns:ADDON_LOADED(name)
 	ns.MeterReset.Init(ns.db)
 	ns.Messages.Init(ns.db)
 	ns.InPlace.Init()
+	ns.QuestButton.Init()
 	ns.SettingsPanel.Init()
 end
 
