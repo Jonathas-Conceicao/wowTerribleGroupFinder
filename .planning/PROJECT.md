@@ -27,9 +27,39 @@ more region flags and spec points" (2026-11-16), v0.2.0 "ILvL Info and Improved 
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
+## Current Milestone: v0.3.0 Elite Quests finder and more inspect data
+
+**Goal:** One click from an elite quest to a group for it, fuller gear info (item level,
+enchants, sockets per slot) on the character sheet and the Inspect window, and every extra that
+isn't the group finder made opt-in so the addon doesn't clash with similar addons.
+
+**Target features:**
+- Opt-in defaults: on by default only the Elite quest button, Dynamic refresh, Swipe animations
+  and Region flags; every other option (item level spots, talents, the new gear info, both meter
+  prompts) off by default. New installs only: existing players keep what they have (an
+  `ns.Migrate` schema-4 step, as v0.2.2 did for the group meter prompt)
+- Elite quest eye button: in the objective tracker only, beside tracked elite (group) quests,
+  looking like retail's tracker find-group button (checked against the reference UI source);
+  it opens Forever's finder ready to create a group for that quest: the Quests & Zones category
+  (ID 116), the quest's map / activity selected and the quest name as the description, as far
+  as the secure description box and restricted calls allow (research decides the route); folds
+  in backlog 999.5
+- Per-slot gear info on the character sheet and the Inspect window: each gear slot shows its
+  item level, its enchant (or a missing-enchant mark) and its socket gems; the existing overall
+  Item Level row and Inspect text stay
+- Settings page in sections, in this order: Group finder, Player inspection (item level,
+  talents, enchants, sockets), Damage meter, Messages
+- Release Review phase, tag `v0.3.0`
+
+**Key context:** Forever's finder has a "Quests & Zones" category (116) and the LFGList API
+takes quest IDs (`CanCreateQuestGroup`, `SetSearchToQuestID`, `questID` on listings); the
+Listing tab's description box is secure, so writing the quest name there must go through the
+game's own path or be dropped. Taint rules from CLAUDE.md apply to the tracker, the character
+sheet and the Inspect window (hooks and our own frames only).
+
 ## Next Milestone Goals (candidates)
 
-Backlog 999.5 (quest log LFG button), the README wording proposals left out of v0.2.2
+The README wording proposals left out of v0.2.2
 (`milestones/v0.2.2-phases/17-release-review/17-HUMAN-UAT.md` item 3), the deferred v0.1
 cleanup list, the v0.2 and v0.2.1 audits' tech debt, EU / Asia shard IDs from players'
 `/tgf region` output, remembered sort / filters, localization-ready strings.
@@ -227,7 +257,8 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-None until the next milestone (`/gsd-new-milestone`). Archived:
+v0.3.0 requirements: see [REQUIREMENTS.md](REQUIREMENTS.md) (opt-in defaults, elite quest
+eye button, per-slot gear info, Settings sections, Release Review). Archived:
 [v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
 [v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md).
 
@@ -355,4 +386,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-20 after the v0.2.2 milestone*
+*Last updated: 2026-11-24 at the start of the v0.3.0 milestone*
