@@ -163,6 +163,7 @@ function GS.Read(unit, slot)
 		r.state = "empty"
 		return r
 	end
+	r.id = id
 	local level
 	if link then
 		level = Clear((C_Item.GetDetailedItemLevelInfo(link)))
@@ -306,7 +307,11 @@ local shownGuid = {}
 local retry = {
 	player = { token = 0, count = 0, waiting = false },
 	inspect = { token = 0, count = 0, waiting = false },
+	-- the inspect answer not in yet: its own budget, so it never uses up the item-load retries
+	inspectReady = { token = 0, count = 0, waiting = false },
 }
+-- Kinds with a slot waiting on item data: GET_ITEM_INFO_RECEIVED redraws only these.
+local awaitingItems = { player = false, inspect = false }
 
 local function NewString(frame)
 	local fs = frame:CreateFontString(nil, "OVERLAY", "GameFontHighlightSmall")
@@ -450,8 +455,9 @@ local function WindowGuid()
 	return g
 end
 
-local function Schedule(kind)
-	local rt = retry[kind]
+local function Schedule(kind, key)
+	key = key or kind
+	local rt = retry[key]
 	if rt.waiting or rt.count >= ITEM_RETRIES then
 		return
 	end
@@ -476,10 +482,22 @@ local function Schedule(kind)
 end
 
 local function Cancel(kind)
-	local rt = retry[kind]
-	rt.token = rt.token + 1
-	rt.waiting = false
-	rt.count = 0
+	for _, key in ipairs(kind == "inspect" and { "inspect", "inspectReady" } or { kind }) do
+		local rt = retry[key]
+		rt.token = rt.token + 1
+		rt.waiting = false
+		rt.count = 0
+	end
+end
+
+--- Asks the game to load a pending slot's item data; the answer comes as
+--- GET_ITEM_INFO_RECEIVED (no polling, no inspect).
+local function RequestItem(r)
+	local fn = C_Item and C_Item.RequestLoadItemDataByID
+	local id = Clear(r.id)
+	if fn and type(id) == "number" then
+		pcall(fn, id)
+	end
 end
 
 --- Draws one slot button's overlay (always called under pcall).
@@ -512,7 +530,7 @@ local function Draw(button)
 		end
 		if not ns.ILvl.InspectReadyFor(unit) then
 			Blank(o)
-			Schedule("inspect")
+			Schedule("inspect", "inspectReady")
 			return
 		end
 	end
@@ -521,6 +539,8 @@ local function Draw(button)
 		Show(o, button, Lines(r))
 	elseif r.state == "pending" then
 		Blank(o)
+		awaitingItems[kind] = true
+		RequestItem(r)
 		Schedule(kind)
 	else
 		Blank(o)
@@ -528,6 +548,7 @@ local function Draw(button)
 end
 
 function RedrawKind(kind)
+	awaitingItems[kind] = false
 	for button in pairs(overlays) do
 		if kindOf[button] == kind then
 			pcall(Draw, button)
@@ -555,6 +576,9 @@ local function OnSlotUpdate(button, kind, namePattern)
 		if not retry[kind].waiting then
 			retry[kind].count = 0
 		end
+		if kind == "inspect" and not retry.inspectReady.waiting then
+			retry.inspectReady.count = 0
+		end
 		Draw(button)
 	end)
 end
@@ -562,7 +586,26 @@ end
 -- A slow inspect answer: one redraw after the inspect guard has recorded it.
 local readyFrame = CreateFrame("Frame")
 readyFrame:RegisterEvent("INSPECT_READY")
-readyFrame:SetScript("OnEvent", function(_, _, guid)
+readyFrame:RegisterEvent("GET_ITEM_INFO_RECEIVED")
+local itemRedrawQueued = false
+readyFrame:SetScript("OnEvent", function(_, event, guid)
+	if event == "GET_ITEM_INFO_RECEIVED" then
+		-- an item some shown slot waits on may have arrived: one coalesced redraw a frame later
+		if itemRedrawQueued or not (awaitingItems.player or awaitingItems.inspect) then
+			return
+		end
+		itemRedrawQueued = true
+		C_Timer.After(0, function()
+			itemRedrawQueued = false
+			if awaitingItems.player then
+				pcall(RedrawKind, "player")
+			end
+			if awaitingItems.inspect then
+				pcall(RedrawKind, "inspect")
+			end
+		end)
+		return
+	end
 	if guid ~= nil and not Secret(guid) and guid == WindowGuid() then
 		C_Timer.After(0, function()
 			pcall(RedrawKind, "inspect")
