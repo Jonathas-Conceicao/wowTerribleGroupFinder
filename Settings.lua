@@ -121,39 +121,17 @@ end
 
 local OPTIONS = {
 	{
-		key = "ilvlPlayerTooltip",
-		section = "Item level and talents",
-		label = "Player tooltips",
-		tooltip = 'Show "Item Level N" on friendly players\' tooltips.',
-	},
-	{
-		key = "specPoints",
-		section = "Item level and talents",
-		label = "Talent points",
-		tooltip = "Show talent points per tree (e.g. 31/20/0) on friendly players' tooltips.",
-	},
-	{
-		key = "ilvlItemTooltip",
-		section = "Item level and talents",
-		label = "Item tooltips",
-		tooltip = 'Show "Item Level N" under the name of weapons and armor.',
-	},
-	{
-		key = "ilvlCharacterSheet",
-		section = "Item level and talents",
-		label = "Character sheet",
-		tooltip = "Show your item level in a row under Movement Speed on the character sheet.",
-	},
-	{
-		key = "ilvlInspect",
-		section = "Item level and talents",
-		label = "Inspect window",
-		tooltip = "Show the inspected player's item level in the Inspect window.",
+		key = "eliteQuestButton",
+		section = "Group finder",
+		label = "Elite quest button",
+		default = true,
+		tooltip = "Show an eye button beside elite quests in the objective tracker; it opens the group finder's Listing tab with what you need to list a group for that quest.",
 	},
 	{
 		key = "dynamicRefresh",
 		section = "Group finder",
 		label = "Dynamic refresh",
+		default = true,
 		tooltip = "Refreshing the same search keeps the list and updates it in place. Off: the stock spinner and a new list.",
 	},
 	{
@@ -161,31 +139,80 @@ local OPTIONS = {
 		section = "Group finder",
 		label = "Swipe animations",
 		parent = "dynamicRefresh",
+		default = true,
 		tooltip = "Rows that leave or arrive on a refresh swipe out and in, and the rows below slide into place.",
 	},
 	{
 		key = "regionFlags",
 		section = "Group finder",
 		label = "Region flags",
+		default = true,
 		tooltip = "Show each listing's region after its name: a flag where there is one, else the region's letters.",
+	},
+	{
+		key = "ilvlPlayerTooltip",
+		section = "Player inspection",
+		label = "Player tooltips",
+		default = false,
+		tooltip = 'Show "Item Level N" on friendly players\' tooltips.',
+	},
+	{
+		key = "specPoints",
+		section = "Player inspection",
+		label = "Talent points",
+		default = false,
+		tooltip = "Show talent points per tree (e.g. 31/20/0) on friendly players' tooltips.",
+	},
+	{
+		key = "ilvlItemTooltip",
+		section = "Player inspection",
+		label = "Item tooltips",
+		default = false,
+		tooltip = 'Show "Item Level N" under the name of weapons and armor.',
+	},
+	{
+		key = "ilvlCharacterSheet",
+		section = "Player inspection",
+		label = "Character sheet",
+		default = false,
+		tooltip = "Show your item level in a row under Movement Speed on the character sheet.",
+	},
+	{
+		key = "ilvlInspect",
+		section = "Player inspection",
+		label = "Inspect window",
+		default = false,
+		tooltip = "Show the inspected player's item level in the Inspect window.",
+	},
+	{
+		key = "slotItemLevel",
+		section = "Player inspection",
+		label = "Slot item level",
+		default = false,
+		tooltip = "Show each item's level beside its slot on the character sheet and the Inspect window.",
+	},
+	{
+		key = "slotEnchants",
+		section = "Player inspection",
+		label = "Slot enchants",
+		default = false,
+		tooltip = 'Show each item\'s enchant beside its slot on the character sheet and the Inspect window, or "No enchant" where the slot can be enchanted.',
 	},
 	{
 		key = "meterResetOnGroup",
 		section = "Damage meter",
 		label = "Ask to reset on joining a group",
-		default = false, -- off for new installs; Migrate's schema 3 keeps it on for earlier users
+		default = false, -- off for new installs; Migrate's schema 3 keeps it on for players from before v0.2.2
 		tooltip = "When you join a group, ask whether to reset your damage meter: Details! when it's loaded, else the game's own meter while it's turned on.",
 	},
 	{
 		key = "meterResetOnInstance",
 		section = "Damage meter",
 		label = "Ask to reset on entering an instance",
+		default = false, -- off for new installs; Migrate's schema 4 keeps it on for earlier players
 		tooltip = "When you enter a dungeon, raid, battleground or any other instance, ask whether to reset your damage meter: Details! when it's loaded, else the game's own meter while it's turned on.",
 	},
 }
 for _, o in ipairs(OPTIONS) do
-	if o.default == nil then
-		o.default = true
-	end
 	S.Register(o)
 end
