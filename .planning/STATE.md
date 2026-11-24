@@ -25,9 +25,9 @@ See: .planning/PROJECT.md (updated 2026-11-24)
 ## Current Position
 
 Phase: 21 of 21 (Release Review)
-Plan: Not started
-Status: Ready to plan (Phases 18-20 complete; their in-game checks deferred to the end)
-Last activity: 2026-11-24 — Phases 18, 20 and 19 executed (autonomous run)
+Plan: 2 of 2 executed
+Status: Awaiting the author's review (21-HUMAN-UAT.md: changelog draft, README proposals, 17 deferred in-game checks, open decisions); then /gsd-complete-milestone
+Last activity: 2026-11-24 — autonomous run finished Phases 18-21 up to the author's review (no push, merge or tag)
 
 ## Performance Metrics
 
