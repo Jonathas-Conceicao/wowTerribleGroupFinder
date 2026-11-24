@@ -466,7 +466,8 @@ local function Schedule(kind)
 				return
 			end
 			rt.waiting = false
-			if kind == "inspect" and WindowGuid() ~= guid then
+			-- a retry scheduled while the window had no GUID yet re-checks on fire
+			if kind == "inspect" and guid ~= nil and WindowGuid() ~= guid then
 				return
 			end
 			RedrawKind(kind)
