@@ -51,8 +51,7 @@ end
 
 -- Slots Forever lets you enchant: vanilla's, plus Forever's neck and off-hand enchants (any
 -- off-hand item: weapons, shields, held-in-off-hand). Never the belt, rings, trinkets,
--- shirt or tabard. Rings are left out on one low-confidence source: for the author's
--- in-game check.
+-- shirt or tabard.
 local ENCHANTABLE = {
 	[1] = true,
 	[2] = true,
@@ -188,7 +187,7 @@ function GS.Read(unit, slot)
 end
 
 -------------------------------------------------------------------------------
---  /tgf gear: a tool shipped alongside, not a gate
+--  /tgf gear: prints what the slot overlays read
 -------------------------------------------------------------------------------
 local function Print(...)
 	ns.Print("|cffffd100gear|r", ...)
@@ -273,7 +272,7 @@ end
 -------------------------------------------------------------------------------
 --  Overlays: one frame of ours per slot button, never a field on Blizzard's button
 -------------------------------------------------------------------------------
--- Layout numbers: first guesses, tuned in game.
+-- Layout: offsets and widths of the slot text, in px.
 local GAP = 3 -- px between the icon and its text
 local LINE_GAP = 1
 local SIDE_WIDTH = 80 -- left and right columns
