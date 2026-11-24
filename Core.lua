@@ -329,7 +329,7 @@ function ns:ADDON_LOADED(name)
 	ns.SettingsPanel.Init()
 end
 
-local USAGE = "/tgf [preview | reset | version | ilvl | region | meter | settings|config | set <key> on|off]"
+local USAGE = "/tgf [preview | reset | version | ilvl | region | meter | gear | settings|config | set <key> on|off]"
 
 SLASH_TERRIBLEGROUPFINDER1 = "/tgf"
 SLASH_TERRIBLEGROUPFINDER2 = "/terriblegroupfinder"
@@ -356,6 +356,8 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 		ns.ILvl.Probe()
 	elseif command == "region" then
 		ns.Region.Probe()
+	elseif command == "gear" then
+		ns.GearSlots.Probe()
 	elseif command == "meter" then
 		if ns.MeterReset.Moving() then
 			Print("the damage meter prompt is being moved: Lock or Default first.")

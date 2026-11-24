@@ -184,3 +184,86 @@ function GS.Read(unit, slot)
 	r.enchantable = GS.Enchantable(slot, link)
 	return r
 end
+
+-------------------------------------------------------------------------------
+--  /tgf gear: a tool shipped alongside, not a gate
+-------------------------------------------------------------------------------
+local function Print(...)
+	ns.Print("|cffffd100gear|r", ...)
+end
+
+local function Present(name, v)
+	return v and name or (name .. " |cffff6060(missing)|r")
+end
+
+local function ProbeUnit(unit, label)
+	local header = label
+	if not UnitIsUnit(unit, "player") then
+		header = header .. " | inspect answered: " .. (ns.ILvl.InspectReadyFor(unit) and "yes" or "no")
+	end
+	Print(header)
+	for _, slot in ipairs(GS.SHOWN) do
+		local name = (ns.ILvl.SLOT_NAMES[slot] or "?") .. " (" .. slot .. ")"
+		local ok, r = pcall(GS.Read, unit, slot)
+		if not ok then
+			Print("  " .. name .. ": error " .. tostring(r))
+		elseif r.state == "secret" then
+			Print("  " .. name .. ": secret")
+		elseif r.state == "pending" then
+			Print("  " .. name .. ": pending (item data not loaded)")
+		elseif r.state == "known" then
+			local sockets = "?"
+			local fn = C_Item and C_Item.GetItemNumSockets
+			if fn then
+				local sok, n = pcall(fn, r.link)
+				n = sok and Clear(n) or nil
+				if n ~= nil then
+					sockets = tostring(n)
+				end
+			end
+			Print(
+				string.format(
+					'  %s: ilvl %d | q%s | enchant ID %d | line "%s" | sockets %s | enchantable %s',
+					name,
+					math.floor(r.level),
+					tostring(r.quality or "?"),
+					r.enchantID,
+					r.enchantText or "none",
+					sockets,
+					r.enchantable and "yes" or "no"
+				)
+			)
+		end
+	end
+end
+
+--- /tgf gear: prints your slots, and the inspected player's while the Inspect window shows.
+function GS.Probe()
+	Print("APIs: " .. table.concat({
+		Present("C_TooltipInfo.GetInventoryItem", C_TooltipInfo and C_TooltipInfo.GetInventoryItem),
+		Present("C_Item.GetDetailedItemLevelInfo", C_Item and C_Item.GetDetailedItemLevelInfo),
+		Present("C_Item.GetItemNumSockets", C_Item and C_Item.GetItemNumSockets),
+		Present(
+			"Enum.TooltipDataLineType.ItemEnchantmentPermanent",
+			type(Enum) == "table"
+				and type(Enum.TooltipDataLineType) == "table"
+				and Enum.TooltipDataLineType.ItemEnchantmentPermanent
+		),
+	}, ", "))
+	ProbeUnit("player", "You")
+	local unit = InspectFrame and InspectFrame:IsShown() and Clear(InspectFrame.unit)
+	if unit then
+		local name = Clear(UnitName(unit)) or "?"
+		ProbeUnit(unit, "Inspected: " .. name)
+	else
+		Print("Inspect window closed: open it on a player to probe their slots.")
+	end
+	local failed = ns.ILvlUI and ns.ILvlUI.failed
+	if failed then
+		for name, why in pairs(failed) do
+			if tostring(name):sub(1, 5) == "slots" then
+				Print("installer " .. name .. " failed: " .. tostring(why))
+			end
+		end
+	end
+end
