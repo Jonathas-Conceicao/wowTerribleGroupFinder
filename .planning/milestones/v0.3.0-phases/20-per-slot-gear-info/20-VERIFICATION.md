@@ -1,7 +1,7 @@
 ---
 phase: 20-per-slot-gear-info
 verified: 2026-11-24T00:00:00Z
-status: human_needed
+status: passed # in-game checks passed by the author, 2026-11-25, with round 2's changes (21-HUMAN-UAT.md item 5)
 score: 10/10 must-haves verified in code
 overrides_applied: 0
 gaps: []

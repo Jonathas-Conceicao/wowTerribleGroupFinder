@@ -67,7 +67,7 @@ Forever's own group finder.
 
 ### Release (REL)
 
-- [ ] **REL-08**: Release Review for v0.3.0: code cleanup, CLAUDE.md entries, README print
+- [x] **REL-08**: Release Review for v0.3.0: code cleanup, CLAUDE.md entries, README print
   reminders, version, changelog draft (the opt-in defaults explained: existing players keep
   their settings) for the author's review, then the tag `v0.3.0`
 
@@ -103,4 +103,4 @@ Forever's own group finder.
 | GEAR-02 | Phase 20 | Complete |
 | GEAR-03 | Phase 20 | Complete |
 | GEAR-04 | Phase 20 | Complete |
-| REL-08 | Phase 21 | Pending |
+| REL-08 | Phase 21 | Complete |

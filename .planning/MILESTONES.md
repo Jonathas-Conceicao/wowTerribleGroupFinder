@@ -1,5 +1,50 @@
 # Milestones
 
+## v0.3.0 Elite Quests finder and more inspect data (Shipped: 2026-11-25)
+
+**Delivered:** an eye on tracked elite quests that opens Forever's Listing tab on Quests & Zones
+with the quest's zone ticked and the cursor in the description box; each item's level and
+enchant beside its slot on the character sheet and the Inspect window; only the group finder's
+options on for new installs, with Settings sections and the game's NEW tags for new options.
+
+**Phases completed:** 4 phases (18-21), 7 plans
+**Requirements:** 13/13 (OPT, QST, GEAR, REL)
+**Git:** 46 commits on `milestone/v0.3.0-elite-quests-finder-and-more-inspect-data` (plus 12
+milestone setup commits on `main`), 2026-11-24 to 2026-11-25; 11 shipped/source files changed
+(+2129 / −55, outside `.planning/`); ~11.2k lines of Lua/XML
+**Tag:** `v0.3.0`
+
+**Key accomplishments:**
+
+- Opt-in defaults: `ns.Migrate` schema 4 keeps the six options that were on in v0.2.2 for
+  players with saved data; new installs get only Elite quest button, Dynamic refresh, Swipe
+  animations and Region flags; Settings in four sections (Group finder first)
+
+- Elite quest eye (`QuestButton.lua`): retail's placement with the addon's purple eye; the click
+  is a secure cover over the eye whose macro `/click`s the game's micro button, the Listing tab
+  and two delegates that pick Quests & Zones and the zone's checkbox, so Post stays untainted;
+  the cursor goes to the description box, which addons can't write (confirmed in game)
+
+- Per-slot gear info (`GearSlots.lua`): item level and enchant beside each slot (weapons above
+  their icons), "No enchant" only where an enchanter can enchant on Forever (neck and off-hand
+  included; shoulders, rings and trinkets never), inspect-safe and item-load aware
+
+- Settings NEW tags (schema 5, `settingsSeen`): the game's blue NEW on options newer than the
+  player last saw, stacking across skipped versions, cleared when Settings closes after the page
+
+- Release Review: author review round 2 in game (eye placement and secure click, no finder
+  widening, slot text offsets, NEW tags); the description question settled with in-game tests
+  (`CreateListing` has no text field; the box refuses `SetText` / `Insert`); README and the
+  changelog reviewed and applied
+
+**Audit:** not run (closed on the author's in-game pass: every UAT item of Phases 18-21 passed;
+the open-artifact audit was clear).
+
+**Known deferred items at close:** none new; the quest log LFG button stays backlog 999.5 (notes
+updated with this milestone's findings).
+
+---
+
 ## v0.2.2 Small Improvements (Shipped: 2026-11-20)
 
 **Delivered:** a damage meter prompt the player can move, with the addon's icon and the game's

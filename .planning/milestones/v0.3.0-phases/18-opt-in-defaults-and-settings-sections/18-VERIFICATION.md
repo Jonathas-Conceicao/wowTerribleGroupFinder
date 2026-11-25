@@ -1,7 +1,7 @@
 ---
 phase: 18-opt-in-defaults-and-settings-sections
 verified: 2026-11-24T00:00:00Z
-status: human_needed
+status: passed # in-game checks passed by the author, 2026-11-25 (18-HUMAN-UAT.md)
 score: 7/7 must-haves verified
 overrides_applied: 0
 human_verification:
