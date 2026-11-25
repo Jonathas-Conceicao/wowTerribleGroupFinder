@@ -23,10 +23,24 @@ function ns.Short(name)
 end
 
 local DEFAULTS = {
-	schema = 3,
+	schema = 5,
 }
 
--- Saved data from an older version, brought up to schema 3 in place (the table is never
+-- The last version before the Settings page had NEW tags (frozen).
+local SEEN_BEFORE_TAGS = "0.2.2"
+
+-- The options on by default up to v0.2.2, frozen (never read from the registry, whose
+-- defaults are now the new ones).
+local V022_ON = {
+	"ilvlPlayerTooltip",
+	"specPoints",
+	"ilvlItemTooltip",
+	"ilvlCharacterSheet",
+	"ilvlInspect",
+	"meterResetOnInstance",
+}
+
+-- Saved data from an older version, brought up to schema 5 in place (the table is never
 -- replaced: the settings registry, the presets and the shard table all hold it). Runs
 -- before every module's Init. The obsolete keys go on every load, so a trip back to an
 -- older version that wrote them again leaves nothing behind.
@@ -34,6 +48,14 @@ local DEFAULTS = {
 -- schema gets it saved on, unless the player set it. "Saved data" is whether the table
 -- held any key when the addon loaded, which is why Migrate runs before DEFAULTS are
 -- filled in.
+-- Schema 4: only the group finder's options (and the Elite quest button) are on for new
+-- installs; saved data from an earlier schema gets the six options that were on by default
+-- in v0.2.2 saved on, unless the player set them. A table holding only `schema` counts as
+-- saved data (a v0.2.x install that never set anything). Options new in v0.3.0 follow their
+-- defaults for everyone.
+-- Schema 5: the Settings page's NEW tags. Saved data from an earlier schema has seen every
+-- option up to v0.2.2, so the options added since show NEW; a new install starts with none
+-- (Settings.Init saves the newest version as seen).
 function ns.Migrate(db)
 	local existing = next(db) ~= nil
 	db.gs = nil -- v0.1 gear score cache
@@ -43,6 +65,22 @@ function ns.Migrate(db)
 			db.meterResetOnGroup = true
 		end
 		db.schema = 3
+	end
+	if (tonumber(db.schema) or 0) < 4 then
+		if existing then
+			for _, key in ipairs(V022_ON) do
+				if type(db[key]) ~= "boolean" then
+					db[key] = true
+				end
+			end
+		end
+		db.schema = 4
+	end
+	if (tonumber(db.schema) or 0) < 5 then
+		if existing and type(db.settingsSeen) ~= "string" then
+			db.settingsSeen = SEEN_BEFORE_TAGS
+		end
+		db.schema = 5
 	end
 end
 
@@ -296,14 +334,17 @@ function ns:ADDON_LOADED(name)
 	ResetState(not ns.Listings.HasAPI())
 	ns.ILvl.Init()
 	ns.ILvlUI.Init()
+	ns.GearSlots.Init()
 	ns.Region.Init(ns.db)
 	ns.MeterReset.Init(ns.db)
 	ns.Messages.Init(ns.db)
 	ns.InPlace.Init()
+	ns.QuestButton.Init()
 	ns.SettingsPanel.Init()
 end
 
-local USAGE = "/tgf [preview | reset | version | ilvl | region | meter | settings|config | set <key> on|off]"
+local USAGE =
+	"/tgf [preview | reset | version | ilvl | region | quest | meter | gear | settings|config | set <key> on|off]"
 
 SLASH_TERRIBLEGROUPFINDER1 = "/tgf"
 SLASH_TERRIBLEGROUPFINDER2 = "/terriblegroupfinder"
@@ -330,6 +371,10 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 		ns.ILvl.Probe()
 	elseif command == "region" then
 		ns.Region.Probe()
+	elseif command == "quest" then
+		ns.QuestButton.Probe()
+	elseif command == "gear" then
+		ns.GearSlots.Probe()
 	elseif command == "meter" then
 		if ns.MeterReset.Moving() then
 			Print("the damage meter prompt is being moved: Lock or Default first.")
@@ -343,6 +388,6 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 	elseif command == "version" then
 		Print("version " .. ns.version)
 	else
-		Print(USAGE)
+		Print('unknown command "' .. command .. '". ' .. USAGE)
 	end
 end

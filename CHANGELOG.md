@@ -1,5 +1,19 @@
 # Changelog
 
+## v0.3.0
+
+A group finder eye on elite quests, item level and enchants beside each gear slot, and extras you turn on yourself.
+
+### Added
+
+- Elite quest LFG button: clicking it sets you up to create a listing with the quest's zone selected; you type the description yourself, due to Blizzard API restrictions
+- Slot item level and enchant on the character sheet and the Inspect window
+
+### Changed
+
+- New installs start with only the group finder's options on (Elite quest button, Dynamic refresh, Swipe animations, Region flags); item level, talents, slot info and the damage meter prompts are off until you turn them on in Settings > AddOns > TerribleGroupFinder. If you already use the addon, your settings are kept
+- The Settings page is now ordered Group finder, Player inspection, Damage meter, Messages; "Item level and talents" is now "Player inspection". After an update, new options carry the game's blue NEW tag (also on the addon's entry in the AddOns list) until you close Settings after looking at them
+
 ## v0.2.2
 
 A damage meter prompt you can move, a choice of activity when whispering, and Settings buttons that act at once.

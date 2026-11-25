@@ -3,7 +3,9 @@
 --  ns.Settings.List(). Proxy settings keep the registry the one source of truth: a value
 --  is saved only once the player sets it, and the registry's listeners fire on a change.
 --  Taint: only Blizzard's public registration calls; no field is written on the Settings
---  panel; our two buttons close it through its own Close (SP.CloseThen).
+--  panel; our two buttons close it through its own Close (SP.CloseThen). The NEW tags are
+--  an IsNewTagShown on our own checkbox initializers, read by the panel under its own
+--  securecallfunction; seen is learned from its EventRegistry events.
 -------------------------------------------------------------------------------
 local _, ns = ...
 
@@ -44,7 +46,15 @@ function SP.Init()
 		end, function(value)
 			ns.Settings.Set(key, value)
 		end)
-		inits[key] = S.CreateCheckbox(cat, setting, opt.tooltip)
+		local init = S.CreateCheckbox(cat, setting, opt.tooltip)
+		inits[key] = init
+		if opt.since and init then
+			-- our own initializer: the game's blue NEW on the row, and on the AddOns list's
+			-- entry (it asks every row of the page), until the page is seen
+			init.IsNewTagShown = function()
+				return ns.Settings.IsNew(key)
+			end
+		end
 		-- A change from elsewhere (/tgf set) shows on an open page, its children re-evaluated.
 		-- Skipped while the setting is locked: the change is the page's own.
 		ns.Settings.OnChange(key, function()
@@ -84,6 +94,27 @@ function SP.Init()
 	S.RegisterAddOnCategory(cat)
 	category = cat
 	categoryID = cat:GetID()
+	SP.TrackSeen()
+end
+
+-- The NEW tags stay until the Settings panel closes after showing our page.
+local viewed = false
+
+function SP.TrackSeen()
+	if not (EventRegistry and EventRegistry.RegisterCallback) then
+		return
+	end
+	EventRegistry:RegisterCallback("Settings.CategoryChanged", function(_, shown)
+		if shown == category then
+			viewed = true
+		end
+	end, SP)
+	EventRegistry:RegisterCallback("SettingsPanel.OnHide", function()
+		if viewed then
+			viewed = false
+			ns.Settings.MarkSeen()
+		end
+	end, SP)
 end
 
 -- Run once the game's Settings panel hides (the latest asked wins); a one-time HookScript

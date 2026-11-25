@@ -7,10 +7,13 @@ tab becomes a table of solo players and groups (in the game's two sections) that
 can sort by role, level, activity and listed time, showing where each player or leader is,
 with one-click whispers (and invites) from preset messages, friend / recent ally marks and
 region flags, while looking and behaving like the stock finder; the list refreshes in place.
-Beyond the finder it shows item level, from the game's own data, on player and item tooltips,
-the character sheet and the Inspect window, talent points on player tooltips, and asks to reset
-the damage meter on joining a group or entering an instance, with a settings page for every extra. It is for
-Forever players looking for groups or members who find the stock bulletin board hard to scan.
+An eye on tracked elite quests opens the finder's Listing tab on Quests & Zones with the quest's
+zone picked. Beyond the finder, as opt-in extras (only the finder's options are on for new
+installs), it shows item level, from the game's own data, on player and item tooltips, the
+character sheet and the Inspect window, each slot's item level and enchant, talent points on
+player tooltips, and asks to reset the damage meter on joining a group or entering an instance,
+with a sectioned settings page for every option. It is for Forever players looking for groups
+or members who find the stock bulletin board hard to scan.
 
 ## Core Value
 
@@ -20,14 +23,23 @@ group finder.
 
 ## Current State
 
-**Shipped v0.2.2 "Small Improvements" (2026-11-20)**, after v0.2.1 "Reset Details reminder,
-more region flags and spec points" (2026-11-16), v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial Release"
-(2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
-[milestones/](milestones/). ~9.2k lines of Lua/XML; checked in the live Forever client by the
+**Shipped v0.3.0 "Elite Quests finder and more inspect data" (2026-11-25)**, after v0.2.2
+"Small Improvements" (2026-11-20), v0.2.1 "Reset Details reminder, more region flags and spec
+points" (2026-11-16), v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial
+Release" (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
+[milestones/](milestones/). ~11.2k lines of Lua/XML; checked in the live Forever client by the
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
-## Current Milestone: v0.3.0 Elite Quests finder and more inspect data
+## Next Milestone Goals (candidates)
+
+The quest log LFG button (backlog 999.5, with v0.3.0's findings), better quest-to-zone matching
+with `C_LFGList.GetActivityIDForQuestID`, the deferred v0.1 cleanup list, the v0.2 and v0.2.1
+audits' tech debt, EU / Asia shard IDs from players' `/tgf region` output, remembered sort /
+filters, localization-ready strings.
+
+<details>
+<summary>v0.3.0 Elite Quests finder and more inspect data — milestone brief (archived)</summary>
 
 **Goal:** One click from an elite quest to a group for it, fuller gear info (item level,
 enchants, sockets per slot) on the character sheet and the Inspect window, and every extra that
@@ -57,12 +69,11 @@ Listing tab's description box is secure, so writing the quest name there must go
 game's own path or be dropped. Taint rules from CLAUDE.md apply to the tracker, the character
 sheet and the Inspect window (hooks and our own frames only).
 
-## Next Milestone Goals (candidates)
+**Outcome:** shipped with sockets dropped (author's call at kickoff), the description left to the
+player (addons can't write it, proven in game), the eye's picks done by a secure click, and NEW
+tags added to Settings during the review.
 
-The README wording proposals left out of v0.2.2
-(`milestones/v0.2.2-phases/17-release-review/17-HUMAN-UAT.md` item 3), the deferred v0.1
-cleanup list, the v0.2 and v0.2.1 audits' tech debt, EU / Asia shard IDs from players'
-`/tgf region` output, remembered sort / filters, localization-ready strings.
+</details>
 
 <details>
 <summary>v0.2.2 Small Improvements — milestone brief (archived)</summary>
@@ -242,6 +253,10 @@ migration was later dropped, and all in-game checks passed at close.
 - ✓ Settings' Move and Edit whisper messages close the options window and act at once (SET-01) — v0.2.2
 - ✓ Whisper activity menu for listings with several activities, with Edit (MSG-01..02) — v0.2.2
 - ✓ Release Review for v0.2.2 (REL-07) — v0.2.2
+- ✓ Opt-in defaults: only the finder's options on for new installs, existing players keep theirs (schema 4); Settings in four sections; NEW tags for new options (schema 5) (OPT-01..04) — v0.3.0
+- ✓ Elite quest eye in the tracker: retail placement, secure click picks Quests & Zones and the quest's zone, cursor in the description box (QST-01..04) — v0.3.0
+- ✓ Per-slot item level and enchant on the character sheet and the Inspect window, "No enchant" where an enchanter can enchant (GEAR-01..04) — v0.3.0
+- ✓ Release Review for v0.3.0 (REL-08) — v0.3.0
 
 <!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
@@ -257,10 +272,10 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-v0.3.0 requirements: see [REQUIREMENTS.md](REQUIREMENTS.md) (opt-in defaults, elite quest
-eye button, per-slot gear info, Settings sections, Release Review). Archived:
+None: the next milestone defines its requirements with `/gsd-new-milestone`. Archived:
 [v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
-[v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md).
+[v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md),
+[v0.3.0](milestones/v0.3.0-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
@@ -274,12 +289,14 @@ eye button, per-slot gear info, Settings sections, Release Review). Archived:
 - Retail support — the addon targets Forever's Vanilla-style finder only (one TOC, interface 16001)
 - Applications / apply flow — Forever's finder has listings only; contact is by whisper and invite
 - A separate group finder window in game — the addon changes Forever's own finder in place
-- Writing the listing description — Blizzard's comment box is secure; the Listing tab stays Blizzard's (delisting from your own row is the one deliberate exception)
+- Writing the listing description — impossible for addons, proven in game in v0.3.0: the comment box refuses `SetText`, `Insert` and paste ("Call is illegal when disabled by security settings"), `LfgListingCreateData` has no text field and no API sets it; the player types it. The Listing tab stays Blizzard's (delisting from your own row and the eye's secure clicks are the deliberate exceptions)
 
 ## Context
 
 - WoW Forever runs on the modern client (secret values, chat messaging lockdown, restricted
-  calls such as `C_LFGList.Search` / `CreateListing` that need a hardware event).
+  calls such as `C_LFGList.Search` / `CreateListing` that need a hardware event; `CreateListing`
+  from addon code on a key press does post, tested in v0.3.0, but Blizzard's own Post path must
+  never read values our code wrote, hence the eye's secure clicks).
 - Forever is one mega-realm per ruleset (PvP, PvE, RP-PvP, RP-PvE); the finder lists only your
   own, so whispers and invites use plain character names.
 - Blizzard UI reference: `C:\Users\jonat\Repositories\wow-ui-source`, branch `forever`
@@ -319,6 +336,11 @@ eye button, per-slot gear info, Settings sections, Release Review). Archived:
 | Manual CurseForge / Wago uploads from the release zip | The author prefers it; no store keys in the repo secrets | — For now |
 | Whisper presets with Auto-send off by default | Prefill keeps the player in control; Auto-send is opt-in | ✓ Good |
 | License GPL-3.0 | Open source, share-alike | ✓ Good |
+| Extras opt-in: only the group finder's options on for new installs | Avoids clashing with other addons that do the same extras; existing players keep theirs through `ns.Migrate` | ✓ Good (v0.3.0) |
+| The quest eye picks Quests & Zones and the zone through a secure cover and `/click` delegates, never from addon code | Selecting them from our code would taint Blizzard's Listing fields and block its Post; Blizzard's own handlers run as the player's clicks | ✓ Good (v0.3.0) |
+| The finder isn't widened for the quest hint; the hint sits outside beside the description box | The author: the Listing tab shouldn't change size | ✓ Good (v0.3.0) |
+| Settings NEW tags per option version, stacking across skipped versions | Updaters see what's new without a popup; a new install sees none | ✓ Good (v0.3.0) |
+| "No enchant" only where an enchanter can enchant on Forever (no shoulders, rings, trinkets) | Reputation-only shoulder enchants would flag almost everyone | ✓ Good (v0.3.0) |
 | Character sheet Item Level row: our own frame from Blizzard's stat row template on the stats list's scroll target, placed under Movement Speed by moving the shown rows' anchors; never an entry in Blizzard's stats list | Inserting Blizzard's `ITEMLEVEL` element into the pane's `elementData` tainted the sheet in game (secure code then failed comparing secret values, "execution tainted by TerribleGroupFinder"); writing `PAPERDOLL_STATCATEGORIES` taints the same path. Moving anchors writes no Lua values | ✓ Good (v0.2) |
 
 ## Git Workflow
@@ -386,4 +408,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-24 at the start of the v0.3.0 milestone*
+*Last updated: 2026-11-25 after the v0.3.0 milestone*

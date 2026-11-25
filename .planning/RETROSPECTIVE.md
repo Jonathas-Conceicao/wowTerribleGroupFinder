@@ -150,6 +150,41 @@
 
 ---
 
+## Milestone: v0.3.0 — Elite Quests finder and more inspect data
+
+**Shipped:** 2026-11-25
+**Phases:** 4 | **Plans:** 7
+
+### What Was Built
+- Opt-in defaults (schema 4) and a sectioned Settings page, then NEW tags for new options (schema 5)
+- The elite quest eye in the tracker, with a secure cover that picks Quests & Zones and the zone
+- Per-slot item level and enchant on the character sheet and the Inspect window
+
+### What Worked
+- All questions up front, then an autonomous run to the author's review with no pauses
+- Code review caught two real bugs (the eye never showing beside a quest item, uncached inspect items staying blank)
+- Proving the description question with the author's own `/run` and `/api` tests settled it with evidence instead of argument
+
+### What Was Inefficient
+- The first eye design (open + hint, nothing picked, finder widened) didn't match what the author wanted; the secure-click design came only in the review
+- Too confident too early that the description was impossible; the author rightly pushed for in-game proof, which took several rounds of tests
+- A `sed -i` on a planning file and a `sed` that stripped CRLF from a Lua file, both against project rules
+
+### Patterns Established
+- Secure picks in Blizzard's UI: a SecureActionButton cover placed by screen coordinates (nothing protected in the tracker) plus `/click` delegates whose `clickbutton` is set in PreClick
+- Feature-claim disputes get settled by a minimal in-game `/run` the author can paste, one step at a time
+
+### Key Lessons
+1. Before calling something impossible, show the exact evidence (API structure, the game's error text) and give the author the one-line test
+2. Ask how the author wants a flow to feel (one click vs. guided) before the autonomous run, not after
+
+### Cost Observations
+- Model mix: Opus (main session and agents)
+- Sessions: 1 (with context compactions)
+- Notable: research up front; no milestone audit; no smoke harness (not kept in the repo), checked in game by the author
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -160,6 +195,7 @@
 | v0.2 | 1 | 6 | Autonomous run with all in-game checks deferred to one pass at the end |
 | v0.2.1 | 1 | 4 | Same flow; research before talents; no generated art |
 | v0.2.2 | 1 | 2 | Live prototype first, then a short wrap-up milestone; no research, no audit |
+| v0.3.0 | 1 | 4 | Questions batched up front, autonomous run to review; the review reworked the eye with the author's in-game tests |
 
 ### Cumulative Quality
 
@@ -169,6 +205,7 @@
 | v0.2 | same harness, 3 modes, all passing (settings, item level, region, motion, raid probes added) | stubbed client API | 0 |
 | v0.2.1 | same harness, 3 modes, all passing (meter, region tags, talents added) | stubbed client API | 0 |
 | v0.2.2 | same harness, 3 modes, all passing (meter move, settings close, activity menu, migrate added) | stubbed client API | 0 |
+| v0.3.0 | none (harness not in the repo); `stylua` parse, code review, author's in-game pass | in game | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 

@@ -4,6 +4,9 @@ A group finder addon for **WoW Forever**. It improves the game's own group finde
 in place, keeping its look: the Browse tab becomes a sortable table of solo players and
 groups, and a new Messages tab holds whisper presets for contacting them in one click.
 
+Only the group finder's options are on at first; item level, talents, slot info and the
+damage meter prompts are turned on in Settings > AddOns > TerribleGroupFinder.
+
 <p align="center">
   <img src="Media/Screenshots/tgf_refresh.gif" alt="The Browse table refreshing in place: rows swipe out and in and slide into place" width="64%">
   <img src="Media/Screenshots/tgf_lfg_message_config.png" alt="The Messages tab with the two whisper presets" width="34%">
@@ -34,15 +37,25 @@ groups, and a new Messages tab holds whisper presets for contacting them in one 
 - **Stock behaviour kept** - your own listing first with its delist button, Send Message
   and Group Invite at the bottom, right-click a row for the game's own menu, and the
   game's row tooltip
-- **Item level** - shown on friendly players' tooltips, on weapon and armor tooltips, as
-  a row under Movement Speed on the character sheet, and on the Inspect window
-- **Region flags** - a US or Oceania flag after each name, your own listing included,
-  with the region in the row tooltip
+- **Elite quest eye** - an eye beside elite quests in the quest tracker opens the group
+  finder's Listing tab on Quests & Zones with the quest's zone ticked, ready to type a
+  description and post
+- **Item level** - off until turned on in Settings; then shown on friendly players'
+  tooltips (with their talent points per tree), on weapon and armor tooltips, as a row
+  under Movement Speed on the character sheet, and on the Inspect window
+- **Slot item level and enchants** - each item's level and enchant beside its slot on the
+  character sheet and the Inspect window, with "No enchant" where the slot can take one
+- **Region flags** - a flag after each name, your own listing included, for US, Oceania,
+  EU, China, Korea or Taiwan (other regions show their first two letters), with the
+  region in the row tooltip
 - **Row icon tooltips** - every icon on a row explains itself on hover
 - **Dynamic refresh** - the refresh button keeps the list and updates it in place: rows
   swipe out and in and slide into place (try it in `/tgf preview`)
-- **Settings page** - in Settings > AddOns: turn each item level spot, Dynamic refresh,
-  the animations and region flags on or off, and open the Messages tab from a button
+- **Settings page** - in Settings > AddOns, in four sections: Group finder (Elite quest
+  button, Dynamic refresh, the animations, region flags; on at first), Player inspection
+  (player and item tooltips, talent points, character sheet, Inspect window, slot item
+  level and slot enchants; off at first), Damage meter (the two reset prompts, off at
+  first, and Move) and Messages (a button opens the Messages tab)
 
 ## Usage
 

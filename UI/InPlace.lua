@@ -11,7 +11,8 @@
 --  list, hooked to stay hidden; its panels while Messages shows), HookScript its OnShow/
 --  OnHide, call its tabs' SetChecked, resize the parent and parent our own frames to it.
 --  Restricted calls (Search, CreateListing) stay Blizzard's; ours are invites and
---  whispers, all from clicks.
+--  whispers, all from clicks. The finder is opened only through the game's own
+--  LFGVanilla_ShowFrame (IP.ShowFinder), out of combat.
 --
 --  Where the game has no group finder, /tgf opens the preview stand-in.
 -------------------------------------------------------------------------------
@@ -22,6 +23,7 @@ ns.InPlace = IP
 
 local FINDER = "Blizzard_GroupFinder_VanillaStyle"
 local BROWSE_TAB = 2
+IP.LISTING_TAB = 1
 local WIDE = 620
 local REPLACED =
 	{ "ScrollBox", "ScrollBar", "SendMessageButton", "GroupInviteButton", "NoResultsFound", "SearchingSpinner" }
@@ -428,6 +430,28 @@ local function OpenAfterSettings()
 	ns.Print("the Messages tab opens when you close the Settings.")
 end
 
+--- Opens Forever's group finder on the given side tab (1 Listing, 2 Browse), through the
+--- game's own LFGVanilla_ShowFrame. Out of combat only; true when it was asked of the game.
+function IP.ShowFinder(tab)
+	if InCombatLockdown() then
+		ns.Print("can't open the group finder in combat.")
+		return false
+	end
+	if
+		not LFGParentFrame
+		or not (type(LFGVanilla_ShowFrame) == "function" or type(LFGVanilla_ToggleFrame) == "function")
+	then
+		ns.Print("the group finder isn't ready yet.")
+		return false
+	end
+	if type(LFGVanilla_ShowFrame) == "function" then
+		LFGVanilla_ShowFrame(tab)
+	elseif not LFGParentFrame:IsShown() then
+		LFGVanilla_ToggleFrame(tab)
+	end
+	return true
+end
+
 --- Opens the group finder on our Messages tab (the stand-in's only where the game has no
 --- group finder API). Out of combat only; with the game's Settings panel open, it opens
 --- once that panel closes.
@@ -445,12 +469,8 @@ function IP.OpenMessages()
 	if SettingsPanel and SettingsPanel.IsShown and SettingsPanel:IsShown() and SettingsPanel.HookScript then
 		return OpenAfterSettings()
 	end
-	if not LFGParentFrame:IsShown() then
-		if LFGVanilla_ShowFrame then
-			LFGVanilla_ShowFrame(BROWSE_TAB)
-		elseif LFGVanilla_ToggleFrame then
-			LFGVanilla_ToggleFrame(BROWSE_TAB)
-		end
+	if not LFGParentFrame:IsShown() and not IP.ShowFinder(BROWSE_TAB) then
+		return
 	end
 	-- last: the stock tabs' OnShow hooks hide Messages
 	ShowMessages()
