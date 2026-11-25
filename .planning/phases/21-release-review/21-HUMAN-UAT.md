@@ -1,5 +1,5 @@
 ---
-status: partial
+status: complete
 phase: 21-release-review
 source: [21-CONTEXT.md, 21-01-SUMMARY.md, 21-02-SUMMARY.md, 18-HUMAN-UAT.md, 19-HUMAN-UAT.md, 20-HUMAN-UAT.md]
 started: 2026-11-24
@@ -14,9 +14,10 @@ updated: 2026-11-24
 
 ### 1. CHANGELOG review
 expected: The `## v0.3.0` section at the top of CHANGELOG.md (first `## ` heading, published by the release workflow as the release notes) is a draft. Review and rewrite as wished. It has Added and Changed only: no bug that existed in v0.2.2 is known fixed, so there is no Fixed heading. `## v0.2.2` and everything below are unchanged.
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ### 2. README wording proposals
+applied 2026-11-25 by the author's approval: a, b (rewritten for the round 2 eye), c, d, e and the region flags line; f (usage commands) dropped, as in the changelog
 expected: README.md is not edited until you approve; the orchestrator applies only the approved lines. There is no flagpedia credit in any of them.
 
 a. Opt-in defaults (a sentence after the intro paragraph)
@@ -97,7 +98,7 @@ Reminder only (decide again; the v0.2.2 review applied none, README wording stay
 ```
 (proposed: "the activity of their listing (you pick one when it lists several)")
 Also still missing: a damage meter reset bullet (joining a group or entering an instance asks whether to reset Details! or the game's own meter; each prompt can be turned off; movable from Settings), and in the Whisper presets bullet the activity menu (a listing with several activities asks which one to name, or Edit to write it yourself).
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ### 3. Screenshot reminders
 expected: You retake the prints (agents never make images). Wanted or not is your call:
@@ -107,11 +108,11 @@ expected: You retake the prints (agents never make images). Wanted or not is you
 - The slot info (item level and enchant beside each slot) on the character sheet and the Inspect window
 - The two prints in the README (`tgf_refresh.gif`, `tgf_lfg_message_config.png`) show screens v0.3.0 did not change.
 This folds in 19-HUMAN-UAT item 8 and 20-HUMAN-UAT item 7 (whether these prints are wanted).
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ### 4. Version
 expected: Confirm v0.3.0 (the TOC keeps `## Version: @project-version@`; tag `v0.3.0` on `main` after the squash merge, by your `/gsd-complete-milestone`; the squash-merge message lists only what players get, none of the in-milestone fixes the branch commits name). Local zip check from 21-01: 28 files, no warnings; entries are the TOC, Core, Settings, Preview, ItemLevel, ItemLevelUI, QuestButton, GearSlots, Region, MeterReset, Messages, Listings, UI/{Widgets.lua, Templates.xml, Motion, Table, MainFrame, InPlace, SettingsPanel, Listing}, Media/Textures/{tgf_icon_64x64, flag_au, cn, eu, kr, tw, us}.tga and LICENSE; nothing from Media/Source, Media/Screenshots or .planning.
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ### 5. Deferred in-game checks
 expected: Run all of these in one session; the release waits on them. Deploy first: `./scripts/install.bat`, then `/reload` in game (the build was deployed by the autonomous run, see 21-02-SUMMARY.md); use `/console taintLog 1` for the taint checks. The source files stay as they are (fill results there or here, your choice).
@@ -133,32 +134,44 @@ From 19-HUMAN-UAT.md (elite quest eye):
 
 From 20-HUMAN-UAT.md (per-slot gear info):
 - (20-1) Layout on the character sheet and the Inspect window: with Slot item level and Slot enchants on, each slot shows two small lines beside its icon toward the model (left column right of the icon, right column and main hand left of it, off hand / ranged above); nothing overlaps the model, a neighbouring slot or the ammo slot; nothing is drawn on the icons; the layout holds at UI scale 0.8 and 1.2 (the offsets are constants at the top of `GearSlots.lua`)
-- (20-2) Enchantable slots on Forever: "No enchant" (red) only on head, neck, shoulder, back, chest, wrist, hands, legs, feet, main hand, off hand and a bow / gun / crossbow; never on belt, rings, trinkets; enchanted slots show the enchant's name (rings and head / shoulder / off-hand marks: see item 6)
+- (20-2) Enchantable slots on Forever: "No enchant" (red) only on head, neck, back, chest, wrist, hands, legs, feet, main hand, off hand and a bow / gun / crossbow; never on shoulders (author, 2026-11-25: no enchanter shoulder enchants on Forever), belt, rings, trinkets; enchanted slots show the enchant's name, shoulders included (rings and head / off-hand marks: see item 6)
 - (20-3) Inspect timing: nothing shows before the inspect answers; inspecting another player never shows the previous player's values; reopening starts blank; a player with uncached items fills in shortly after
 - (20-4) Options: each option alone shows its line in the first spot; turning one off clears it from open windows at once; both off clears everything
 - (20-5) Taint: with `/console taintLog 1`, equipping / unequipping and clicking slots on the sheet and the Inspect window log nothing from TerribleGroupFinder
 - (20-6) `/tgf gear`: prints each of your slots (level, enchant ID, enchant line, sockets, enchantable) and the inspected player's while the Inspect window shows
-result: [pending]
+
+Round 2 (author's feedback of 2026-11-25; supersedes 19-1's "left of a quest item button", 19-3's widened finder and 19-5's width restore):
+- (R2-1) Eye: the addon's purple eye in retail's square button, at the block's top right; a quest item button sits left of it, centred on it (out of combat)
+- (R2-2) Secure click, finder closed: one click opens the finder on Listing with Quests & Zones picked and the quest's zone ticked (when its row is on screen without scrolling); the finder keeps its normal width; the hint box sits outside it, right of the side tabs: quest name, Zone (ticked / tick it), Description: type "LFM <name>"
+- (R2-3) Secure click, finder already open (on Browse, Messages or Listing): it doesn't close; same result as R2-2
+- (R2-4) Post works after the eye: pick a playstyle, type the description, List Self / List Group: the listing is made, no ADDON_ACTION_BLOCKED, `/console taintLog 1` shows nothing from TerribleGroupFinder; also with "cast on key down" on and off (`ActionButtonUseKeyDown`)
+- (R2-5) No zone match or row off screen: Quests & Zones still picked, the hint says "Zone: tick <zone>"; `/tgf quest` shows each quest's matched activity and whether `LFDMicroButton` / `LFGParentFrameTab1` were found
+- (R2-6) Combat: hovering the eye in combat and clicking prints "can't open the group finder in combat."; combat starting while hovering gives no error; the tracker updates in combat raise no errors
+- (R2-7) Slot info: all three weapons' text above their icons, 1 px higher than before; left and right columns 2 px further from their icons, nothing clipped
+- (R2-9) Description: after the eye's click the cursor is in the empty description box, ready to type "LFM <name>". (Tried 2026-11-25: `Insert` is refused too, "Call is illegal when disabled by security settings", with a taint log line; the try was removed. Check the taint log stays clean now.)
+- (R2-10) Hint box: beside the description box, just outside the finder (top right past the side tabs until a category is picked, then it moves); shows only the quest name and "Zone: X (ticked)"; 3 px more room between the text and the border. (Description settled 2026-11-25: addons can't write it; `CreateListing` has no text field; the `/tgf listtest` prototype was removed)
+- (R2-8) [passed in game 2026-11-25, author] NEW tags: with a saved file from before (or the current dev one), Settings > AddOns shows NEW on TerribleGroupFinder and on Elite quest button, Slot item level, Slot enchants; closing Settings after viewing the page clears them for good; a fresh install shows none
+result: passed (author, 2026-11-25)
 
 ### 6. Open author decisions
 expected: Each with the default the code ships now:
 - Rings enchantable on Forever? Shipped: left out (never "No enchant")
-- Head / shoulder / off-hand "No enchant" noise? Shipped: marked enchantable
-- The hint box look with the widened finder: shipped, the Listing content stretches with the frame; the alternative is anchoring the hint outside it
+- Head / off-hand "No enchant" noise? Shipped: marked enchantable (shoulders decided 2026-11-25: not flagged)
+- The hint box look: decided in round 2 (outside the finder, no widening)
 - The slot text layout constants at the top of GearSlots.lua: tune if anything overlaps
 - The eye in combat when anchored beside a quest item: shipped, it stays until the next layout; a click in combat only prints
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ### 7. Phase confirmation
 expected: Your confirmation closes Phase 21; then `/gsd-complete-milestone` (push, squash-merge, tag `v0.3.0`). Nothing of this was done by the autonomous run: no push, merge or tag.
-result: [pending]
+result: passed (author, 2026-11-25)
 
 ## Summary
 
 total: 7
-passed: 0
+passed: 7
 issues: 0
-pending: 7
+pending: 0
 skipped: 0
 blocked: 0
 
