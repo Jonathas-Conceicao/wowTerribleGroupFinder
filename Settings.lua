@@ -17,8 +17,16 @@ local listeners = {} -- key -> { fn, ... }
 local db -- the saved table, held by reference (never copied or replaced)
 
 -- Keys other modules keep in the same saved table: never an option's key.
-local RESERVED =
-	{ schema = true, invite = true, request = true, shards = true, meterPos = true, gs = true, autoRefresh = true }
+local RESERVED = {
+	schema = true,
+	invite = true,
+	request = true,
+	shards = true,
+	meterPos = true,
+	gs = true,
+	autoRefresh = true,
+	settingsSeen = true,
+}
 
 -- A saved value that isn't a boolean is dropped, so Get falls back to the default.
 local function Clean(opt)
@@ -28,7 +36,8 @@ local function Clean(opt)
 end
 
 --- Add an option: { key, default (boolean), label, section?, tooltip?, parent? (key of
---- the option it sits under), onChange(value, key)? }. A
+--- the option it sits under), since? (the version it arrived in, "0.3.0": the Settings page
+--- tags it NEW until seen), onChange(value, key)? }. A
 --- key registered twice keeps its first option; a key that isn't a string, is reserved,
 --- or comes without a boolean default is an error.
 function S.Register(opt)
@@ -52,11 +61,64 @@ function S.List()
 	return list
 end
 
---- Hold the saved table and drop any saved option value that isn't a boolean.
+-- "0.3.0" -> { 0, 3, 0 }; anything unreadable is version 0.
+local function Parts(v)
+	local out = {}
+	if type(v) == "string" then
+		for n in v:gmatch("%d+") do
+			out[#out + 1] = tonumber(n)
+		end
+	end
+	return out
+end
+
+-- Whether version a comes before version b.
+local function Older(a, b)
+	local pa, pb = Parts(a), Parts(b)
+	for i = 1, math.max(#pa, #pb) do
+		local x, y = pa[i] or 0, pb[i] or 0
+		if x ~= y then
+			return x < y
+		end
+	end
+	return false
+end
+
+-- The newest `since` among the options ("0" when none has one).
+local function Newest()
+	local newest = "0"
+	for _, opt in ipairs(list) do
+		if type(opt.since) == "string" and Older(newest, opt.since) then
+			newest = opt.since
+		end
+	end
+	return newest
+end
+
+--- Hold the saved table and drop any saved option value that isn't a boolean. A table
+--- without `settingsSeen` (a new install; Migrate gives saved data from before the NEW tags
+--- the last version before them) has seen every option.
 function S.Init(saved)
 	db = saved
 	for _, opt in ipairs(list) do
 		Clean(opt)
+	end
+	if type(db.settingsSeen) ~= "string" then
+		db.settingsSeen = Newest()
+	end
+end
+
+--- Whether the option arrived after the version the player last saw the Settings page in
+--- (all the versions skipped since add up). False before the saved table is ready.
+function S.IsNew(key)
+	local opt = byKey[key]
+	return opt ~= nil and db ~= nil and type(opt.since) == "string" and Older(db.settingsSeen, opt.since)
+end
+
+--- The player has seen the Settings page: no option is new any more.
+function S.MarkSeen()
+	if db then
+		db.settingsSeen = Newest()
 	end
 end
 
@@ -125,7 +187,8 @@ local OPTIONS = {
 		section = "Group finder",
 		label = "Elite quest button",
 		default = true,
-		tooltip = "Show an eye button beside elite quests in the objective tracker; it opens the group finder's Listing tab with what you need to list a group for that quest.",
+		since = "0.3.0",
+		tooltip = "Show an eye button beside elite quests in the objective tracker; it opens the group finder's Listing tab on Quests & Zones with the quest's zone ticked, ready for you to type a description and post.",
 	},
 	{
 		key = "dynamicRefresh",
@@ -189,6 +252,7 @@ local OPTIONS = {
 		section = "Player inspection",
 		label = "Slot item level",
 		default = false,
+		since = "0.3.0",
 		tooltip = "Show each item's level beside its slot on the character sheet and the Inspect window.",
 	},
 	{
@@ -196,6 +260,7 @@ local OPTIONS = {
 		section = "Player inspection",
 		label = "Slot enchants",
 		default = false,
+		since = "0.3.0",
 		tooltip = 'Show each item\'s enchant beside its slot on the character sheet and the Inspect window, or "No enchant" where the slot can be enchanted.',
 	},
 	{

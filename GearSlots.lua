@@ -49,13 +49,13 @@ for _, slot in ipairs(GS.SHOWN) do
 	GS.SHOW[slot] = true
 end
 
--- Slots Forever lets you enchant: vanilla's, plus Forever's neck and off-hand enchants (any
--- off-hand item: weapons, shields, held-in-off-hand). Never the belt, rings, trinkets,
--- shirt or tabard.
+-- Slots Forever lets an enchanter enchant: vanilla's, plus Forever's neck and off-hand enchants
+-- (any off-hand item: weapons, shields, held-in-off-hand). Never the belt, rings, trinkets,
+-- shirt or tabard, nor the shoulders (their enchants come only from a reputation, so a missing
+-- one isn't flagged; an enchanted shoulder still shows its enchant).
 local ENCHANTABLE = {
 	[1] = true,
 	[2] = true,
-	[3] = true,
 	[5] = true,
 	[7] = true,
 	[8] = true,
@@ -273,11 +273,11 @@ end
 --  Overlays: one frame of ours per slot button, never a field on Blizzard's button
 -------------------------------------------------------------------------------
 -- Layout: offsets and widths of the slot text, in px.
-local GAP = 3 -- px between the icon and its text
+local SIDE_GAP = 5 -- px between a column's icon and its text, toward the model
+local ABOVE_GAP = 4 -- px between a weapon's icon and the text above it
 local LINE_GAP = 1
 local SIDE_WIDTH = 80 -- left and right columns
-local MAIN_WIDTH = 60 -- main hand, text left of its icon
-local ABOVE_WIDTH = 42 -- off hand and ranged: text above the icon
+local ABOVE_WIDTH = 42 -- the weapons (main hand, off hand, ranged): text above the icon
 local LEVEL_ABOVE = 5 -- our frame's level over the button's
 local ITEM_RETRIES = 3
 
@@ -296,7 +296,7 @@ local LAYOUT = {
 	[12] = "right",
 	[13] = "right",
 	[14] = "right",
-	[16] = "main",
+	[16] = "above",
 	[17] = "above",
 	[18] = "above",
 }
@@ -334,27 +334,26 @@ local function Overlay(button)
 	local a, b = NewString(o), NewString(o)
 	local side = LAYOUT[Clear(button:GetID())] or "left"
 	if side == "left" then
-		a:SetPoint("TOPLEFT", button, "TOPRIGHT", GAP, -2)
+		a:SetPoint("TOPLEFT", button, "TOPRIGHT", SIDE_GAP, -2)
 		a:SetJustifyH("LEFT")
 		a:SetWidth(SIDE_WIDTH)
 		b:SetPoint("TOPLEFT", a, "BOTTOMLEFT", 0, -LINE_GAP)
 		b:SetJustifyH("LEFT")
 		b:SetWidth(SIDE_WIDTH)
 	elseif side == "above" then
-		a:SetPoint("BOTTOM", button, "TOP", 0, GAP)
+		a:SetPoint("BOTTOM", button, "TOP", 0, ABOVE_GAP)
 		a:SetJustifyH("CENTER")
 		a:SetWidth(ABOVE_WIDTH)
 		b:SetPoint("BOTTOM", a, "TOP", 0, LINE_GAP)
 		b:SetJustifyH("CENTER")
 		b:SetWidth(ABOVE_WIDTH)
 	else
-		local w = side == "main" and MAIN_WIDTH or SIDE_WIDTH
-		a:SetPoint("TOPRIGHT", button, "TOPLEFT", -GAP, -2)
+		a:SetPoint("TOPRIGHT", button, "TOPLEFT", -SIDE_GAP, -2)
 		a:SetJustifyH("RIGHT")
-		a:SetWidth(w)
+		a:SetWidth(SIDE_WIDTH)
 		b:SetPoint("TOPRIGHT", a, "BOTTOMRIGHT", 0, -LINE_GAP)
 		b:SetJustifyH("RIGHT")
-		b:SetWidth(w)
+		b:SetWidth(SIDE_WIDTH)
 	end
 	o.a, o.b = a, b
 	o:Hide()

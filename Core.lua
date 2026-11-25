@@ -23,8 +23,11 @@ function ns.Short(name)
 end
 
 local DEFAULTS = {
-	schema = 4,
+	schema = 5,
 }
+
+-- The last version before the Settings page had NEW tags (frozen).
+local SEEN_BEFORE_TAGS = "0.2.2"
 
 -- The options on by default up to v0.2.2, frozen (never read from the registry, whose
 -- defaults are now the new ones).
@@ -37,7 +40,7 @@ local V022_ON = {
 	"meterResetOnInstance",
 }
 
--- Saved data from an older version, brought up to schema 4 in place (the table is never
+-- Saved data from an older version, brought up to schema 5 in place (the table is never
 -- replaced: the settings registry, the presets and the shard table all hold it). Runs
 -- before every module's Init. The obsolete keys go on every load, so a trip back to an
 -- older version that wrote them again leaves nothing behind.
@@ -50,6 +53,9 @@ local V022_ON = {
 -- in v0.2.2 saved on, unless the player set them. A table holding only `schema` counts as
 -- saved data (a v0.2.x install that never set anything). Options new in v0.3.0 follow their
 -- defaults for everyone.
+-- Schema 5: the Settings page's NEW tags. Saved data from an earlier schema has seen every
+-- option up to v0.2.2, so the options added since show NEW; a new install starts with none
+-- (Settings.Init saves the newest version as seen).
 function ns.Migrate(db)
 	local existing = next(db) ~= nil
 	db.gs = nil -- v0.1 gear score cache
@@ -69,6 +75,12 @@ function ns.Migrate(db)
 			end
 		end
 		db.schema = 4
+	end
+	if (tonumber(db.schema) or 0) < 5 then
+		if existing and type(db.settingsSeen) ~= "string" then
+			db.settingsSeen = SEEN_BEFORE_TAGS
+		end
+		db.schema = 5
 	end
 end
 
@@ -376,6 +388,6 @@ SlashCmdList.TERRIBLEGROUPFINDER = function(msg)
 	elseif command == "version" then
 		Print("version " .. ns.version)
 	else
-		Print(USAGE)
+		Print('unknown command "' .. command .. '". ' .. USAGE)
 	end
 end

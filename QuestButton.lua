@@ -1,45 +1,54 @@
 -------------------------------------------------------------------------------
 --  QuestButton.lua -- the Elite quest eye (ns.QuestButton): an eye button of ours on tracked
 --  elite quests in the objective tracker (Quest and Campaign modules). A click, out of
---  combat, opens Forever's group finder on its Listing tab.
+--  combat, opens Forever's group finder on its Listing tab with Quests & Zones picked and the
+--  quest's zone ticked, the way the player's own clicks would.
 --
 --  Taint: post-hooks only (hooksecurefunc on the module instances' EndLayout). The eye is
---  our own Button parented to the block, kept in a weak table, never a field on the block.
---  The only change to Blizzard's tracker is the HeaderText's RIGHT anchor, moved only when
---  the title still fits one line and set again by the block's own layout. Nothing of the
---  finder is selected or written. Gated by eliteQuestButton, read where it acts.
+--  our own plain Button parented to the block, kept in a weak table, never a field on the
+--  block. The changes to Blizzard's tracker are anchors only, set again by the block's own
+--  layout: the HeaderText's RIGHT anchor (moved only when the title still fits one line) and,
+--  out of combat, the quest item button's (moved left of the eye, retail's order).
 --
---  The hint box is our own frame parented to the Listing tab; the finder is widened for it
---  (IP.WidenListing). Our outline is parented to the Quests & Zones category button. Both
---  only read Blizzard's frames: nothing is selected, filled or clicked, the player picks,
---  types and posts.
+--  The click is secure: nothing in the tracker is protected. While the mouse is over an eye
+--  (out of combat), one SecureActionButton of ours, a child of UIParent placed by screen
+--  coordinates, covers it; its macro /clicks the game's own buttons (the group finder micro
+--  button, the Listing tab) and two click-delegates of ours, which click the Quests & Zones
+--  category button and the zone's checkbox. Those run in Blizzard's code as the player's
+--  clicks, so Post stays the game's own. The zone is ticked only when its row is on screen
+--  (the list is never scrolled). The description box takes no text from addons: the cursor is
+--  put in it for the player to type, and the hint box (our own frame beside it, outside the
+--  finder) shows the quest and its zone.
 -------------------------------------------------------------------------------
-local _, ns = ...
+local addonName, ns = ...
 
 local Q = {}
 ns.QuestButton = Q
 
 local MODULES = { "QuestObjectiveTracker", "CampaignQuestObjectiveTracker" }
 local EYE_SIZE = 30
-local ICON_SIZE = 13
+local ICON_SIZE = 18
 local OFFSET_X = 5
 local OFFSET_Y = 2
 local SPACING = 2
-local EYE_ATLAS = "socialqueuing-icon-eye"
-local EYE_FALLBACK = "Interface\\Icons\\INV_Misc_Spyglass_03" -- a stock game icon
+local EYE_ICON = "Interface\\AddOns\\" .. addonName .. "\\Media\\Textures\\tgf_icon_64x64"
 local TIP_TITLE = "Find a group for this quest"
-local TIP_NOTE = "Opens the group finder's Listing tab with this quest's details."
+local TIP_NOTE = "Opens the group finder's Listing tab on Quests & Zones, with this quest's zone ticked."
 local QUEST_CATEGORY = 116 -- Forever's file-local LFGLISTING_QUEST_CATEGORY_ID, carried as our own
 local HINT_W = 240
-local HINT_EXTRA = HINT_W + 12
-local HINT_TOP = -26 -- just under the title bar, the roles band's top
-local HINT_PAD = 12
-local HINT_MAX_HEIGHT = 100 -- the category buttons start about 106 px below the hint's top
+local HINT_PAD = 15 -- the dialog border's inset plus 3 px of air around the text
 local GAP = 3
+local SIDE_TAB_W = 44 -- the finder's side tabs, where their width can't be read
 local OUTLINE_ATLAS = "groupfinder-button-cover-hover"
+-- The macro's /click targets: the game's own, then our two click-delegates.
+local OPENER = "LFDMicroButton"
+local LISTING_TAB = "LFGParentFrameTab1"
+local PICK_CATEGORY = "TGFQuestCategory"
+local PICK_ACTIVITY = "TGFQuestActivity"
 
 local eyes = setmetatable({}, { __mode = "k" }) -- block -> our button
 local moved = setmetatable({}, { __mode = "k" }) -- blocks whose header anchor we moved
+local movedItem = setmetatable({}, { __mode = "k" }) -- block -> the quest item button we moved
 local hooked = {} -- module -> true
 local hookedList = {}
 local eligible = {} -- questID -> boolean
@@ -54,6 +63,13 @@ end
 
 local function PlainNumber(v)
 	return type(v) == "number" and not Secret(v)
+end
+
+local function PlainString(v)
+	if type(v) == "string" and not Secret(v) and v ~= "" then
+		return v
+	end
+	return nil
 end
 
 -- Elite by the game's own flag; the quest tag's ID where that API is missing. Never the
@@ -103,6 +119,24 @@ local function CanUsePremade()
 	return ok and not Secret(value) and value == true
 end
 
+local function ShowEyeTip(owner)
+	ns.W.ShowTip(owner, TIP_TITLE, nil, { gold = true, note = TIP_NOTE })
+end
+
+local function EyeDown(eye)
+	if eye:IsEnabled() then
+		eye:SetButtonState("PUSHED")
+		eye.Icon:ClearAllPoints()
+		eye.Icon:SetPoint("CENTER", -2, -1)
+	end
+end
+
+local function EyeUp(eye)
+	eye:SetButtonState("NORMAL")
+	eye.Icon:ClearAllPoints()
+	eye.Icon:SetPoint("CENTER", -1, 0)
+end
+
 local function NewEye(block)
 	local eye = CreateFrame("Button", nil, block)
 	eye:SetSize(EYE_SIZE, EYE_SIZE)
@@ -118,32 +152,21 @@ local function NewEye(block)
 		eye:SetMotionScriptsWhileDisabled(true)
 	end
 	local icon = eye:CreateTexture(nil, "ARTWORK", nil, 5)
+	icon:SetTexture(EYE_ICON) -- the addon's own purple eye
+	icon:SetSize(ICON_SIZE, ICON_SIZE)
 	icon:SetPoint("CENTER", -1, 0)
-	if ns.W.HasAtlas(EYE_ATLAS) then
-		icon:SetAtlas(EYE_ATLAS)
-		icon:SetSize(ICON_SIZE, ICON_SIZE)
-	else
-		icon:SetTexture(EYE_FALLBACK)
-		icon:SetTexCoord(0.08, 0.92, 0.08, 0.92)
-		icon:SetSize(16, 16)
-	end
 	eye.Icon = icon
 	eye:RegisterForClicks("LeftButtonUp")
-	eye:SetScript("OnMouseDown", function(self)
-		if self:IsEnabled() then
-			self.Icon:ClearAllPoints()
-			self.Icon:SetPoint("CENTER", -2, -1)
-		end
-	end)
-	eye:SetScript("OnMouseUp", function(self)
-		self.Icon:ClearAllPoints()
-		self.Icon:SetPoint("CENTER", -1, 0)
-	end)
+	eye:SetScript("OnMouseDown", EyeDown)
+	eye:SetScript("OnMouseUp", EyeUp)
 	eye:SetScript("OnEnter", function(self)
-		ns.W.ShowTip(self, TIP_TITLE, nil, { gold = true, note = TIP_NOTE })
+		ShowEyeTip(self)
+		Q.Cover(self)
 	end)
-	eye:SetScript("OnLeave", function()
-		GameTooltip:Hide()
+	eye:SetScript("OnLeave", function(self)
+		if GameTooltip:GetOwner() == self then
+			GameTooltip:Hide()
+		end
 	end)
 	eye:SetScript("OnClick", function(self)
 		Q.Click(self)
@@ -152,13 +175,41 @@ local function NewEye(block)
 	return eye
 end
 
+-- Where Blizzard puts the quest item button when it's the block's first right-edge frame.
+local function ItemHome(block)
+	local s = block.parentModule and block.parentModule.questItemButtonSettings
+	local x = s and PlainNumber(s.offsetX) and s.offsetX or 0
+	local y = s and PlainNumber(s.offsetY) and s.offsetY or 0
+	return x, y
+end
+
+-- Retail's order: the eye at the block's top right, the quest item button left of it and
+-- centred on it (out of combat only; the block's own layout puts the button back).
 local function Place(eye, block)
 	eye:ClearAllPoints()
-	local r = block.rightEdgeFrame
-	if r == nil then
-		eye:SetPoint("TOPRIGHT", block, "TOPRIGHT", OFFSET_X, OFFSET_Y)
-	else
-		eye:SetPoint("RIGHT", r, "LEFT", -SPACING, 0)
+	eye:SetPoint("TOPRIGHT", block, "TOPRIGHT", OFFSET_X, OFFSET_Y)
+	local item = block.rightEdgeFrame
+	if type(item) == "table" and item ~= eye and item.SetPoint then
+		item:ClearAllPoints()
+		item:SetPoint("RIGHT", block, "TOPRIGHT", OFFSET_X - EYE_SIZE - SPACING, OFFSET_Y - EYE_SIZE / 2)
+		movedItem[block] = item
+	end
+end
+
+local function RestoreItem(block)
+	local item = movedItem[block]
+	if not item then
+		return
+	end
+	if InCombatLockdown() then
+		pending = true
+		return
+	end
+	movedItem[block] = nil
+	if block.rightEdgeFrame == item then
+		local x, y = ItemHome(block)
+		item:ClearAllPoints()
+		item:SetPoint("TOPRIGHT", block, "TOPRIGHT", x, y)
 	end
 end
 
@@ -171,13 +222,14 @@ local function HeaderBase(block)
 end
 
 -- Header room: the title's right edge moves in for the eye only when it keeps its line count.
-local function MakeRoom(block, eye)
+-- With or without the item button, the eye takes the same room from the title's right end.
+local function MakeRoom(block)
 	local text = block.HeaderText
 	if type(text) ~= "table" or not text.SetPoint or not text.GetWidth then
 		return
 	end
 	local base = HeaderBase(block)
-	local target = base + (block.rightEdgeFrame and 0 or OFFSET_X) - eye:GetWidth() - SPACING
+	local target = base + OFFSET_X - EYE_SIZE - SPACING
 	-- measured, not re-wrapped: the unbounded title must fit the narrower width on one line
 	text:SetPoint("RIGHT", base, 0)
 	local lineWidth = text:GetWidth()
@@ -208,21 +260,23 @@ local function HideEye(block)
 	end
 end
 
+local function Off(block)
+	HideEye(block)
+	Restore(block)
+	RestoreItem(block)
+end
+
 local function UpdateBlock(block)
 	local id = block.id
 	if not PlainNumber(id) then
-		HideEye(block)
-		Restore(block)
-		return
+		return Off(block)
 	end
 	local on = ns.Settings.Get("eliteQuestButton") and CanUsePremade() and Eligible(id)
 	if not on then
-		HideEye(block)
-		Restore(block)
-		return
+		return Off(block)
 	end
 	if InCombatLockdown() and block.rightEdgeFrame then
-		-- no anchoring to the quest item button in combat
+		-- the quest item button isn't moved in combat: the eye waits for the end of combat
 		HideEye(block)
 		pending = true
 		return
@@ -234,7 +288,7 @@ local function UpdateBlock(block)
 	end
 	Place(eye, block)
 	eye:Show()
-	MakeRoom(block, eye)
+	MakeRoom(block)
 end
 
 -- The hook body: runs after every layout of a module. Never raises into the tracker.
@@ -257,6 +311,7 @@ local function Pass(module)
 	if not ok then
 		Q.lastError = tostring(err)
 	end
+	Q.Recheck()
 end
 
 local function RefreshAll()
@@ -315,15 +370,8 @@ function Q.Init()
 end
 
 -------------------------------------------------------------------------------
---  The hint (our own box on the Listing tab) and the category outline
+--  The quest's name, zone and Quests & Zones activity (read only)
 -------------------------------------------------------------------------------
-local function PlainString(v)
-	if type(v) == "string" and not Secret(v) and v ~= "" then
-		return v
-	end
-	return nil
-end
-
 local function QuestName(id)
 	if type(C_QuestLog) ~= "table" or type(C_QuestLog.GetTitleForQuestID) ~= "function" then
 		return nil
@@ -386,6 +434,53 @@ local function Zone(id)
 	return ZoneFromLog(id) or ZoneFromTask(id) or ZoneFromMap(id)
 end
 
+-- The names an activity goes by: the list's own (LFGUtil_GetActivityInfoName), full, short.
+local function ActivityNames(activityID)
+	if type(C_LFGList) ~= "table" or type(C_LFGList.GetActivityInfoTable) ~= "function" then
+		return {}
+	end
+	local ok, info = pcall(C_LFGList.GetActivityInfoTable, activityID)
+	if not ok or type(info) ~= "table" then
+		return {}
+	end
+	local names = {}
+	if type(LFGUtil_GetActivityInfoName) == "function" then
+		local okName, listed = pcall(LFGUtil_GetActivityInfoName, info)
+		names[#names + 1] = okName and PlainString(listed) or nil
+	end
+	names[#names + 1] = PlainString(info.fullName)
+	names[#names + 1] = PlainString(info.shortName)
+	return names
+end
+
+--- The Quests & Zones activity named like the quest's zone (the zone sources in order):
+--- its ID and name, or nil.
+function Q.ActivityFor(id)
+	if type(C_LFGList) ~= "table" or type(C_LFGList.GetAvailableActivities) ~= "function" then
+		return nil
+	end
+	local ok, activities = pcall(C_LFGList.GetAvailableActivities, QUEST_CATEGORY)
+	if not ok or type(activities) ~= "table" then
+		return nil
+	end
+	local log, task, map = Q.ZoneSources(id)
+	for _, zone in ipairs({ log or false, task or false, map or false }) do
+		if zone then
+			local want = zone:lower()
+			for _, activityID in ipairs(activities) do
+				if PlainNumber(activityID) then
+					for _, name in ipairs(ActivityNames(activityID)) do
+						if name:lower() == want then
+							return activityID, name
+						end
+					end
+				end
+			end
+		end
+	end
+	return nil
+end
+
 local function CategoryName()
 	if type(C_LFGList) == "table" and type(C_LFGList.GetLfgCategoryInfo) == "function" then
 		local ok, info = pcall(C_LFGList.GetLfgCategoryInfo, QUEST_CATEGORY)
@@ -400,20 +495,15 @@ local function EliteTag()
 	return PlainString(ELITE) or "Elite"
 end
 
--- The four strings, or nil when the quest's name can't be read.
-local function HintText(id)
-	local name = QuestName(id)
-	if not name then
-		return nil
+local function HasActiveListing()
+	if type(C_LFGList) == "table" and type(C_LFGList.HasActiveEntryInfo) == "function" then
+		local ok, value = pcall(C_LFGList.HasActiveEntryInfo)
+		return ok and not Secret(value) and value == true
 	end
-	local zone = Zone(id)
-	return "[" .. EliteTag() .. "] " .. name,
-		"Category: " .. CategoryName(),
-		zone and ("Zone: " .. zone) or nil,
-		'Description: type "' .. name .. '"'
+	return false
 end
 
---- The hint as one chat line (the stand-in, or when the box can't show). Nil without a name.
+--- The hint as one chat line (the stand-in, or with an active listing). Nil without a name.
 function Q.HintLine(id)
 	local name = QuestName(id)
 	if not name then
@@ -426,45 +516,265 @@ function Q.HintLine(id)
 		.. "): list a group under "
 		.. CategoryName()
 		.. (zone and (", " .. zone) or "")
-		.. ', description "'
-		.. name
-		.. '".'
+		.. "."
 end
 
+-------------------------------------------------------------------------------
+--  The secure click: our cover over the eye, and the two click-delegates
+-------------------------------------------------------------------------------
+local cover, pickCategory, pickActivity
+local armed = { quest = nil, activity = nil, activityName = nil }
+
+-- One of our secure buttons. The macro's /click is a key up: act on it whatever the
+-- player's "cast on key down" setting says.
+local function SecureButton(name, action)
+	local b = CreateFrame("Button", name, UIParent, "SecureActionButtonTemplate")
+	b:SetAttribute("type", action)
+	b:SetAttribute("useOnKeyDown", false)
+	b:RegisterForClicks("LeftButtonUp")
+	return b
+end
+
+-- The Quests & Zones category button (read only), unless that category is already picked.
+local function CategoryButton()
+	local frame = LFGListingFrame
+	if not frame or frame:GetCategorySelection() == QUEST_CATEGORY then
+		return nil
+	end
+	local buttons = frame.CategoryView and frame.CategoryView.CategoryButtons
+	if type(buttons) ~= "table" then
+		return nil
+	end
+	for _, button in ipairs(buttons) do
+		if type(button) == "table" and button.categoryID == QUEST_CATEGORY and button:IsShown() then
+			return button
+		end
+	end
+	return nil
+end
+
+-- The zone row's checkbox, when Quests & Zones is picked, the zone isn't ticked yet and its
+-- row is on screen (read only: the list is never scrolled or expanded).
+local function ActivityCheck(activityID)
+	local frame = LFGListingFrame
+	if not (activityID and frame) or frame:GetCategorySelection() ~= QUEST_CATEGORY then
+		return nil
+	end
+	if frame:IsActivitySelected(activityID) then
+		return nil
+	end
+	local box = frame.ActivityView and frame.ActivityView.ScrollBox
+	if not (box and box.FindFrameByPredicate and box:IsVisible()) then
+		return nil
+	end
+	local row = box:FindFrameByPredicate(function(_, node)
+		local data = type(node) == "table" and type(node.GetData) == "function" and node:GetData() or node
+		return type(data) == "table" and data.activityID == activityID
+	end)
+	local check = row and row.CheckButton
+	if check and check:IsVisible() and check:IsEnabled() then
+		return check
+	end
+	return nil
+end
+
+-- PreClick, out of combat: the macro for this quest. The finder is toggled open only when
+-- it's closed (the micro button would close it); with an active listing nothing is picked.
+local function Arm(c)
+	if InCombatLockdown() then
+		return
+	end
+	local block = c.eye and c.eye:GetParent()
+	local id = block and block.id
+	armed.quest, armed.activity, armed.activityName = nil, nil, nil
+	if not PlainNumber(id) or not LFGParentFrame then
+		c:SetAttribute("macrotext", nil)
+		return
+	end
+	armed.quest = id
+	local lines = {}
+	if not LFGParentFrame:IsShown() then
+		lines[#lines + 1] = "/click " .. OPENER
+	end
+	lines[#lines + 1] = "/click " .. LISTING_TAB
+	if not HasActiveListing() then
+		lines[#lines + 1] = "/click " .. PICK_CATEGORY
+		armed.activity, armed.activityName = Q.ActivityFor(id)
+		if armed.activity then
+			lines[#lines + 1] = "/click " .. PICK_ACTIVITY
+		end
+	end
+	c:SetAttribute("macrotext", table.concat(lines, "\n"))
+end
+
+-- The description box takes no text from addons (SetText, Insert and paste are all refused:
+-- "Call is illegal when disabled by security settings"), so with Quests & Zones picked the
+-- cursor is put in it, still empty, for the player to type the hint's text. Focus only:
+-- nothing of the box is read beyond its text being empty, nothing written.
+local function FocusDescription()
+	local frame = LFGListingFrame
+	if not frame or frame:GetCategorySelection() ~= QUEST_CATEGORY then
+		return
+	end
+	local view = frame.ActivityView
+	local box = view and view.Comment and view.Comment.EditBox
+	if not (box and box.SetFocus and box:IsVisible() and box:IsEnabled()) then
+		return
+	end
+	local text = box:GetText()
+	if Secret(text) or (text ~= nil and text ~= "") then
+		return
+	end
+	box:SetFocus()
+end
+
+-- PostClick: the hint. Where the macro couldn't open the Listing tab, the game's own opener.
+local function After()
+	local id = armed.quest
+	if not id then
+		return
+	end
+	if not (LFGListingFrame and LFGListingFrame:IsShown()) then
+		if InCombatLockdown() or not ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
+			return
+		end
+	end
+	if Q.ShowHint(id) then
+		FocusDescription()
+	end
+end
+
+local function BuildCover()
+	if cover then
+		return cover
+	end
+	local c = SecureButton(nil, "macro")
+	c:SetFrameStrata("DIALOG")
+	c:Hide()
+	c:SetScript("OnEnter", function(self)
+		if self.eye then
+			self.eye:LockHighlight()
+			ShowEyeTip(self)
+		end
+	end)
+	c:SetScript("OnLeave", function(self)
+		if GameTooltip:GetOwner() == self then
+			GameTooltip:Hide()
+		end
+		Q.Uncover()
+	end)
+	c:SetScript("OnMouseDown", function(self)
+		if self.eye then
+			EyeDown(self.eye)
+		end
+	end)
+	c:SetScript("OnMouseUp", function(self)
+		if self.eye then
+			EyeUp(self.eye)
+		end
+	end)
+	c:SetScript("PreClick", Arm)
+	c:SetScript("PostClick", After)
+
+	pickCategory = SecureButton(PICK_CATEGORY, "click")
+	pickActivity = SecureButton(PICK_ACTIVITY, "click")
+	for _, b in ipairs({ pickCategory, pickActivity }) do
+		-- shown so /click always reaches them, but nothing to see or hit
+		b:SetSize(1, 1)
+		b:SetAlpha(0)
+		b:EnableMouse(false)
+		b:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
+	end
+	pickCategory:SetScript("PreClick", function(self)
+		if not InCombatLockdown() then
+			self:SetAttribute("clickbutton", CategoryButton())
+		end
+	end)
+	pickActivity:SetScript("PreClick", function(self)
+		if not InCombatLockdown() then
+			self:SetAttribute("clickbutton", ActivityCheck(armed.activity))
+		end
+	end)
+
+	-- combat starts: the cover goes while it still can
+	local events = CreateFrame("Frame")
+	events:RegisterEvent("PLAYER_REGEN_DISABLED")
+	events:SetScript("OnEvent", function()
+		Q.Uncover()
+	end)
+	cover = c
+	return c
+end
+
+--- Lays our secure cover over the eye under the mouse (out of combat, in game only), by
+--- screen coordinates: nothing of the tracker is anchored to it.
+function Q.Cover(eye)
+	if InCombatLockdown() or not LFGParentFrame or not ns.Listings.HasAPI() then
+		return
+	end
+	local left, bottom = eye:GetLeft(), eye:GetBottom()
+	local width, height = eye:GetSize()
+	if not (PlainNumber(left) and PlainNumber(bottom) and PlainNumber(width) and PlainNumber(height)) then
+		return
+	end
+	local c = BuildCover()
+	if c.eye and c.eye ~= eye then
+		c.eye:UnlockHighlight()
+	end
+	c.eye = eye
+	c:SetScale(eye:GetEffectiveScale() / UIParent:GetEffectiveScale())
+	c:ClearAllPoints()
+	c:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", left, bottom)
+	c:SetSize(width, height)
+	c:Show()
+end
+
+--- After a tracker layout: the cover follows its eye while the mouse is still over it, and
+--- goes when the eye is gone or the mouse left.
+function Q.Recheck()
+	if not cover or not cover:IsShown() or InCombatLockdown() then
+		return
+	end
+	local eye = cover.eye
+	if eye and eye:IsVisible() and eye:IsMouseOver() then
+		Q.Cover(eye)
+	else
+		Q.Uncover()
+	end
+end
+
+--- Takes the cover away (out of combat; in combat it was already taken at its start).
+function Q.Uncover()
+	if not cover or not cover:IsShown() or InCombatLockdown() then
+		return
+	end
+	if cover.eye then
+		cover.eye:UnlockHighlight()
+		EyeUp(cover.eye)
+	end
+	cover:Hide()
+end
+
+-------------------------------------------------------------------------------
+--  The hint (our own box beside the finder) and the category outline
+-------------------------------------------------------------------------------
 local hint, outline
 
-local function Cleanup()
-	-- the hint and outline go at once; the finder's width restore waits for the end of combat
+local function StopOutline()
 	if outline then
 		if outline.pulse then
 			outline.pulse:Stop()
 		end
 		outline:Hide()
 	end
-	ns.InPlace.WidenListing(0)
 end
 
--- Our own pulsing outline on the Quests & Zones category button (read only use of it).
+-- Our own pulsing outline on the Quests & Zones category button (read only use of it),
+-- shown only while that category isn't picked yet.
 local function PlaceOutline()
-	local view = LFGListingFrame and LFGListingFrame.CategoryView
-	local buttons = view and view.CategoryButtons
-	local target
-	if type(buttons) == "table" then
-		for _, button in ipairs(buttons) do
-			if type(button) == "table" and button.categoryID == QUEST_CATEGORY and button:IsShown() then
-				target = button
-				break
-			end
-		end
-	end
+	local target = CategoryButton()
 	if not target then
-		if outline then
-			if outline.pulse then
-				outline.pulse:Stop()
-			end
-			outline:Hide()
-		end
-		return
+		return StopOutline()
 	end
 	if not outline then
 		outline = CreateFrame("Frame", nil, target)
@@ -514,22 +824,36 @@ local function PlaceOutline()
 	outline.pulse:Play()
 end
 
-local function HasActiveListing()
-	if type(C_LFGList) == "table" and type(C_LFGList.HasActiveEntryInfo) == "function" then
-		local ok, value = pcall(C_LFGList.HasActiveEntryInfo)
-		return ok and not Secret(value) and value == true
+-- Beside the description box, just outside the finder (below its side tabs); while the box
+-- isn't shown (no category picked yet), right of the side tabs at the top.
+local function PlaceHint()
+	if not hint then
+		return
 	end
-	return false
+	hint:ClearAllPoints()
+	local view = LFGListingFrame.ActivityView
+	local comment = view and view.Comment
+	local frameRight = LFGParentFrame:GetRight()
+	local commentRight = comment and comment:IsVisible() and comment:GetRight()
+	if PlainNumber(frameRight) and PlainNumber(commentRight) then
+		hint:SetPoint("LEFT", comment, "RIGHT", frameRight - commentRight + 4, 0)
+	else
+		local tabs = LFGParentFrame.ListingTab
+		local tabWidth = tabs and tabs:IsShown() and tabs:GetWidth()
+		hint:SetPoint("TOPLEFT", LFGParentFrame, "TOPRIGHT", (PlainNumber(tabWidth) and tabWidth or SIDE_TAB_W) + 6, -2)
+	end
 end
 
 local function BuildHint()
 	if hint then
 		return hint
 	end
-	if not LFGListingFrame then
+	if not (LFGListingFrame and LFGParentFrame) then
 		return nil
 	end
 	local W = ns.W
+	-- a child of the Listing tab (it hides with it), placed outside the finder, past its
+	-- side tabs: the finder keeps its size
 	local f = W.Create("Frame", LFGListingFrame, "BackdropTemplate")
 	local ok, border = pcall(CreateFrame, "Frame", nil, f, "DialogBorderTemplate")
 	if ok and border then
@@ -545,8 +869,7 @@ local function BuildHint()
 		})
 	end
 	f:SetWidth(HINT_W)
-	f:SetPoint("TOPRIGHT", LFGListingFrame, "TOPRIGHT", -6, HINT_TOP)
-	f:SetFrameLevel(math.max(LFGListingFrame:GetFrameLevel() + 10, 510))
+	f:SetFrameLevel(LFGListingFrame:GetFrameLevel() + 10)
 	f:EnableMouse(true)
 	f:Hide()
 
@@ -554,36 +877,29 @@ local function BuildHint()
 	local okClose, made = pcall(W.Create, "Button", f, "UIPanelCloseButton")
 	if okClose and made then
 		close = made
-		close:SetPoint("TOPRIGHT", -2, -2)
 	else
 		close = W.Button(f, "x", 20, 20)
-		close:SetPoint("TOPRIGHT", -2, -2)
 	end
+	close:SetPoint("TOPRIGHT", -2, -2)
 	close:SetScript("OnClick", function()
 		f:Hide()
 	end)
 
 	local inner = HINT_W - 2 * HINT_PAD
-	f.title = W.Text(f, "GameFontNormal", 12)
-	f.title:SetWidth(inner - 20)
-	f.category = W.Text(f, "GameFontHighlightSmall", 11)
-	f.category:SetWidth(inner)
-	f.zone = W.Text(f, "GameFontHighlightSmall", 11)
-	f.zone:SetWidth(inner)
-	f.desc = W.Text(f, "GameFontHighlightSmall", 11)
-	f.desc:SetWidth(inner)
-	for _, fs in ipairs({ f.title, f.category, f.zone, f.desc }) do
+	f.lines = {}
+	for i = 1, 4 do
+		local fs = W.Text(f, i == 1 and "GameFontNormal" or "GameFontHighlightSmall", i == 1 and 12 or 11)
+		fs:SetWidth(i == 1 and inner - 20 or inner)
 		fs:SetJustifyH("LEFT")
 		fs:SetWordWrap(false) -- width-bound: a long name is cut, never wrapped
 		if fs.SetMaxLines then
 			fs:SetMaxLines(1)
 		end
+		f.lines[i] = fs
 	end
-	f.title:SetTextColor(1, 0.82, 0)
-	f.title:SetPoint("TOPLEFT", HINT_PAD, -HINT_PAD)
-	f.category:SetPoint("TOPLEFT", f.title, "BOTTOMLEFT", 0, -GAP)
+	f.lines[1]:SetTextColor(1, 0.82, 0)
 
-	f:SetScript("OnHide", Cleanup)
+	f:SetScript("OnHide", StopOutline)
 	hint = f
 
 	LFGListingFrame:HookScript("OnHide", function()
@@ -596,28 +912,33 @@ local function BuildHint()
 		view:HookScript("OnShow", function()
 			if hint:IsShown() then
 				PlaceOutline()
+				PlaceHint()
+			end
+		end)
+	end
+	local activities = LFGListingFrame.ActivityView
+	if activities then
+		activities:HookScript("OnShow", function()
+			if hint:IsShown() then
+				PlaceHint()
 			end
 		end)
 	end
 	local events = CreateFrame("Frame")
 	events:RegisterEvent("LFG_LIST_ACTIVE_ENTRY_UPDATE")
-	events:RegisterEvent("PLAYER_REGEN_DISABLED")
-	events:SetScript("OnEvent", function(_, event)
-		if not hint:IsShown() then
-			return
-		end
-		if event == "PLAYER_REGEN_DISABLED" or HasActiveListing() then
+	events:SetScript("OnEvent", function()
+		if hint:IsShown() and HasActiveListing() then
 			hint:Hide()
 		end
 	end)
 	return hint
 end
 
---- Shows the hint box and the outline on the Listing tab. False when it only printed a chat
---- line (no name, an active listing, no finder to widen) or showed nothing.
+--- Shows the hint box beside the finder (and the outline while Quests & Zones isn't
+--- picked). False when it only printed a chat line (an active listing) or showed nothing.
 function Q.ShowHint(id)
-	local title, category, zone, desc = HintText(id)
-	if not title or not LFGListingFrame or not LFGListingFrame:IsShown() then
+	local name = QuestName(id)
+	if not name or not LFGListingFrame or not LFGListingFrame:IsShown() then
 		return false
 	end
 	if HasActiveListing() then
@@ -629,34 +950,45 @@ function Q.ShowHint(id)
 	if not f then
 		return false
 	end
-	if not ns.InPlace.WidenListing(HINT_EXTRA) then
-		ns.Print(Q.HintLine(id))
-		return false
-	end
-	f.title:SetText(title)
-	f.category:SetText(category)
-	f.desc:SetText(desc)
-	f.desc:ClearAllPoints()
-	local height = HINT_PAD * 2 + f.title:GetStringHeight() + f.category:GetStringHeight() + f.desc:GetStringHeight()
+	local picked = LFGListingFrame:GetCategorySelection() == QUEST_CATEGORY
+	local activity = armed.quest == id and armed.activity or nil
+	local zone = armed.quest == id and armed.activityName or Zone(id)
+	local ticked = picked and activity and LFGListingFrame:IsActivitySelected(activity)
+
+	local texts = { "[" .. EliteTag() .. "] " .. name }
 	if zone then
-		f.zone:SetText(zone)
-		f.zone:ClearAllPoints()
-		f.zone:SetPoint("TOPLEFT", f.category, "BOTTOMLEFT", 0, -GAP)
-		f.zone:Show()
-		f.desc:SetPoint("TOPLEFT", f.zone, "BOTTOMLEFT", 0, -GAP)
-		height = height + f.zone:GetStringHeight() + GAP * 3
-	else
-		f.zone:Hide()
-		f.desc:SetPoint("TOPLEFT", f.category, "BOTTOMLEFT", 0, -GAP)
-		height = height + GAP * 2
+		texts[#texts + 1] = "Zone: " .. zone .. (ticked and " (ticked)" or "")
 	end
-	f:SetHeight(math.min(height, HINT_MAX_HEIGHT))
+
+	local height = HINT_PAD * 2
+	local above
+	for i, fs in ipairs(f.lines) do
+		local text = texts[i]
+		fs:ClearAllPoints()
+		if text then
+			fs:SetText(text)
+			if above then
+				fs:SetPoint("TOPLEFT", above, "BOTTOMLEFT", 0, -GAP)
+				height = height + GAP
+			else
+				fs:SetPoint("TOPLEFT", HINT_PAD, -HINT_PAD)
+			end
+			height = height + fs:GetStringHeight()
+			fs:Show()
+			above = fs
+		else
+			fs:Hide()
+		end
+	end
+	PlaceHint()
+	f:SetHeight(height)
 	f:Show()
 	PlaceOutline()
 	return true
 end
 
---- The eye's click: the quest is read now (blocks are recycled). Out of combat only.
+--- The eye's own click, reached only when the cover isn't over it: in combat a chat line;
+--- the stand-in prints the hint; else the game's own opener and the hint, nothing picked.
 function Q.Click(eye)
 	local block = eye:GetParent()
 	local id = block and block.id
@@ -668,13 +1000,13 @@ function Q.Click(eye)
 		return
 	end
 	if not ns.Listings.HasAPI() then
-		-- the stand-in / preview has no finder: the hint as one chat line
 		local line = Q.HintLine(id)
 		if line then
 			ns.Print(line)
 		end
 		return
 	end
+	armed.quest, armed.activity, armed.activityName = nil, nil, nil
 	if ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
 		Q.ShowHint(id)
 	end
@@ -754,6 +1086,10 @@ function Q.Probe()
 				.. Say(ns.Settings.Get("eliteQuestButton"))
 				.. ", premade "
 				.. (C_LFGInfo and Call(C_LFGInfo.CanPlayerUsePremadeGroup) or "n/a")
+				.. ", opener "
+				.. (_G[OPENER] and "yes" or "missing")
+				.. ", listing tab button "
+				.. (_G[LISTING_TAB] and "yes" or "missing")
 		)
 		local ids = TrackedIDs()
 		if #ids == 0 then
@@ -768,6 +1104,7 @@ function Q.Probe()
 				end
 			end
 			local log, task, map = Q.ZoneSources(id)
+			local activity, activityName = Q.ActivityFor(id)
 			ns.Print(
 				id
 					.. " "
@@ -788,6 +1125,8 @@ function Q.Probe()
 					.. Say(task)
 					.. " / map "
 					.. Say(map)
+					.. ", activity "
+					.. (activity and (Say(activity) .. " " .. Say(activityName)) or "none")
 			)
 		end
 		local list = "n/a"
