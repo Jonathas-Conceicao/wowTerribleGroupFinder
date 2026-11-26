@@ -2,16 +2,19 @@
 
 ## v0.3.1
 
-See how your invites ended, and fixes for the elite quest button and the first search after a reload.
+See how your invites ended, a list that follows the activities you pick, and a fix for the elite quest button.
 
 ### Added
 
 - After you invite a player from the list (Group Invite or Auto-invite), their row says whether they accepted, declined, or the invite expired
 
+### Changed
+
+- Picking an activity in the Browse tab (for example one dungeon after choosing Dungeons) shows only that activity's listings at once, without pressing Refresh
+
 ### Fixed
 
 - Clicking the elite quest button could raise Lua errors
-- The first search after logging in or reloading could show the whole category instead of the activity you picked
 
 ## v0.3.0
 

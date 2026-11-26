@@ -13,7 +13,7 @@ updated: 2026-11-26
 ## Tests
 
 ### 1. CHANGELOG review
-expected: the `## v0.3.1` section at the top of CHANGELOG.md (the first `## ` heading, the one the release workflow publishes) is a draft: a one-line summary, Added (the invite outcome on rows) and Fixed (the elite quest button's Lua errors; the first search after logging in or reloading). Both Fixed items existed in v0.3.0. Review and rewrite as wished. `## v0.3.0` and everything below it are unchanged.
+expected: the `## v0.3.1` section at the top of CHANGELOG.md (the first `## ` heading, the one the release workflow publishes) is a draft: a one-line summary, Added (the invite outcome on rows), Changed (picking an activity narrows the list at once, without Refresh; reworded 2026-11-26 after the author's report that ticking one dungeon after picking Dungeons didn't narrow until Refresh) and Fixed (the elite quest button's Lua errors, which existed in v0.3.0). Review and rewrite as wished. `## v0.3.0` and everything below it are unchanged.
 result: [pending]
 
 ### 2. README wording proposals
@@ -67,11 +67,11 @@ After:
   what the Elite quest eye reads for your tracked quests; `/tgf meter` shows the damage
   meter prompt now
 ```
-result: [pending]
+result: skipped (author, 2026-11-26: no README changes for now)
 
 ### 3. Screenshot reminder
 expected: the author retakes prints; agents make no images. Optional: a row showing accepted / declined / expired. `tgf_refresh.gif` shows the list refreshing but no invite, so it stays valid; `tgf_lfg_message_config.png` is unchanged by v0.3.1.
-result: [pending]
+result: skipped (author, 2026-11-26: no new prints for now)
 
 ### 4. Version
 expected: v0.3.1. The TOC keeps `## Version: @project-version@`; tag `v0.3.1` on `main` after the squash merge, by the author's `/gsd-complete-milestone`. The squash-merge message lists only what players get (the invite outcome, the two fixes), none of the in-milestone fixes the branch commits name. The local zip (23-01) holds 28 files: the TOC, the Lua and XML files, the seven textures (icon and six flags) and LICENSE; nothing from Media/Source, Media/Screenshots or .planning.
@@ -91,7 +91,7 @@ Deploy first: `./scripts/install.bat`, then `/reload` in game. Use `/console tai
 - (22-9) Invite expired: invite a player who ignores the popup; the cell reads "expired" (grey) after about 60 s
 - (22-10) Outcome persists: the outcome stays on its row through a Dynamic refresh and a re-sort; whisper-only rows still read "sent"
 - (22-11) Preview invites: `/tgf preview`, Group Invite on three solo rows: accepted, declined, expired in turn
-- (22-12) First search after a reload: after `/reload`, pick a category, pick an activity (or an activity group checkbox) and press Refresh while the first search may still be out; the first answer lists only that activity, not the general view; the next refresh is a normal Dynamic refresh (no spinner, rows swipe)
+- (22-12) Picks narrow the list at once (reworked 2026-11-26 after the author's report: picking Dungeons searches every dungeon, and ticking one dungeon starts no search in Forever's finder, so the list stayed whole until Refresh): after `/reload`, pick Dungeons, then tick one dungeon (right away, and again after waiting for the list); the list shows only that dungeon's listings at once, without Refresh; tick a second dungeon: both show; untick all: every dungeon shows again; then press Refresh: a normal Dynamic refresh of the picked dungeons (no spinner, rows swipe); an activity group checkbox still searches as stock
 - (22-13) No regression in other searches: later searches of other categories and activities, and Dynamic refresh off, behave as before
 
 result: [pending]
