@@ -50,8 +50,8 @@ Forever's own group finder.
 
 - Changing the eye's secure-click route or what it picks: this milestone only guards it
 - Invite outcomes for invites sent outside the addon's buttons (from chat, the unit menu)
-- Other invite refusals (already in a group, ignoring you) as their own states: they fall to
-  "expired" or stay "invited" (author's choice at kickoff)
+- Other invite refusals (already in a group, ignoring you, not found) as their own states:
+  they show "declined" (author's choice, 2026-11-26)
 
 ## Traceability
 
