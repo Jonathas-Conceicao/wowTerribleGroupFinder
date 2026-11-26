@@ -50,6 +50,8 @@ local pending = false
 --  new search (unless relisted), and the selection and whisper/invite marks follow their
 --  listing by key. A failed refresh keeps the list; a search for anything else is a new
 --  list; with the setting off every search is stock.
+--  An answer wider than the picked activities (the first search after a reload, still out
+--  when they were picked) shows only the picked ones (narrowTo).
 --  There is never a refresh on a timer: the game blocks `Search` from one
 --  (ADDON_ACTION_BLOCKED), and this addon never calls `Search` at all.
 -------------------------------------------------------------------------------
@@ -62,6 +64,67 @@ local shownFilter -- the category and activities of the list shown (set by its a
 -- already, so a call while one is out (its own double calls, a click during a search) does
 -- nothing, and neither do we. issued: that search's filter, shown once it answers.
 local searchOut, issued = false, nil
+-- The category and activity set (empty: the whole category) of that search, and the set an
+-- answer wider than the picks is narrowed to (held until the next answer).
+local issuedCategory, issuedSet, narrowTo = nil, {}, nil
+
+-- The picked activity IDs from the dropdown, in order (numbers only).
+local function PickedIDs()
+	local f = LFGBrowseFrame
+	local acts = f and f.ActivityDropdown and f.ActivityDropdown.selectedValues
+	local ids = {}
+	if type(acts) == "table" then
+		for _, id in ipairs(acts) do
+			if type(id) == "number" then
+				ids[#ids + 1] = id
+			end
+		end
+	end
+	return ids
+end
+
+local function PickedCategory()
+	local f = LFGBrowseFrame
+	local dd = f and f.CategoryDropdown
+	if dd and type(dd.GetValue) == "function" then
+		local ok, v = pcall(dd.GetValue, dd)
+		if ok and type(v) == "number" then
+			return v
+		end
+	end
+	return nil
+end
+
+-- The picked activities as a set when an answer for the search (category, searched) is
+-- wider than them; nil for a normal answer or when the picks can't be derived from it.
+local function NarrowSet(category, searched)
+	if type(searched) ~= "table" or type(category) ~= "number" or PickedCategory() ~= category then
+		return nil
+	end
+	local picks = PickedIDs()
+	if #picks == 0 then
+		return nil
+	end
+	local wide = next(searched) ~= nil
+	local set, n = {}, 0
+	for _, id in ipairs(picks) do
+		if wide and not searched[id] then
+			return nil -- picked what wasn't searched: not derivable
+		end
+		if not set[id] then
+			set[id] = true
+			n = n + 1
+		end
+	end
+	local m = 0
+	for _ in pairs(searched) do
+		m = m + 1
+	end
+	if m == n then
+		return nil -- the same set: a normal answer
+	end
+	return set
+end
 
 -- The category and activities Blizzard's dropdowns hold, as a string (nil without an activity).
 local function FilterKey()
@@ -97,6 +160,11 @@ local function OnSearch()
 	ns.Motion.Cancel()
 	local key = FilterKey()
 	issued = key
+	issuedCategory = PickedCategory()
+	issuedSet = {}
+	for _, id in ipairs(PickedIDs()) do
+		issuedSet[id] = true
+	end
 	if ns.UsingPreview() then
 		-- /tgf preview: a search of the same filter again (the refresh button) runs the
 		-- simulated refresh; any other is a new list of the preview data. The real search
@@ -150,7 +218,7 @@ local function Read()
 	refresh.merge, refresh.snapshot = false, nil
 	if not ns.UsingPreview() then
 		local selected = previous and ns.Table.SelectedKey()
-		ns.Listings.Read(previous)
+		ns.Listings.Read(previous, narrowTo)
 		if previous then
 			return ns.Motion.Show(previous, selected)
 		end
@@ -340,9 +408,16 @@ local function Attach()
 			-- (a failed new search shows none; a failed refresh keeps its list).
 			searchOut = false
 			if event == "LFG_LIST_SEARCH_RESULTS_RECEIVED" then
-				shownFilter = issued
+				if ns.UsingPreview() then
+					narrowTo = nil
+					shownFilter = issued
+				else
+					narrowTo = NarrowSet(issuedCategory, issuedSet)
+					shownFilter = narrowTo and FilterKey() or issued
+				end
 			elseif not refresh.pending then
 				shownFilter = nil
+				narrowTo = nil
 			end
 		end
 		if answer and refresh.pending then
