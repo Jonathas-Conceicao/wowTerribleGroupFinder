@@ -23,15 +23,23 @@ group finder.
 
 ## Current State
 
-**Shipped v0.3.0 "Elite Quests finder and more inspect data" (2026-11-25)**, after v0.2.2
-"Small Improvements" (2026-11-20), v0.2.1 "Reset Details reminder, more region flags and spec
+**Shipped v0.3.1 "Small fixes" (2026-11-26)**, after v0.3.0 "Elite Quests finder and more
+inspect data" (2026-11-25), v0.2.2 "Small Improvements" (2026-11-20), v0.2.1 "Reset Details reminder, more region flags and spec
 points" (2026-11-16), v0.2.0 "ILvL Info and Improved Refresh" (2026-11-15) and v0.1.0 "Initial
 Release" (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
-[milestones/](milestones/). ~11.2k lines of Lua/XML; checked in the live Forever client by the
+[milestones/](milestones/). ~11.6k lines of Lua/XML; checked in the live Forever client by the
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
-## Current Milestone: v0.3.1 Small fixes
+## Next Milestone Goals (candidates)
+
+The quest log LFG button (backlog 999.5, with v0.3.0's findings), better quest-to-zone matching
+with `C_LFGList.GetActivityIDForQuestID`, the deferred v0.1 cleanup list, the v0.2 and v0.2.1
+audits' tech debt, EU / Asia shard IDs from players' `/tgf region` output, remembered sort /
+filters, localization-ready strings.
+
+<details>
+<summary>v0.3.1 Small fixes — milestone brief (archived)</summary>
 
 **Goal:** Fix three small issues players hit in v0.3.0: Lua errors from the elite quest eye's
 click, a row's "invited" that never says how the invite ended, and a first search after a
@@ -52,12 +60,12 @@ click, a row's "invited" that never says how the invite ended, and a first searc
 path. The search bug may relate to the v0.2 audit's `searchOut` reset edge case
 (`UI/InPlace.lua`); the dynamic refresh must still never call `C_LFGList.Search` itself.
 
-## Next Milestone Goals (candidates)
+**Outcome:** shipped as planned; the search fix grew during the review (the author's report:
+picking a category searches all of it and ticking one activity starts no search), so the shown
+list now follows the activity picks at once, filtered from the answer already in hand. The
+changelog calls the eye's change a guard, not a fix (it only failed in edge cases).
 
-The quest log LFG button (backlog 999.5, with v0.3.0's findings), better quest-to-zone matching
-with `C_LFGList.GetActivityIDForQuestID`, the deferred v0.1 cleanup list, the v0.2 and v0.2.1
-audits' tech debt, EU / Asia shard IDs from players' `/tgf region` output, remembered sort /
-filters, localization-ready strings.
+</details>
 
 <details>
 <summary>v0.3.0 Elite Quests finder and more inspect data — milestone brief (archived)</summary>
@@ -278,6 +286,10 @@ migration was later dropped, and all in-game checks passed at close.
 - ✓ Elite quest eye in the tracker: retail placement, secure click picks Quests & Zones and the quest's zone, cursor in the description box (QST-01..04) — v0.3.0
 - ✓ Per-slot item level and enchant on the character sheet and the Inspect window, "No enchant" where an enchanter can enchant (GEAR-01..04) — v0.3.0
 - ✓ Release Review for v0.3.0 (REL-08) — v0.3.0
+- ✓ Elite quest eye: every hover and click step guarded, failures in one chat line and `/tgf quest` (QST-05) — v0.3.1
+- ✓ Invite outcome on rows: invited, then accepted / declined / expired, following the listing (INV-01..02) — v0.3.1
+- ✓ The shown list follows the activity picks at once, the first answer after a reload included (SRCH-01) — v0.3.1
+- ✓ Release Review for v0.3.1 (REL-09) — v0.3.1
 
 <!-- Built in the prototype; confirmed in the live client with v0.1. -->
 
@@ -293,16 +305,15 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-v0.3.1 Small fixes: see [REQUIREMENTS.md](REQUIREMENTS.md) (eye click guards, invite
-outcome, first search after a reload). Archived:
+None: the next milestone starts with `/gsd-new-milestone`. Archived:
 [v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
 [v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md),
-[v0.3.0](milestones/v0.3.0-REQUIREMENTS.md).
+[v0.3.0](milestones/v0.3.0-REQUIREMENTS.md), [v0.3.1](milestones/v0.3.1-REQUIREMENTS.md).
 
 ### Deferred (next-milestone candidates)
 
 - v0.2.1 audit open items (talents need valid inspect data, a later game popup can overlap the meter prompt, possible soft flag edges, region groups over 32 bytes): `milestones/v0.2.1-MILESTONE-AUDIT.md`
-- v0.2 audit tech debt (unused `SP.ID()`, `searchOut` reset edge case, tooltip spots without change listeners): `milestones/v0.2-MILESTONE-AUDIT.md`
+- v0.2 audit tech debt (unused `SP.ID()`, `searchOut` reset edge case (not the cause of v0.3.1's search issue; still open), tooltip spots without change listeners): `milestones/v0.2-MILESTONE-AUDIT.md`
 - v0.1 release-review cleanup list (tooltip blank lines, raw status colours, feedback for clicks during the lock, header label width, and more: `milestones/v0.1-phases/05-release-review/05-HUMAN-UAT.md` item 11)
 - Remembered sort / filters, localization-ready strings
 
@@ -363,6 +374,8 @@ outcome, first search after a reload). Archived:
 | The finder isn't widened for the quest hint; the hint sits outside beside the description box | The author: the Listing tab shouldn't change size | ✓ Good (v0.3.0) |
 | Settings NEW tags per option version, stacking across skipped versions | Updaters see what's new without a popup; a new install sees none | ✓ Good (v0.3.0) |
 | "No enchant" only where an enchanter can enchant on Forever (no shoulders, rings, trinkets) | Reputation-only shoulder enchants would flag almost everyone | ✓ Good (v0.3.0) |
+| Invite outcomes read from the game's own system messages (`ERR_*` format strings) and roster, matched by plain name; a decline 55 s or more after the invite reads "expired"; other refusals read "declined" | The game has no invite-result event for the inviter; the invitee's popup declines by itself at 60 s; separate states for offline / in a group weren't worth the space (author) | ✓ Good (v0.3.1) |
+| The Browse list narrows to the picked activities client-side (post-hooks on the activity dropdown), never by a search of ours | Forever searches on the category pick but not on one activity's tick; `C_LFGList.Search` from addon code is blocked / tainting | ✓ Good (v0.3.1) |
 | Character sheet Item Level row: our own frame from Blizzard's stat row template on the stats list's scroll target, placed under Movement Speed by moving the shown rows' anchors; never an entry in Blizzard's stats list | Inserting Blizzard's `ITEMLEVEL` element into the pane's `elementData` tainted the sheet in game (secure code then failed comparing secret values, "execution tainted by TerribleGroupFinder"); writing `PAPERDOLL_STATCATEGORIES` taints the same path. Moving anchors writes no Lua values | ✓ Good (v0.2) |
 
 ## Git Workflow
@@ -430,4 +443,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-26 at the start of the v0.3.1 milestone*
+*Last updated: 2026-11-26 after the v0.3.1 milestone*

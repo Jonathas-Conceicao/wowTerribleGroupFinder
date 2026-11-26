@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.1
+
+See how your invites ended, a list that follows the activities you pick, and guards on the elite quest button.
+
+### Added
+
+- After you invite a player from the list (Group Invite or Auto-invite), their row says whether they accepted, declined, or the invite expired
+
+### Changed
+
+- Picking an activity in the Browse tab (for example one dungeon after choosing Dungeons) shows only that activity's listings at once, without pressing Refresh
+- The elite quest button's click is guarded, so a rare case that fails no longer raises Lua errors
+
 ## v0.3.0
 
 A group finder eye on elite quests, item level and enchants beside each gear slot, and extras you turn on yourself.

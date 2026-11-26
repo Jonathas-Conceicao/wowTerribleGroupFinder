@@ -7,6 +7,7 @@
 - ✅ **v0.2.1 Reset Details reminder, more region flags and spec points** — Phases 12-15 (shipped 2026-11-16, tag `v0.2.1`) — [archive](milestones/v0.2.1-ROADMAP.md)
 - ✅ **v0.2.2 Small Improvements** — Phases 16-17 (shipped 2026-11-20, tag `v0.2.2`) — [archive](milestones/v0.2.2-ROADMAP.md)
 - ✅ **v0.3.0 Elite Quests finder and more inspect data** — Phases 18-21 (shipped 2026-11-25, tag `v0.3.0`) — [archive](milestones/v0.3.0-ROADMAP.md)
+- ✅ **v0.3.1 Small fixes** — Phases 22-23 (shipped 2026-11-26, tag `v0.3.1`) — [archive](milestones/v0.3.1-ROADMAP.md)
 
 ## Phases
 
@@ -62,6 +63,14 @@
 
 </details>
 
+<details>
+<summary>✅ v0.3.1 Small fixes (Phases 22-23) — SHIPPED 2026-11-26</summary>
+
+- [x] Phase 22: Small Fixes (4/4 plans) — completed 2026-11-26
+- [x] Phase 23: Release Review (2/2 plans) — completed 2026-11-26
+
+</details>
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -71,6 +80,7 @@
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
+| 22-23 | v0.3.1 | 6/6 | Complete | 2026-11-26 |
 
 ## Backlog
 

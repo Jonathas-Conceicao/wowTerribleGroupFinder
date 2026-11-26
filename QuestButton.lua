@@ -57,6 +57,34 @@ local pending = false -- a pass that waited for the end of combat
 Q.failed = nil -- why the installer didn't install
 Q.lastError = nil -- the last error of a pass
 
+local reported = {} -- step -> true: the steps that already printed their chat line
+
+-- A failed step: kept for /tgf quest, one chat line per distinct step per session.
+local function Fail(step, err)
+	Q.lastError = step .. ": " .. tostring(err)
+	if not reported[step] then
+		reported[step] = true
+		ns.Print("Quest eye: " .. step .. " failed")
+	end
+end
+
+-- Runs fn(...) under pcall; a failure goes to Fail and gives nil, else the first four results.
+local function Try(step, fn, ...)
+	local ok, a, b, c, d = pcall(fn, ...)
+	if not ok then
+		Fail(step, a)
+		return nil
+	end
+	return a, b, c, d
+end
+
+-- A script handler that never raises and returns nothing.
+local function Guarded(step, fn)
+	return function(...)
+		Try(step, fn, ...)
+	end
+end
+
 local function Secret(v)
 	return issecretvalue ~= nil and issecretvalue(v)
 end
@@ -124,6 +152,9 @@ local function ShowEyeTip(owner)
 end
 
 local function EyeDown(eye)
+	if not (eye and eye.Icon) then
+		return
+	end
 	if eye:IsEnabled() then
 		eye:SetButtonState("PUSHED")
 		eye.Icon:ClearAllPoints()
@@ -132,6 +163,9 @@ local function EyeDown(eye)
 end
 
 local function EyeUp(eye)
+	if not (eye and eye.Icon) then
+		return
+	end
 	eye:SetButtonState("NORMAL")
 	eye.Icon:ClearAllPoints()
 	eye.Icon:SetPoint("CENTER", -1, 0)
@@ -157,20 +191,26 @@ local function NewEye(block)
 	icon:SetPoint("CENTER", -1, 0)
 	eye.Icon = icon
 	eye:RegisterForClicks("LeftButtonUp")
-	eye:SetScript("OnMouseDown", EyeDown)
-	eye:SetScript("OnMouseUp", EyeUp)
+	eye:SetScript("OnMouseDown", Guarded("press", EyeDown))
+	eye:SetScript("OnMouseUp", Guarded("press", EyeUp))
 	eye:SetScript("OnEnter", function(self)
-		ShowEyeTip(self)
-		Q.Cover(self)
+		Try("tooltip", ShowEyeTip, self)
+		Try("cover", Q.Cover, self)
 	end)
-	eye:SetScript("OnLeave", function(self)
-		if GameTooltip:GetOwner() == self then
-			GameTooltip:Hide()
-		end
-	end)
-	eye:SetScript("OnClick", function(self)
-		Q.Click(self)
-	end)
+	eye:SetScript(
+		"OnLeave",
+		Guarded("leave", function(self)
+			if GameTooltip:GetOwner() == self then
+				GameTooltip:Hide()
+			end
+		end)
+	)
+	eye:SetScript(
+		"OnClick",
+		Guarded("click", function(self)
+			Q.Click(self)
+		end)
+	)
 	eye:Hide()
 	return eye
 end
@@ -309,9 +349,9 @@ local function Pass(module)
 		end
 	end)
 	if not ok then
-		Q.lastError = tostring(err)
+		Fail("layout", err)
 	end
-	Q.Recheck()
+	Try("recheck", Q.Recheck)
 end
 
 local function RefreshAll()
@@ -522,7 +562,7 @@ end
 -------------------------------------------------------------------------------
 --  The secure click: our cover over the eye, and the two click-delegates
 -------------------------------------------------------------------------------
-local cover, pickCategory, pickActivity
+local cover, coverFrame, pickCategory, pickActivity, coverEvents
 local armed = { quest = nil, activity = nil, activityName = nil }
 
 -- One of our secure buttons. The macro's /click is a key up: act on it whatever the
@@ -538,7 +578,11 @@ end
 -- The Quests & Zones category button (read only), unless that category is already picked.
 local function CategoryButton()
 	local frame = LFGListingFrame
-	if not frame or frame:GetCategorySelection() == QUEST_CATEGORY then
+	if not frame or type(frame.GetCategorySelection) ~= "function" then
+		return nil
+	end
+	local picked = frame:GetCategorySelection()
+	if PlainNumber(picked) and picked == QUEST_CATEGORY then
 		return nil
 	end
 	local buttons = frame.CategoryView and frame.CategoryView.CategoryButtons
@@ -546,7 +590,13 @@ local function CategoryButton()
 		return nil
 	end
 	for _, button in ipairs(buttons) do
-		if type(button) == "table" and button.categoryID == QUEST_CATEGORY and button:IsShown() then
+		if
+			type(button) == "table"
+			and PlainNumber(button.categoryID)
+			and button.categoryID == QUEST_CATEGORY
+			and type(button.IsShown) == "function"
+			and button:IsShown()
+		then
 			return button
 		end
 	end
@@ -557,19 +607,27 @@ end
 -- row is on screen (read only: the list is never scrolled or expanded).
 local function ActivityCheck(activityID)
 	local frame = LFGListingFrame
-	if not (activityID and frame) or frame:GetCategorySelection() ~= QUEST_CATEGORY then
+	if
+		not (activityID and frame)
+		or type(frame.GetCategorySelection) ~= "function"
+		or type(frame.IsActivitySelected) ~= "function"
+	then
+		return nil
+	end
+	local picked = frame:GetCategorySelection()
+	if not PlainNumber(picked) or picked ~= QUEST_CATEGORY then
 		return nil
 	end
 	if frame:IsActivitySelected(activityID) then
 		return nil
 	end
 	local box = frame.ActivityView and frame.ActivityView.ScrollBox
-	if not (box and box.FindFrameByPredicate and box:IsVisible()) then
+	if not (box and type(box.FindFrameByPredicate) == "function" and box:IsVisible()) then
 		return nil
 	end
 	local row = box:FindFrameByPredicate(function(_, node)
 		local data = type(node) == "table" and type(node.GetData) == "function" and node:GetData() or node
-		return type(data) == "table" and data.activityID == activityID
+		return type(data) == "table" and PlainNumber(data.activityID) and data.activityID == activityID
 	end)
 	local check = row and row.CheckButton
 	if check and check:IsVisible() and check:IsEnabled() then
@@ -584,27 +642,35 @@ local function Arm(c)
 	if InCombatLockdown() then
 		return
 	end
-	local block = c.eye and c.eye:GetParent()
-	local id = block and block.id
+	-- cleared first: a failure below leaves no stale macro to run
+	c:SetAttribute("macrotext", nil)
 	armed.quest, armed.activity, armed.activityName = nil, nil, nil
-	if not PlainNumber(id) or not LFGParentFrame then
-		c:SetAttribute("macrotext", nil)
-		return
-	end
-	armed.quest = id
-	local lines = {}
-	if not LFGParentFrame:IsShown() then
-		lines[#lines + 1] = "/click " .. OPENER
-	end
-	lines[#lines + 1] = "/click " .. LISTING_TAB
-	if not HasActiveListing() then
-		lines[#lines + 1] = "/click " .. PICK_CATEGORY
-		armed.activity, armed.activityName = Q.ActivityFor(id)
-		if armed.activity then
-			lines[#lines + 1] = "/click " .. PICK_ACTIVITY
+	local text, id, activity, activityName = Try("macro", function()
+		local eye = c.eye
+		local block = eye and eye:GetParent()
+		local questID = block and block.id
+		if not PlainNumber(questID) or not LFGParentFrame then
+			return nil
 		end
+		local lines = {}
+		if not LFGParentFrame:IsShown() then
+			lines[#lines + 1] = "/click " .. OPENER
+		end
+		lines[#lines + 1] = "/click " .. LISTING_TAB
+		local actID, actName
+		if not HasActiveListing() then
+			lines[#lines + 1] = "/click " .. PICK_CATEGORY
+			actID, actName = Q.ActivityFor(questID)
+			if actID then
+				lines[#lines + 1] = "/click " .. PICK_ACTIVITY
+			end
+		end
+		return table.concat(lines, "\n"), questID, actID, actName
+	end)
+	if text then
+		c:SetAttribute("macrotext", text)
+		armed.quest, armed.activity, armed.activityName = id, activity, activityName
 	end
-	c:SetAttribute("macrotext", table.concat(lines, "\n"))
 end
 
 -- The description box takes no text from addons (SetText, Insert and paste are all refused:
@@ -613,7 +679,11 @@ end
 -- nothing of the box is read beyond its text being empty, nothing written.
 local function FocusDescription()
 	local frame = LFGListingFrame
-	if not frame or frame:GetCategorySelection() ~= QUEST_CATEGORY then
+	if not frame or type(frame.GetCategorySelection) ~= "function" then
+		return
+	end
+	local picked = frame:GetCategorySelection()
+	if not PlainNumber(picked) or picked ~= QUEST_CATEGORY then
 		return
 	end
 	local view = frame.ActivityView
@@ -630,54 +700,73 @@ end
 
 -- PostClick: the hint. Where the macro couldn't open the Listing tab, the game's own opener.
 local function After()
-	local id = armed.quest
-	if not id then
-		return
-	end
-	if not (LFGListingFrame and LFGListingFrame:IsShown()) then
-		if InCombatLockdown() or not ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
+	Try("after", function()
+		local id = armed.quest
+		if not id then
 			return
 		end
-	end
-	if Q.ShowHint(id) then
-		FocusDescription()
-	end
+		if not (LFGListingFrame and LFGListingFrame:IsShown()) then
+			if InCombatLockdown() or not (ns.InPlace and ns.InPlace.ShowFinder) then
+				return
+			end
+			if not ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
+				return
+			end
+		end
+		if Q.ShowHint(id) then
+			Try("description", FocusDescription)
+		end
+	end)
+	armed.quest, armed.activity, armed.activityName = nil, nil, nil
 end
 
 local function BuildCover()
 	if cover then
 		return cover
 	end
-	local c = SecureButton(nil, "macro")
+	-- kept from a build that failed partway, so a retry never makes a second frame
+	local c = coverFrame or SecureButton(nil, "macro")
+	coverFrame = c
 	c:SetFrameStrata("DIALOG")
 	c:Hide()
-	c:SetScript("OnEnter", function(self)
-		if self.eye then
-			self.eye:LockHighlight()
-			ShowEyeTip(self)
-		end
-	end)
-	c:SetScript("OnLeave", function(self)
-		if GameTooltip:GetOwner() == self then
-			GameTooltip:Hide()
-		end
-		Q.Uncover()
-	end)
-	c:SetScript("OnMouseDown", function(self)
-		if self.eye then
+	c:SetScript(
+		"OnEnter",
+		Guarded("hover", function(self)
+			if self.eye then
+				if self.eye.LockHighlight then
+					self.eye:LockHighlight()
+				end
+				Try("tooltip", ShowEyeTip, self)
+			end
+		end)
+	)
+	c:SetScript(
+		"OnLeave",
+		Guarded("leave", function(self)
+			if GameTooltip:GetOwner() == self then
+				GameTooltip:Hide()
+			end
+			Try("uncover", Q.Uncover)
+		end)
+	)
+	c:SetScript(
+		"OnMouseDown",
+		Guarded("press", function(self)
 			EyeDown(self.eye)
-		end
-	end)
-	c:SetScript("OnMouseUp", function(self)
-		if self.eye then
+		end)
+	)
+	c:SetScript(
+		"OnMouseUp",
+		Guarded("press", function(self)
 			EyeUp(self.eye)
-		end
-	end)
+		end)
+	)
 	c:SetScript("PreClick", Arm)
 	c:SetScript("PostClick", After)
 
-	pickCategory = SecureButton(PICK_CATEGORY, "click")
-	pickActivity = SecureButton(PICK_ACTIVITY, "click")
+	-- each named delegate and the events frame are made once, whatever fails midway
+	pickCategory = pickCategory or SecureButton(PICK_CATEGORY, "click")
+	pickActivity = pickActivity or SecureButton(PICK_ACTIVITY, "click")
 	for _, b in ipairs({ pickCategory, pickActivity }) do
 		-- shown so /click always reaches them, but nothing to see or hit
 		b:SetSize(1, 1)
@@ -686,22 +775,28 @@ local function BuildCover()
 		b:SetPoint("BOTTOMLEFT", UIParent, "BOTTOMLEFT", 0, 0)
 	end
 	pickCategory:SetScript("PreClick", function(self)
-		if not InCombatLockdown() then
-			self:SetAttribute("clickbutton", CategoryButton())
+		if InCombatLockdown() then
+			return
 		end
+		self:SetAttribute("clickbutton", nil)
+		self:SetAttribute("clickbutton", Try("category button", CategoryButton))
 	end)
 	pickActivity:SetScript("PreClick", function(self)
-		if not InCombatLockdown() then
-			self:SetAttribute("clickbutton", ActivityCheck(armed.activity))
+		if InCombatLockdown() then
+			return
 		end
+		self:SetAttribute("clickbutton", nil)
+		self:SetAttribute("clickbutton", Try("activity checkbox", ActivityCheck, armed.activity))
 	end)
 
 	-- combat starts: the cover goes while it still can
-	local events = CreateFrame("Frame")
-	events:RegisterEvent("PLAYER_REGEN_DISABLED")
-	events:SetScript("OnEvent", function()
-		Q.Uncover()
-	end)
+	if not coverEvents then
+		coverEvents = CreateFrame("Frame")
+		coverEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
+		coverEvents:SetScript("OnEvent", function()
+			Try("uncover", Q.Uncover)
+		end)
+	end
 	cover = c
 	return c
 end
@@ -712,13 +807,20 @@ function Q.Cover(eye)
 	if InCombatLockdown() or not LFGParentFrame or not ns.Listings.HasAPI() then
 		return
 	end
+	if not eye then
+		return
+	end
 	local left, bottom = eye:GetLeft(), eye:GetBottom()
 	local width, height = eye:GetSize()
 	if not (PlainNumber(left) and PlainNumber(bottom) and PlainNumber(width) and PlainNumber(height)) then
 		return
 	end
-	local c = BuildCover()
-	if c.eye and c.eye ~= eye then
+	Try("build", BuildCover)
+	local c = cover
+	if not c then
+		return
+	end
+	if c.eye and c.eye ~= eye and c.eye.UnlockHighlight then
 		c.eye:UnlockHighlight()
 	end
 	c.eye = eye
@@ -736,7 +838,7 @@ function Q.Recheck()
 		return
 	end
 	local eye = cover.eye
-	if eye and eye:IsVisible() and eye:IsMouseOver() then
+	if eye and eye.IsVisible and eye:IsVisible() and eye:IsMouseOver() then
 		Q.Cover(eye)
 	else
 		Q.Uncover()
@@ -748,9 +850,12 @@ function Q.Uncover()
 	if not cover or not cover:IsShown() or InCombatLockdown() then
 		return
 	end
-	if cover.eye then
-		cover.eye:UnlockHighlight()
-		EyeUp(cover.eye)
+	local eye = cover.eye
+	if eye then
+		if eye.UnlockHighlight then
+			eye:UnlockHighlight()
+		end
+		EyeUp(eye)
 	end
 	cover:Hide()
 end
@@ -830,11 +935,14 @@ local function PlaceHint()
 	if not hint then
 		return
 	end
+	if not (LFGListingFrame and LFGParentFrame) then
+		return
+	end
 	hint:ClearAllPoints()
 	local view = LFGListingFrame.ActivityView
 	local comment = view and view.Comment
 	local frameRight = LFGParentFrame:GetRight()
-	local commentRight = comment and comment:IsVisible() and comment:GetRight()
+	local commentRight = comment and comment.IsVisible and comment:IsVisible() and comment:GetRight()
 	if PlainNumber(frameRight) and PlainNumber(commentRight) then
 		hint:SetPoint("LEFT", comment, "RIGHT", frameRight - commentRight + 4, 0)
 	else
@@ -911,8 +1019,8 @@ local function BuildHint()
 	if view then
 		view:HookScript("OnShow", function()
 			if hint:IsShown() then
-				PlaceOutline()
-				PlaceHint()
+				Try("outline", PlaceOutline)
+				Try("hint", PlaceHint)
 			end
 		end)
 	end
@@ -920,7 +1028,7 @@ local function BuildHint()
 	if activities then
 		activities:HookScript("OnShow", function()
 			if hint:IsShown() then
-				PlaceHint()
+				Try("hint", PlaceHint)
 			end
 		end)
 	end
@@ -934,26 +1042,33 @@ local function BuildHint()
 	return hint
 end
 
---- Shows the hint box beside the finder (and the outline while Quests & Zones isn't
---- picked). False when it only printed a chat line (an active listing) or showed nothing.
-function Q.ShowHint(id)
+local function ShowHintBody(id)
 	local name = QuestName(id)
 	if not name or not LFGListingFrame or not LFGListingFrame:IsShown() then
 		return false
 	end
 	if HasActiveListing() then
 		-- the Listing tab shows the active listing, no categories
-		ns.Print(Q.HintLine(id))
+		local line = Q.HintLine(id)
+		if line then
+			ns.Print(line)
+		end
 		return false
 	end
 	local f = BuildHint()
 	if not f then
 		return false
 	end
-	local picked = LFGListingFrame:GetCategorySelection() == QUEST_CATEGORY
+	local picked, ticked = false, false
+	if type(LFGListingFrame.GetCategorySelection) == "function" then
+		local selection = LFGListingFrame:GetCategorySelection()
+		picked = PlainNumber(selection) and selection == QUEST_CATEGORY
+	end
 	local activity = armed.quest == id and armed.activity or nil
 	local zone = armed.quest == id and armed.activityName or Zone(id)
-	local ticked = picked and activity and LFGListingFrame:IsActivitySelected(activity)
+	if picked and activity and type(LFGListingFrame.IsActivitySelected) == "function" then
+		ticked = LFGListingFrame:IsActivitySelected(activity) == true
+	end
 
 	local texts = { "[" .. EliteTag() .. "] " .. name }
 	if zone then
@@ -973,24 +1088,35 @@ function Q.ShowHint(id)
 			else
 				fs:SetPoint("TOPLEFT", HINT_PAD, -HINT_PAD)
 			end
-			height = height + fs:GetStringHeight()
+			height = height + (fs:GetStringHeight() or 0)
 			fs:Show()
 			above = fs
 		else
 			fs:Hide()
 		end
 	end
-	PlaceHint()
+	Try("hint", PlaceHint)
 	f:SetHeight(height)
 	f:Show()
-	PlaceOutline()
+	if not Try("outline", function()
+		PlaceOutline()
+		return true
+	end) then
+		StopOutline()
+	end
 	return true
+end
+
+--- Shows the hint box beside the finder (and the outline while Quests & Zones isn't
+--- picked). False when it only printed a chat line (an active listing) or showed nothing.
+function Q.ShowHint(id)
+	return Try("hint", ShowHintBody, id) == true
 end
 
 --- The eye's own click, reached only when the cover isn't over it: in combat a chat line;
 --- the stand-in prints the hint; else the game's own opener and the hint, nothing picked.
 function Q.Click(eye)
-	local block = eye:GetParent()
+	local block = eye and eye:GetParent()
 	local id = block and block.id
 	if not PlainNumber(id) then
 		return
@@ -1007,7 +1133,7 @@ function Q.Click(eye)
 		return
 	end
 	armed.quest, armed.activity, armed.activityName = nil, nil, nil
-	if ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
+	if ns.InPlace and ns.InPlace.ShowFinder and ns.InPlace.ShowFinder(ns.InPlace.LISTING_TAB) then
 		Q.ShowHint(id)
 	end
 end
@@ -1069,6 +1195,19 @@ local function TrackedIDs()
 	return ids
 end
 
+-- ", failed steps: build, hint" for the steps that failed this session, else "".
+local function FailedSteps()
+	local steps = {}
+	for step in pairs(reported) do
+		steps[#steps + 1] = step
+	end
+	if #steps == 0 then
+		return ""
+	end
+	table.sort(steps)
+	return ", failed steps: " .. table.concat(steps, ", ")
+end
+
 function Q.Probe()
 	local ok, err = pcall(function()
 		local names = {}
@@ -1082,6 +1221,7 @@ function Q.Probe()
 				.. (#names > 0 and table.concat(names, ", ") or "none")
 				.. (Q.failed and (", failed: " .. Q.failed) or "")
 				.. (Q.lastError and (", last error: " .. Q.lastError) or "")
+				.. FailedSteps()
 				.. ", eliteQuestButton "
 				.. Say(ns.Settings.Get("eliteQuestButton"))
 				.. ", premade "

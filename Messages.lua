@@ -42,6 +42,15 @@ local ROLE_NAMES = { tank = "Tank", healer = "Healer", dps = "Damage" }
 
 local db
 
+-- Invite outcomes: a backstop timer for clients that never answer, and the decline that
+-- comes this late is the invitee's own 60 s popup timeout.
+local INVITE_EXPIRE = 120
+local EXPIRE_AS_DECLINE = 55
+local PREVIEW_OUTCOMES = { "accepted", "declined", "expired" }
+local previewIndex = 0
+
+local StartTracking
+
 function M.Init(saved)
 	saved.messages = saved.messages or {}
 	db = saved.messages
@@ -54,6 +63,7 @@ function M.Init(saved)
 	end
 	db.invite.autoInvite = db.invite.autoInvite == true and db.invite.auto
 	db.request.autoInvite = nil
+	StartTracking()
 end
 
 --- text, Auto-send, Auto-invite (only the invite preset has it, and only with Auto-send on).
@@ -232,6 +242,157 @@ local function Redraw()
 	end
 end
 
+-------------------------------------------------------------------------------
+--  Invite outcomes: how an invite sent from the addon ended, read from the game's own
+--  system messages (patterns built from its global format strings), the roster and a timer.
+-------------------------------------------------------------------------------
+local ACCEPT_GLOBALS = { "ERR_JOINED_GROUP_S", "ERR_RAID_MEMBER_ADDED_S" }
+local DECLINE_GLOBALS = {
+	"ERR_DECLINE_GROUP_S",
+	"ERR_ALREADY_IN_GROUP_S",
+	"ERR_IGNORING_YOU_S",
+	"ERR_BAD_PLAYER_NAME_S",
+	"ERR_CHAT_PLAYER_NOT_FOUND_S",
+}
+
+local function PatternOf(globalName)
+	local fmt = _G[globalName]
+	if type(fmt) ~= "string" or not (fmt:find("%s", 1, true) or fmt:find("%%%d%$s")) then
+		return nil
+	end
+	local escaped = fmt:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+	escaped = escaped:gsub("%%%%%d%%%$s", "(.+)") -- a positional %1$s, as some locales use
+	escaped = escaped:gsub("%%%%s", "(.+)")
+	return "^" .. escaped .. "$"
+end
+
+local function PlainName(captured)
+	if type(captured) ~= "string" then
+		return nil
+	end
+	local s = captured:match("|h%[(.-)%]|h") or captured
+	s = s:gsub("|c%x%x%x%x%x%x%x%x", ""):gsub("|r", "")
+	return ns.Short(s)
+end
+
+local function RedrawOutcome()
+	if ns.Motion and ns.Motion.Busy and ns.Motion.Busy() then
+		C_Timer.After(0.5, RedrawOutcome)
+		return
+	end
+	Redraw()
+end
+
+local function AnyPending()
+	for _, entry in pairs(ns.state.invited) do
+		if type(entry) == "table" and entry.outcome == "pending" then
+			return true
+		end
+	end
+	return false
+end
+
+local function Resolve(name, outcome)
+	if not name then
+		return
+	end
+	local changed = false
+	for _, entry in pairs(ns.state.invited) do
+		if type(entry) == "table" and entry.name == name and entry.outcome == "pending" then
+			-- "decline": the player's own decline, which their popup also sends by itself after
+			-- 60 s, so a late one is a timeout; other refusals stay "declined" at any time
+			if outcome == "decline" then
+				entry.outcome = GetTime() - entry.at >= EXPIRE_AS_DECLINE and "expired" or "declined"
+			else
+				entry.outcome = outcome
+			end
+			changed = true
+		end
+	end
+	if changed then
+		RedrawOutcome()
+	end
+end
+
+--- Records an invite sent from the addon for listing `l`; the row reads "invited" until an
+--- outcome comes. A new table each time, so an old outcome never carries over.
+function M.MarkInvited(l, preview)
+	local entry = {
+		name = ns.Short(l.leader.name) or l.leader.name,
+		at = GetTime(),
+		outcome = "pending",
+	}
+	ns.state.invited[l.id] = entry
+	C_Timer.After(INVITE_EXPIRE, function()
+		if entry.outcome == "pending" then
+			entry.outcome = "expired"
+			RedrawOutcome()
+		end
+	end)
+	if preview then
+		C_Timer.After(2 + math.random() * 2, function()
+			if entry.outcome == "pending" then
+				previewIndex = previewIndex % #PREVIEW_OUTCOMES + 1
+				entry.outcome = PREVIEW_OUTCOMES[previewIndex]
+				RedrawOutcome()
+			end
+		end)
+	end
+	return entry
+end
+
+function StartTracking()
+	-- a global missing or without a name slot is skipped
+	local accepted, declined = {}, {}
+	for _, g in ipairs(ACCEPT_GLOBALS) do
+		local p = PatternOf(g)
+		if p then
+			accepted[#accepted + 1] = { pattern = p, outcome = "accepted" }
+		end
+	end
+	for _, g in ipairs(DECLINE_GLOBALS) do
+		local p = PatternOf(g)
+		if p then
+			local outcome = g == "ERR_DECLINE_GROUP_S" and "decline" or "declined"
+			declined[#declined + 1] = { pattern = p, outcome = outcome }
+		end
+	end
+	local f = CreateFrame("Frame")
+	f:RegisterEvent("CHAT_MSG_SYSTEM")
+	f:RegisterEvent("GROUP_ROSTER_UPDATE")
+	f:SetScript("OnEvent", function(_, event, text)
+		if ns.UsingPreview() or not AnyPending() then
+			return
+		end
+		if event == "CHAT_MSG_SYSTEM" then
+			if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
+				return
+			end
+			for _, list in ipairs({ accepted, declined }) do
+				for _, p in ipairs(list) do
+					local c = text:match(p.pattern)
+					if c then
+						Resolve(PlainName(c), p.outcome)
+						return
+					end
+				end
+			end
+		else
+			for _, entry in pairs(ns.state.invited) do
+				if type(entry) == "table" and entry.outcome == "pending" then
+					local okP, inParty = pcall(UnitInParty, entry.name)
+					local okR, inRaid = pcall(UnitInRaid, entry.name)
+					local joined = (okP and not (issecretvalue and issecretvalue(inParty)) and inParty)
+						or (okR and not (issecretvalue and issecretvalue(inRaid)) and inRaid)
+					if joined then
+						Resolve(entry.name, "accepted")
+					end
+				end
+			end
+		end
+	end)
+end
+
 -- A menu entry acts later than the click that opened it: the rows may be moving, or a
 -- refresh or a new search may have taken the listing away meanwhile.
 local function StillThere(l)
@@ -305,7 +466,7 @@ function M.Send(l, preview, from, choice)
 		ns.state.messaged[l.id] = true
 		ns.Print(string.format("preview: whispered %s: %s", target, text))
 		if invite then
-			ns.state.invited[l.id] = true
+			M.MarkInvited(l, true)
 			ns.Print(string.format("preview: would invite %s (C_PartyInfo.InviteUnit).", target))
 		end
 		M.StartLock(l.id, from or "row")
@@ -329,7 +490,7 @@ function M.Send(l, preview, from, choice)
 		end
 		ns.state.messaged[l.id] = true
 		if invite and C_PartyInfo and C_PartyInfo.InviteUnit and pcall(C_PartyInfo.InviteUnit, target) then
-			ns.state.invited[l.id] = true
+			M.MarkInvited(l, false)
 		end
 		M.StartLock(l.id, from or "row")
 		return true

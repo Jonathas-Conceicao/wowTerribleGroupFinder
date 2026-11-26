@@ -258,13 +258,31 @@ end
 
 --- Reads the last search's results; returns the listings. With previous (L.Snapshot()
 --- taken when a refresh went out), marks carry over by key and delisted listings drop;
---- without, the ones an earlier refresh dropped stay out.
-function L.Read(previous)
+--- without, the ones an earlier refresh dropped stay out. only: a set of activity IDs;
+--- listings with none of them are left out, never yours.
+function L.Read(previous, only)
 	local items = L.items
 	for i = #items, 1, -1 do
 		items[i] = nil
 	end
 	L.ReadResults(items)
+	if type(only) == "table" then
+		for i = #items, 1, -1 do
+			local l = items[i]
+			if not l.mine then
+				local keep = false
+				for _, a in ipairs(l.acts or {}) do
+					if only[a.key] then
+						keep = true
+						break
+					end
+				end
+				if not keep then
+					table.remove(items, i)
+				end
+			end
+		end
+	end
 	if previous then
 		L.ClearDropped()
 	end

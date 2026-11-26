@@ -1,5 +1,42 @@
 # Milestones
 
+## v0.3.1 Small fixes (Shipped: 2026-11-26)
+
+**Delivered:** the invite's outcome on its row (accepted / declined / expired), a Browse list
+that follows the activities you pick at once without Refresh, and guards on every step of the
+elite quest eye's hover and click.
+
+**Phases completed:** 2 phases (22-23), 6 plans
+**Requirements:** 5/5 (QST-05, INV-01..02, SRCH-01, REL-09)
+**Git:** 32 commits on `milestone/v0.3.1-small-fixes` (plus 3 milestone setup commits on
+`main`), 2026-11-26; 7 shipped/source files changed (+570 / −116, outside `.planning/`);
+~11.7k lines of Lua/XML
+**Tag:** `v0.3.1`
+
+**Key accomplishments:**
+
+- Eye guards (`QuestButton.lua`): `Try` / `Guarded` around every hover and click step, secure
+  attributes cleared first so a failed step leaves a click that does nothing, the cover built
+  once; a failure prints "Quest eye: <step> failed" once per step and `/tgf quest` lists them
+
+- Invite outcomes (`Messages.lua`, `UI/Table.lua`): `M.MarkInvited` keeps `{ name, at, outcome }`
+  per invite; `CHAT_MSG_SYSTEM` patterns from the game's `ERR_*` strings (positional `%1$s`
+  too), `GROUP_ROSTER_UPDATE` and a 2-minute timer resolve it; a decline at 55 s or later reads
+  expired; the Listed cell colours it; the preview cycles the three
+
+- Activity picks narrow the list (`UI/InPlace.lua`, `Listings.lua`): `Listings.Read(previous,
+  only)` filters to a set of activities; the answer is narrowed when it arrives and whenever the
+  picks change (post-hooks on the activity dropdown's `ValueSetSelected` / `ValueReset`), with
+  no search of ours; reworked in the review after the author's report
+
+- Release Review: code comments tidied, CLAUDE.md updated, changelog drafted and reviewed
+  ("guarded", not "fixed", for the eye); README and prints unchanged (author's call)
+
+**Audit:** not run (closed on the author's in-game pass: all 13 checks of Phase 22 and the
+review items of Phase 23 passed; the two author decisions kept as shipped).
+
+---
+
 ## v0.3.0 Elite Quests finder and more inspect data (Shipped: 2026-11-25)
 
 **Delivered:** an eye on tracked elite quests that opens Forever's Listing tab on Quests & Zones

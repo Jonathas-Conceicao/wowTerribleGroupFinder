@@ -2,32 +2,33 @@
 gsd_state_version: 1.0
 milestone: v0.3.1
 milestone_name: Small fixes
-status: planning
-last_updated: "2026-11-26T13:29:51.502Z"
-last_activity: 2026-11-26
+status: Awaiting next milestone
+stopped_at: Milestone v0.3.1 complete
+last_updated: "2026-11-26T20:04:42.087Z"
+last_activity: 2026-11-26 — Milestone v0.3.1 completed and archived
 progress:
-  total_phases: 0
-  completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_phases: 2
+  completed_phases: 2
+  total_plans: 6
+  completed_plans: 6
+  percent: 100
 ---
 
 # Project State
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-11-25)
+See: .planning/PROJECT.md (updated 2026-11-26)
 
 **Core value:** Finding the right players or group fast: the listing must be easy to read and order (role, level, activity, location) and quick to act on, without leaving or replacing Forever's own group finder.
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`)
+**Current focus:** Planning the next milestone
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: Milestone v0.3.1 complete
 Plan: —
-Status: Defining requirements
-Last activity: 2026-11-26 — Milestone v0.3.1 started
+Status: Awaiting next milestone
+Last activity: 2026-11-26 — Milestone v0.3.1 completed and archived
 
 ## Performance Metrics
 
@@ -36,6 +37,7 @@ Last activity: 2026-11-26 — Milestone v0.3.1 started
 **v0.2.1:** 4 phases (12-15), 7 plans, 59 commits, 2026-11-16.
 **v0.2.2:** 2 phases (16-17), 4 plans, 25 commits, 2026-11-19 → 2026-11-20.
 **v0.3.0:** 4 phases (18-21), 7 plans, 58 commits (46 on the branch), 2026-11-24 → 2026-11-25.
+**v0.3.1:** 2 phases (22-23), 6 plans, 35 commits (32 on the branch), 2026-11-26.
 Details in `milestones/` and `MILESTONES.md`.
 
 ## Accumulated Context
@@ -56,7 +58,7 @@ None.
 
 ## Deferred Items
 
-Items acknowledged and deferred at milestone close (2026-11-16, carried over at the v0.2.2 close on 2026-11-20 and the v0.3.0 close on 2026-11-25):
+Items acknowledged and deferred at milestone close (2026-11-16, carried over at the v0.2.2 close on 2026-11-20 and the v0.3.0 close on 2026-11-25 and the v0.3.1 close on 2026-11-26):
 
 | Category | Item | Status |
 |----------|------|--------|
@@ -68,8 +70,8 @@ Items acknowledged and deferred at milestone close (2026-11-16, carried over at 
 
 ## Session Continuity
 
-Last session: 2026-11-25
-Stopped at: Milestone v0.3.0 shipped (tag v0.3.0)
+Last session: 2026-11-26T14:23:38.632Z
+Stopped at: Milestone v0.3.1 complete
 Resume file: None
 
 ## Operator Next Steps
