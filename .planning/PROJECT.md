@@ -31,6 +31,27 @@ Release" (2026-11-12); see [MILESTONES.md](MILESTONES.md) and the archives in
 author. Releases are tagged on `main`; the release workflow builds the zip and the author
 uploads it to CurseForge / Wago by hand.
 
+## Current Milestone: v0.3.1 Small fixes
+
+**Goal:** Fix three small issues players hit in v0.3.0: Lua errors from the elite quest eye's
+click, a row's "invited" that never says how the invite ended, and a first search after a
+`/reload` or login that shows the general view instead of the picked activity.
+
+**Target features:**
+- Elite quest eye: guards on every click path (the secure cover, its PreClick / PostClick, the
+  two click delegates, the hint), so a failure prints one chat line and never raises a Lua error;
+  the secure-click route and its taint rules stay as they are
+- Invite outcome: a row marked "invited" changes to "accepted", "declined" or "expired" once the
+  player answers or the invite times out (read from the game's own messages); "sent" (whisper
+  only) stays as it is
+- Search fix: after a `/reload` or login, the first search after picking a category and
+  activity searches that activity, not the category's general view (no second refresh needed)
+- Release Review phase, tag `v0.3.1`
+
+**Key context:** no research. The eye's error had no recorded text: the fix guards every
+path. The search bug may relate to the v0.2 audit's `searchOut` reset edge case
+(`UI/InPlace.lua`); the dynamic refresh must still never call `C_LFGList.Search` itself.
+
 ## Next Milestone Goals (candidates)
 
 The quest log LFG button (backlog 999.5, with v0.3.0's findings), better quest-to-zone matching
@@ -272,7 +293,8 @@ migration was later dropped, and all in-game checks passed at close.
 
 ### Active
 
-None: the next milestone defines its requirements with `/gsd-new-milestone`. Archived:
+v0.3.1 Small fixes: see [REQUIREMENTS.md](REQUIREMENTS.md) (eye click guards, invite
+outcome, first search after a reload). Archived:
 [v0.1](milestones/v0.1-REQUIREMENTS.md), [v0.2](milestones/v0.2-REQUIREMENTS.md),
 [v0.2.1](milestones/v0.2.1-REQUIREMENTS.md), [v0.2.2](milestones/v0.2.2-REQUIREMENTS.md),
 [v0.3.0](milestones/v0.3.0-REQUIREMENTS.md).
@@ -408,4 +430,4 @@ This document evolves at phase transitions and milestone boundaries.
 4. Update Context with current state
 
 ---
-*Last updated: 2026-11-25 after the v0.3.0 milestone*
+*Last updated: 2026-11-26 at the start of the v0.3.1 milestone*
