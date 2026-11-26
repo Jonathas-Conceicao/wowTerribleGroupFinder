@@ -75,6 +75,15 @@ Taken at milestone kickoff and the autonomous run's up-front batch (2026-11-26),
   sections, sorting, greying and Needs my role work on the narrowed list as on any list
 - Must also work with Dynamic refresh off and in the preview path (no regressions)
 
+### Resolved after research (autonomous defaults, 2026-11-26)
+- The game's invite popup declines on its own after 60 s (`StaticPopup` timeout → `DeclineGroup()`),
+  so the inviter sees `ERR_DECLINE_GROUP_S` for a timeout too: a decline arriving 55 s or more
+  after the invite reads "expired"; earlier, "declined". The 2-minute timer stays as the backstop
+  for clients that never answer
+- Narrowing applies only when the picked activities are a subset of the searched set (or the
+  search was category-wide); otherwise the answer is read unchanged
+- The eye's chat line uses `ns.Print` (its usual prefix), text `Quest eye: <step> failed`
+
 ### Claude's Discretion
 - Exact helper names, where the narrowing lives (`Listings.Read` filter argument vs the
   `source.listings` function), the expiry timer mechanism (one ticker vs `C_Timer.After` per
