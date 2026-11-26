@@ -107,7 +107,7 @@ Plans:
 
 Plans:
 
-- [ ] 23-01-PLAN.md — code cleanup of the v0.3.1 files (no behaviour change, `stylua .`), CLAUDE.md for v0.3.1, TOC / package check
+- [x] 23-01-PLAN.md — code cleanup of the v0.3.1 files (no behaviour change, `stylua .`), CLAUDE.md for v0.3.1, TOC / package check
 - [ ] 23-02-PLAN.md — `## v0.3.1` changelog draft, 23-HUMAN-UAT.md (README proposals, print reminder, Phase 22 in-game checks, author decisions); the run stops before the author's review
 
 ## Progress
@@ -120,7 +120,7 @@ Plans:
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
 | 22. Small Fixes | v0.3.1 | 4/4 | Complete    | 2026-11-26 |
-| 23. Release Review | v0.3.1 | 0/2 | Not started | - |
+| 23. Release Review | v0.3.1 | 1/2 | In Progress|  |
 
 ## Backlog
 
