@@ -11,8 +11,7 @@ Forever's own group finder.
 
 ### Elite quest eye (QST)
 
-- [x] **QST-05
-**: Clicking or hovering the elite quest eye never raises a Lua error: every step
+- [x] **QST-05**: Clicking or hovering the elite quest eye never raises a Lua error: every step
   of the click (the secure cover's placement and removal, its PreClick and PostClick, the two
   click delegates' PreClick, the hint and the description focus) is guarded (nil checks on the
   frames and APIs it reads, `pcall` where a call can fail); a failure prints one chat line,
