@@ -7,6 +7,7 @@
 - ✅ **v0.2.1 Reset Details reminder, more region flags and spec points** — Phases 12-15 (shipped 2026-11-16, tag `v0.2.1`) — [archive](milestones/v0.2.1-ROADMAP.md)
 - ✅ **v0.2.2 Small Improvements** — Phases 16-17 (shipped 2026-11-20, tag `v0.2.2`) — [archive](milestones/v0.2.2-ROADMAP.md)
 - ✅ **v0.3.0 Elite Quests finder and more inspect data** — Phases 18-21 (shipped 2026-11-25, tag `v0.3.0`) — [archive](milestones/v0.3.0-ROADMAP.md)
+- 🚧 **v0.3.1 Small fixes** — Phases 22-23 (in progress)
 
 ## Phases
 
@@ -62,6 +63,41 @@
 
 </details>
 
+### 🚧 v0.3.1 Small fixes (In Progress)
+
+- [ ] **Phase 22: Small Fixes** - the elite quest eye's click guarded against Lua errors, invite outcomes on rows, the first search after a reload lists the picked activity
+- [ ] **Phase 23: Release Review** - cleanup, docs, changelog draft, author review, tag `v0.3.1`
+
+## Phase Details
+
+### Phase 22: Small Fixes
+
+**Goal**: The eye's click never errors, an invite's row says how it ended, and the first search after a reload shows what the player picked
+**Depends on**: Nothing (first phase)
+**Requirements**: QST-05, INV-01, INV-02, SRCH-01
+**Approach**: fix in place, no probe-first step; guards around each step of the eye's click in `QuestButton.lua` (`Q.Cover` / `Q.Recheck` / `Q.Uncover`, the cover's PreClick / PostClick, the delegates' PreClick, the hint), errors kept for `/tgf quest`; invite outcomes from the game's system messages for the invited name (`CHAT_MSG_SYSTEM` with the game's own format strings, joining seen on `GROUP_ROSTER_UPDATE`), shown where `ns.state.invited` is read in `UI/Table.lua`; the search fix in `UI/InPlace.lua` / the Browse dropdown flow, found by reading Blizzard's `Blizzard_GroupFinder_VanillaStyle` search path (the v0.2 audit's `searchOut` reset edge case is a lead); in-game checks at the end of the phase
+**Success Criteria** (what must be TRUE):
+
+1. Clicking and hovering the eye (out of combat, in combat, with the finder open or closed, with an active listing, with the quest's zone off screen) raises no Lua error; a failed step prints one chat line and `/tgf quest` shows it; Post still works after using the eye (taint log clean)
+2. After a Group Invite or Auto-invite, the row's "invited" turns "accepted" when the player joins, "declined" when they decline, "expired" when the invite runs out; whisper-only rows still say "sent"; the outcome stays on its listing through refreshes and sorting
+3. After a `/reload` or login, picking a category and an activity and searching lists that activity on the first search; later searches and Dynamic refresh work as before, and the addon never calls `C_LFGList.Search` itself
+4. The preview shows the invite outcomes; nothing errors where the finder or tracker is missing
+
+**Plans**: TBD
+
+### Phase 23: Release Review
+
+**Goal**: v0.3.1 is cleaned up, documented and tagged after the author's review
+**Depends on**: Phase 22
+**Requirements**: REL-09
+**Success Criteria** (what must be TRUE):
+
+1. Code cleanup done (unused code removed, `stylua .` clean); CLAUDE.md entries describe the changes
+2. Version `0.3.1` in the TOC; the changelog's v0.3.1 section drafted for players and reviewed by the author, with the README reviewed (print reminders flagged)
+3. The milestone branch squash-merged into `main` and tagged `v0.3.1`
+
+**Plans**: TBD
+
 ## Progress
 
 | Phase | Milestone | Plans Complete | Status | Completed |
@@ -71,6 +107,8 @@
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
+| 22. Small Fixes | v0.3.1 | 0/? | Not started | - |
+| 23. Release Review | v0.3.1 | 0/? | Not started | - |
 
 ## Backlog
 

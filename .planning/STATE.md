@@ -6,7 +6,7 @@ status: planning
 last_updated: "2026-11-26T13:29:51.502Z"
 last_activity: 2026-11-26
 progress:
-  total_phases: 0
+  total_phases: 2
   completed_phases: 0
   total_plans: 0
   completed_plans: 0
@@ -17,17 +17,17 @@ progress:
 
 ## Project Reference
 
-See: .planning/PROJECT.md (updated 2026-11-25)
+See: .planning/PROJECT.md (updated 2026-11-26)
 
 **Core value:** Finding the right players or group fast: the listing must be easy to read and order (role, level, activity, location) and quick to act on, without leaving or replacing Forever's own group finder.
-**Current focus:** Planning the next milestone (`/gsd-new-milestone`)
+**Current focus:** v0.3.1 Small fixes, Phase 22 (Small Fixes)
 
 ## Current Position
 
-Phase: Not started (defining requirements)
+Phase: 22 of 22-23 (Small Fixes) — not started
 Plan: —
-Status: Defining requirements
-Last activity: 2026-11-26 — Milestone v0.3.1 started
+Status: Ready to plan
+Last activity: 2026-11-26 — Milestone v0.3.1 roadmap created (2 phases, 5 requirements)
 
 ## Performance Metrics
 
@@ -74,4 +74,4 @@ Resume file: None
 
 ## Operator Next Steps
 
-- Start the next milestone with /gsd-new-milestone
+- Plan Phase 22 with /gsd-discuss-phase 22 or /gsd-plan-phase 22
