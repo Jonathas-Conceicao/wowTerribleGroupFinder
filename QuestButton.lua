@@ -57,6 +57,34 @@ local pending = false -- a pass that waited for the end of combat
 Q.failed = nil -- why the installer didn't install
 Q.lastError = nil -- the last error of a pass
 
+local reported = {} -- step -> true: the steps that already printed their chat line
+
+-- A failed step: kept for /tgf quest, one chat line per distinct step per session.
+local function Fail(step, err)
+	Q.lastError = step .. ": " .. tostring(err)
+	if not reported[step] then
+		reported[step] = true
+		ns.Print("Quest eye: " .. step .. " failed")
+	end
+end
+
+-- Runs fn(...) under pcall; a failure goes to Fail and gives nil, else the first two results.
+local function Try(step, fn, ...)
+	local ok, a, b = pcall(fn, ...)
+	if not ok then
+		Fail(step, a)
+		return nil
+	end
+	return a, b
+end
+
+-- A script handler that never raises and returns nothing.
+local function Guarded(step, fn)
+	return function(...)
+		Try(step, fn, ...)
+	end
+end
+
 local function Secret(v)
 	return issecretvalue ~= nil and issecretvalue(v)
 end
@@ -124,6 +152,9 @@ local function ShowEyeTip(owner)
 end
 
 local function EyeDown(eye)
+	if not (eye and eye.Icon) then
+		return
+	end
 	if eye:IsEnabled() then
 		eye:SetButtonState("PUSHED")
 		eye.Icon:ClearAllPoints()
@@ -132,6 +163,9 @@ local function EyeDown(eye)
 end
 
 local function EyeUp(eye)
+	if not (eye and eye.Icon) then
+		return
+	end
 	eye:SetButtonState("NORMAL")
 	eye.Icon:ClearAllPoints()
 	eye.Icon:SetPoint("CENTER", -1, 0)
@@ -157,20 +191,26 @@ local function NewEye(block)
 	icon:SetPoint("CENTER", -1, 0)
 	eye.Icon = icon
 	eye:RegisterForClicks("LeftButtonUp")
-	eye:SetScript("OnMouseDown", EyeDown)
-	eye:SetScript("OnMouseUp", EyeUp)
+	eye:SetScript("OnMouseDown", Guarded("press", EyeDown))
+	eye:SetScript("OnMouseUp", Guarded("press", EyeUp))
 	eye:SetScript("OnEnter", function(self)
-		ShowEyeTip(self)
-		Q.Cover(self)
+		Try("tooltip", ShowEyeTip, self)
+		Try("cover", Q.Cover, self)
 	end)
-	eye:SetScript("OnLeave", function(self)
-		if GameTooltip:GetOwner() == self then
-			GameTooltip:Hide()
-		end
-	end)
-	eye:SetScript("OnClick", function(self)
-		Q.Click(self)
-	end)
+	eye:SetScript(
+		"OnLeave",
+		Guarded("leave", function(self)
+			if GameTooltip:GetOwner() == self then
+				GameTooltip:Hide()
+			end
+		end)
+	)
+	eye:SetScript(
+		"OnClick",
+		Guarded("click", function(self)
+			Q.Click(self)
+		end)
+	)
 	eye:Hide()
 	return eye
 end
@@ -309,9 +349,9 @@ local function Pass(module)
 		end
 	end)
 	if not ok then
-		Q.lastError = tostring(err)
+		Fail("layout", err)
 	end
-	Q.Recheck()
+	Try("recheck", Q.Recheck)
 end
 
 local function RefreshAll()
@@ -522,7 +562,7 @@ end
 -------------------------------------------------------------------------------
 --  The secure click: our cover over the eye, and the two click-delegates
 -------------------------------------------------------------------------------
-local cover, pickCategory, pickActivity
+local cover, pickCategory, pickActivity, coverEvents
 local armed = { quest = nil, activity = nil, activityName = nil }
 
 -- One of our secure buttons. The macro's /click is a key up: act on it whatever the
@@ -651,33 +691,44 @@ local function BuildCover()
 	local c = SecureButton(nil, "macro")
 	c:SetFrameStrata("DIALOG")
 	c:Hide()
-	c:SetScript("OnEnter", function(self)
-		if self.eye then
-			self.eye:LockHighlight()
-			ShowEyeTip(self)
-		end
-	end)
-	c:SetScript("OnLeave", function(self)
-		if GameTooltip:GetOwner() == self then
-			GameTooltip:Hide()
-		end
-		Q.Uncover()
-	end)
-	c:SetScript("OnMouseDown", function(self)
-		if self.eye then
+	c:SetScript(
+		"OnEnter",
+		Guarded("hover", function(self)
+			if self.eye then
+				if self.eye.LockHighlight then
+					self.eye:LockHighlight()
+				end
+				Try("tooltip", ShowEyeTip, self)
+			end
+		end)
+	)
+	c:SetScript(
+		"OnLeave",
+		Guarded("leave", function(self)
+			if GameTooltip:GetOwner() == self then
+				GameTooltip:Hide()
+			end
+			Try("uncover", Q.Uncover)
+		end)
+	)
+	c:SetScript(
+		"OnMouseDown",
+		Guarded("press", function(self)
 			EyeDown(self.eye)
-		end
-	end)
-	c:SetScript("OnMouseUp", function(self)
-		if self.eye then
+		end)
+	)
+	c:SetScript(
+		"OnMouseUp",
+		Guarded("press", function(self)
 			EyeUp(self.eye)
-		end
-	end)
+		end)
+	)
 	c:SetScript("PreClick", Arm)
 	c:SetScript("PostClick", After)
 
-	pickCategory = SecureButton(PICK_CATEGORY, "click")
-	pickActivity = SecureButton(PICK_ACTIVITY, "click")
+	-- each named delegate and the events frame are made once, whatever fails midway
+	pickCategory = pickCategory or SecureButton(PICK_CATEGORY, "click")
+	pickActivity = pickActivity or SecureButton(PICK_ACTIVITY, "click")
 	for _, b in ipairs({ pickCategory, pickActivity }) do
 		-- shown so /click always reaches them, but nothing to see or hit
 		b:SetSize(1, 1)
@@ -697,11 +748,13 @@ local function BuildCover()
 	end)
 
 	-- combat starts: the cover goes while it still can
-	local events = CreateFrame("Frame")
-	events:RegisterEvent("PLAYER_REGEN_DISABLED")
-	events:SetScript("OnEvent", function()
-		Q.Uncover()
-	end)
+	if not coverEvents then
+		coverEvents = CreateFrame("Frame")
+		coverEvents:RegisterEvent("PLAYER_REGEN_DISABLED")
+		coverEvents:SetScript("OnEvent", function()
+			Try("uncover", Q.Uncover)
+		end)
+	end
 	cover = c
 	return c
 end
@@ -712,13 +765,20 @@ function Q.Cover(eye)
 	if InCombatLockdown() or not LFGParentFrame or not ns.Listings.HasAPI() then
 		return
 	end
+	if not eye then
+		return
+	end
 	local left, bottom = eye:GetLeft(), eye:GetBottom()
 	local width, height = eye:GetSize()
 	if not (PlainNumber(left) and PlainNumber(bottom) and PlainNumber(width) and PlainNumber(height)) then
 		return
 	end
-	local c = BuildCover()
-	if c.eye and c.eye ~= eye then
+	Try("build", BuildCover)
+	local c = cover
+	if not c then
+		return
+	end
+	if c.eye and c.eye ~= eye and c.eye.UnlockHighlight then
 		c.eye:UnlockHighlight()
 	end
 	c.eye = eye
@@ -736,7 +796,7 @@ function Q.Recheck()
 		return
 	end
 	local eye = cover.eye
-	if eye and eye:IsVisible() and eye:IsMouseOver() then
+	if eye and eye.IsVisible and eye:IsVisible() and eye:IsMouseOver() then
 		Q.Cover(eye)
 	else
 		Q.Uncover()
@@ -748,9 +808,12 @@ function Q.Uncover()
 	if not cover or not cover:IsShown() or InCombatLockdown() then
 		return
 	end
-	if cover.eye then
-		cover.eye:UnlockHighlight()
-		EyeUp(cover.eye)
+	local eye = cover.eye
+	if eye then
+		if eye.UnlockHighlight then
+			eye:UnlockHighlight()
+		end
+		EyeUp(eye)
 	end
 	cover:Hide()
 end
