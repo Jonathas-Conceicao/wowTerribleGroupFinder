@@ -747,7 +747,7 @@ function Instance:Invite(l)
 	if not (l and l.solo and not l.mine) then
 		return
 	end
-	ns.state.invited[l.id] = true
+	ns.Messages.MarkInvited(l, self.source.preview())
 	if self.source.preview() then
 		ns.Print(format("preview: would invite %s (C_PartyInfo.InviteUnit).", l.leader.name))
 	else
@@ -1411,7 +1411,13 @@ function Instance:FillRow(row, item)
 	if l.delisted then
 		listed = greyed and "delisted" or "|cffff3333delisted|r"
 	elseif ns.state.invited[l.id] then
-		listed = greyed and "invited" or "|cff33ff33invited|r"
+		local inv = ns.state.invited[l.id]
+		local outcome = type(inv) == "table" and inv.outcome or "pending"
+		local word = outcome == "pending" and "invited" or outcome
+		local colour = (outcome == "declined" and "|cffff3333")
+			or (outcome == "expired" and "|cff9d9d9d")
+			or "|cff33ff33"
+		listed = greyed and word or (colour .. word .. "|r")
 	elseif ns.state.messaged[l.id] then
 		listed = greyed and "sent" or "|cff33ff33sent|r"
 	else
