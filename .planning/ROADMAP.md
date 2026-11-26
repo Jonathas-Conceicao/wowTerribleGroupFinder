@@ -88,7 +88,7 @@
 Plans:
 
 - [x] 22-01-PLAN.md — guard every step of the elite quest eye's hover and click (Try / Guarded, clear-first secure attributes, idempotent cover build, failed steps in `/tgf quest`)
-- [ ] 22-02-PLAN.md — invite outcomes: `M.MarkInvited`, system-message / roster / timer / preview resolution, Listed cell accepted / declined / expired
+- [x] 22-02-PLAN.md — invite outcomes: `M.MarkInvited`, system-message / roster / timer / preview resolution, Listed cell accepted / declined / expired
 - [ ] 22-03-PLAN.md — first search after a reload: narrow a wider answer to the picked activities (`Listings.Read(previous, only)`, `NarrowSet` in InPlace)
 - [ ] 22-04-PLAN.md — CLAUDE.md entries for the three fixes, 22-HUMAN-UAT.md in-game checks, `stylua .`
 
@@ -114,7 +114,7 @@ Plans:
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
-| 22. Small Fixes | v0.3.1 | 1/4 | In Progress|  |
+| 22. Small Fixes | v0.3.1 | 2/4 | In Progress|  |
 | 23. Release Review | v0.3.1 | 0/? | Not started | - |
 
 ## Backlog
