@@ -50,8 +50,10 @@ local pending = false
 --  new search (unless relisted), and the selection and whisper/invite marks follow their
 --  listing by key. A failed refresh keeps the list; a search for anything else is a new
 --  list; with the setting off every search is stock.
---  An answer wider than the picked activities (the first search after a reload, still out
---  when they were picked) shows only the picked ones (narrowTo).
+--  An answer wider than the picked activities shows only the picked ones (narrowTo): picking
+--  a category searches all its activities, and ticking one activity in Blizzard's dropdown
+--  searches nothing (only Refresh, a whole activity group or Reset do), so the list follows
+--  the picks at once, whether they were made while that search was out or after it answered.
 --  There is never a refresh on a timer: the game blocks `Search` from one
 --  (ADDON_ACTION_BLOCKED), and this addon never calls `Search` at all.
 -------------------------------------------------------------------------------
@@ -67,6 +69,9 @@ local searchOut, issued = false, nil
 -- The category and activity set (empty: the whole category) of that search, and the set an
 -- answer wider than the picks is narrowed to (held until the next answer).
 local issuedCategory, issuedSet, narrowTo = nil, {}, nil
+-- The same for the answer shown (its category, set and filter key), so picks made after it
+-- arrived can narrow it too: ticking an activity in Blizzard's dropdown starts no search.
+local answeredCategory, answeredSet, answeredFilter = nil, nil, nil
 
 -- The picked activity IDs from the dropdown, in order (numbers only).
 local function PickedIDs()
@@ -194,6 +199,30 @@ local function OnSearch()
 		ns.Listings.ClearDropped() -- a new list: what earlier refreshes dropped may show again
 		ns.Table.ClearSelection()
 	end
+end
+
+-- Hooked after the activity dropdown's own pick changes: the answer shown is narrowed to the
+-- new picks (or shown whole again) at once. Run a frame later, so a pick change that comes
+-- with a search (an activity group, Reset, a category) is left to that search's answer.
+local picksPending = false
+local function OnPicksChanged()
+	if picksPending then
+		return
+	end
+	picksPending = true
+	C_Timer.After(0, function()
+		picksPending = false
+		if searchOut or refresh.pending or ns.UsingPreview() or not answeredSet then
+			return
+		end
+		local before = narrowTo
+		narrowTo = NarrowSet(answeredCategory, answeredSet)
+		shownFilter = narrowTo and FilterKey() or answeredFilter
+		if before or narrowTo then
+			ns.Table.ClearSelection()
+			ReadSoon()
+		end
+	end)
 end
 
 -- Once a refresh is in view (any Motion.Show, the preview's too), a read that came in
@@ -397,6 +426,15 @@ local function Attach()
 	if LFGBrowse_DoSearch then
 		hooksecurefunc("LFGBrowse_DoSearch", OnSearch)
 	end
+	-- post-hooks only: the picks are read, never set
+	local picks = f.ActivityDropdown
+	if type(picks) == "table" then
+		for _, method in ipairs({ "ValueSetSelected", "ValueReset" }) do
+			if type(picks[method]) == "function" then
+				hooksecurefunc(picks, method, OnPicksChanged)
+			end
+		end
+	end
 	local events = CreateFrame("Frame")
 	for _, event in ipairs(EVENTS) do
 		events:RegisterEvent(event)
@@ -411,13 +449,16 @@ local function Attach()
 				if ns.UsingPreview() then
 					narrowTo = nil
 					shownFilter = issued
+					answeredCategory, answeredSet, answeredFilter = nil, nil, nil
 				else
+					answeredCategory, answeredSet, answeredFilter = issuedCategory, issuedSet, issued
 					narrowTo = NarrowSet(issuedCategory, issuedSet)
 					shownFilter = narrowTo and FilterKey() or issued
 				end
 			elseif not refresh.pending then
 				shownFilter = nil
 				narrowTo = nil
+				answeredCategory, answeredSet, answeredFilter = nil, nil, nil
 			end
 		end
 		if answer and refresh.pending then
