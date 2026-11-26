@@ -3,14 +3,15 @@ gsd_state_version: 1.0
 milestone: v0.3.1
 milestone_name: Small fixes
 status: planning
-last_updated: "2026-11-26T13:29:51.502Z"
-last_activity: 2026-11-26
+stopped_at: Completed 22-01-PLAN.md
+last_updated: "2026-11-26T14:23:38.643Z"
+last_activity: 2026-11-26 — Milestone v0.3.1 roadmap created (2 phases, 5 requirements)
 progress:
   total_phases: 2
   completed_phases: 0
-  total_plans: 0
-  completed_plans: 0
-  percent: 0
+  total_plans: 4
+  completed_plans: 1
+  percent: 25
 ---
 
 # Project State
@@ -44,6 +45,8 @@ Details in `milestones/` and `MILESTONES.md`.
 
 Decisions are logged in PROJECT.md Key Decisions.
 
+- 22-01: Try returns up to four results; After always resets armed state
+
 ### Pending Todos
 
 None.
@@ -68,8 +71,8 @@ Items acknowledged and deferred at milestone close (2026-11-16, carried over at 
 
 ## Session Continuity
 
-Last session: 2026-11-25
-Stopped at: Milestone v0.3.0 shipped (tag v0.3.0)
+Last session: 2026-11-26T14:23:38.632Z
+Stopped at: Completed 22-01-PLAN.md
 Resume file: None
 
 ## Operator Next Steps
