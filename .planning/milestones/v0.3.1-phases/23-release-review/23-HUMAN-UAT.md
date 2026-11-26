@@ -1,5 +1,5 @@
 ---
-status: partial
+status: complete
 phase: 23-release-review
 source: [23-CONTEXT.md, 23-01-SUMMARY.md, 23-02-SUMMARY.md, 22-HUMAN-UAT.md, 22-REVIEW.md]
 started: 2026-11-26
@@ -8,7 +8,7 @@ updated: 2026-11-26
 
 ## Current Test
 
-[awaiting the author's review and in-game pass: the autonomous run stopped here]
+[complete: the author's review and in-game pass, 2026-11-26]
 
 ## Tests
 
@@ -75,7 +75,7 @@ result: skipped (author, 2026-11-26: no new prints for now)
 
 ### 4. Version
 expected: v0.3.1. The TOC keeps `## Version: @project-version@`; tag `v0.3.1` on `main` after the squash merge, by the author's `/gsd-complete-milestone`. The squash-merge message lists only what players get (the invite outcome, the two fixes), none of the in-milestone fixes the branch commits name. The local zip (23-01) holds 28 files: the TOC, the Lua and XML files, the seven textures (icon and six flags) and LICENSE; nothing from Media/Source, Media/Screenshots or .planning.
-result: [pending]
+result: passed (author, 2026-11-26: v0.3.1)
 
 ### 5. Deferred in-game checks (all 13 of 22-HUMAN-UAT.md)
 Deploy first: `./scripts/install.bat`, then `/reload` in game. Use `/console taintLog 1` for the taint check (22-6). The release waits on these. Results can be filled in 22-HUMAN-UAT.md or here.
@@ -94,25 +94,25 @@ Deploy first: `./scripts/install.bat`, then `/reload` in game. Use `/console tai
 - (22-12) Picks narrow the list at once (reworked 2026-11-26 after the author's report: picking Dungeons searches every dungeon, and ticking one dungeon starts no search in Forever's finder, so the list stayed whole until Refresh): after `/reload`, pick Dungeons, then tick one dungeon (right away, and again after waiting for the list); the list shows only that dungeon's listings at once, without Refresh; tick a second dungeon: both show; untick all: every dungeon shows again; then press Refresh: a normal Dynamic refresh of the picked dungeons (no spinner, rows swipe); an activity group checkbox still searches as stock. **Passed (author, 2026-11-26: "works great now")**
 - (22-13) No regression in other searches: later searches of other categories and activities, and Dynamic refresh off, behave as before
 
-result: [pending]
+result: passed (author, 2026-11-26: all 13)
 
 ### 6. Author decisions
 Each with the default the code ships now:
 - (a) IN-02 (22-REVIEW): an answer is also narrowed when the picks changed to a subset of the searched activities while the search was out. Default: narrowed; the alternative is showing the full answer
 - (b) The 55 s rule: the player's own decline arriving 55 s or more after the invite reads "expired" (the invitee's 60 s popup timeout), while other refusals (offline, already in a group, ignoring you, not found) stay "declined" at any time, and no answer at all reads "expired" after 2 minutes. Default: as shipped
-result: [pending]
+result: passed (author, 2026-11-26: both kept as shipped)
 
 ### 7. Phase confirmation
 expected: the author's confirmation closes Phase 23; then `/gsd-complete-milestone` (push, squash-merge into `main`, tag `v0.3.1`). Nothing of this was done by the autonomous run.
-result: [pending]
+result: passed (author, 2026-11-26: /gsd-complete-milestone, push and release approved)
 
 ## Summary
 
 total: 7
-passed: 0
+passed: 5
 issues: 0
-pending: 7
-skipped: 0
+pending: 0
+skipped: 2
 blocked: 0
 
 ## Gaps

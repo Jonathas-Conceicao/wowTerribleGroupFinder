@@ -34,11 +34,12 @@ Forever's own group finder.
 - [x] **SRCH-01**: After a `/reload` or login, the first search after picking a category and
   activity in Forever's Browse tab lists that activity, not the category's general view, with
   no second refresh needed; Dynamic refresh still never calls `C_LFGList.Search` itself, and
-  later searches and refreshes work as before
+  later searches and refreshes work as before. Shipped wider (author's report during the Release
+  Review): the shown list also follows the activity picks at once, without Refresh
 
 ### Release (REL)
 
-- [ ] **REL-09**: Release Review for v0.3.1: code cleanup, CLAUDE.md entries, README print
+- [x] **REL-09**: Release Review for v0.3.1: code cleanup, CLAUDE.md entries, README print
   reminders, version `0.3.1`, changelog draft for the author's review, tag `v0.3.1`
 
 ## Future Requirements
@@ -62,7 +63,7 @@ Forever's own group finder.
 | INV-01 | Phase 22 | Complete |
 | INV-02 | Phase 22 | Complete |
 | SRCH-01 | Phase 22 | Complete |
-| REL-09 | Phase 23 | Pending |
+| REL-09 | Phase 23 | Complete |
 
 **Coverage:** 5/5 requirements mapped
 

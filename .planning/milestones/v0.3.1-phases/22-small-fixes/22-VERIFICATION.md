@@ -1,8 +1,8 @@
 ---
 phase: 22-small-fixes
 verified: 2026-11-26T00:00:00Z
-status: human_needed
-score: 4/4 requirement groups verified in code (in-game confirmation pending)
+status: passed
+score: 4/4 requirement groups verified in code and confirmed in game (author, 2026-11-26)
 overrides_applied: 0
 human_verification:
   - test: "22-HUMAN-UAT.md tests 1-6: eye hover/click (finder closed/open, active listing, off-screen zone, combat), /tgf quest, Post after eye with taintLog"
@@ -19,7 +19,7 @@ human_verification:
 # Phase 22: Small Fixes Verification Report
 
 **Phase Goal:** The eye's click never errors, an invite's row says how it ended, and the first search after a reload shows what the player picked
-**Status:** human_needed (code complete; static verification only, no Lua interpreter)
+**Status:** passed (code verified statically; the human checks all passed in the author's in-game pass, 2026-11-26)
 **Re-verification:** No
 
 ## Observable Truths

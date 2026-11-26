@@ -185,6 +185,39 @@
 
 ---
 
+## Milestone: v0.3.1 — Small fixes
+
+**Shipped:** 2026-11-26
+**Phases:** 2 | **Plans:** 6
+
+### What Was Built
+- Guards on every step of the elite quest eye's hover and click, failures listed by `/tgf quest`
+- The invite's outcome on its row (accepted / declined / expired) from the game's system messages
+- A Browse list that follows the activity picks at once, filtered from the answer already shown
+
+### What Worked
+- One day from kickoff to release: questions up front, an autonomous run, the author's in-game pass
+- Code review caught three real issues before the author's pass (a half-built cover, missing patterns, decline-as-expired scope)
+
+### What Was Inefficient
+- The search bug was misread at kickoff ("first search after a reload") and fixed for that reading; the real issue (ticking one activity starts no search) only surfaced in the author's test, so the fix was redone in the review
+- The `requirements mark-complete` tool broke a requirement line; fixed by hand
+
+### Patterns Established
+- Narrow the shown answer client-side from post-hooks on Blizzard's dropdown instead of searching (searching from addon code is blocked)
+- Invite results from the game's `ERR_*` format strings turned into patterns (`%s` and positional `%1$s`)
+
+### Key Lessons
+1. For a UI bug, get the exact click sequence from the author before planning; read the Blizzard handler for each click
+2. Changelog wording for robustness work: "guarded", not "fixed", when it only failed in edge cases
+
+### Cost Observations
+- Model mix: Opus (main session and agents)
+- Sessions: 1 (with context compactions)
+- Notable: no research, no milestone audit; checked in game by the author
+
+---
+
 ## Cross-Milestone Trends
 
 ### Process Evolution
@@ -196,6 +229,7 @@
 | v0.2.1 | 1 | 4 | Same flow; research before talents; no generated art |
 | v0.2.2 | 1 | 2 | Live prototype first, then a short wrap-up milestone; no research, no audit |
 | v0.3.0 | 1 | 4 | Questions batched up front, autonomous run to review; the review reworked the eye with the author's in-game tests |
+| v0.3.1 | 1 | 2 | Small fixes in a day; the search fix was reworked after the author's in-game test |
 
 ### Cumulative Quality
 
@@ -206,6 +240,7 @@
 | v0.2.1 | same harness, 3 modes, all passing (meter, region tags, talents added) | stubbed client API | 0 |
 | v0.2.2 | same harness, 3 modes, all passing (meter move, settings close, activity menu, migrate added) | stubbed client API | 0 |
 | v0.3.0 | none (harness not in the repo); `stylua` parse, code review, author's in-game pass | in game | 0 |
+| v0.3.1 | none; `stylua` parse, code review, author's in-game pass | in game | 0 |
 
 ### Top Lessons (Verified Across Milestones)
 
