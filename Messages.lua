@@ -257,10 +257,11 @@ local DECLINE_GLOBALS = {
 
 local function PatternOf(globalName)
 	local fmt = _G[globalName]
-	if type(fmt) ~= "string" or not fmt:find("%s", 1, true) then
+	if type(fmt) ~= "string" or not (fmt:find("%s", 1, true) or fmt:find("%%%d%$s")) then
 		return nil
 	end
 	local escaped = fmt:gsub("[%^%$%(%)%%%.%[%]%*%+%-%?]", "%%%0")
+	escaped = escaped:gsub("%%%%%d%%%$s", "(.+)") -- a positional %1$s, as some locales use
 	escaped = escaped:gsub("%%%%s", "(.+)")
 	return "^" .. escaped .. "$"
 end
@@ -298,8 +299,10 @@ local function Resolve(name, outcome)
 	local changed = false
 	for _, entry in pairs(ns.state.invited) do
 		if type(entry) == "table" and entry.name == name and entry.outcome == "pending" then
-			if outcome == "declined" and GetTime() - entry.at >= EXPIRE_AS_DECLINE then
-				entry.outcome = "expired"
+			-- "decline": the player's own decline, which their popup also sends by itself after
+			-- 60 s, so a late one is a timeout; other refusals stay "declined" at any time
+			if outcome == "decline" then
+				entry.outcome = GetTime() - entry.at >= EXPIRE_AS_DECLINE and "expired" or "declined"
 			else
 				entry.outcome = outcome
 			end
@@ -339,12 +342,20 @@ function M.MarkInvited(l, preview)
 end
 
 function StartTracking()
+	-- a global missing or without a name slot is skipped (never a nil hole in the list)
 	local accepted, declined = {}, {}
 	for _, g in ipairs(ACCEPT_GLOBALS) do
-		accepted[#accepted + 1] = PatternOf(g)
+		local p = PatternOf(g)
+		if p then
+			accepted[#accepted + 1] = { pattern = p, outcome = "accepted" }
+		end
 	end
 	for _, g in ipairs(DECLINE_GLOBALS) do
-		declined[#declined + 1] = PatternOf(g)
+		local p = PatternOf(g)
+		if p then
+			local outcome = g == "ERR_DECLINE_GROUP_S" and "decline" or "declined"
+			declined[#declined + 1] = { pattern = p, outcome = outcome }
+		end
 	end
 	local f = CreateFrame("Frame")
 	f:RegisterEvent("CHAT_MSG_SYSTEM")
@@ -357,18 +368,13 @@ function StartTracking()
 			if type(text) ~= "string" or (issecretvalue and issecretvalue(text)) then
 				return
 			end
-			for _, p in ipairs(accepted) do
-				local c = text:match(p)
-				if c then
-					Resolve(PlainName(c), "accepted")
-					return
-				end
-			end
-			for _, p in ipairs(declined) do
-				local c = text:match(p)
-				if c then
-					Resolve(PlainName(c), "declined")
-					return
+			for _, list in ipairs({ accepted, declined }) do
+				for _, p in ipairs(list) do
+					local c = text:match(p.pattern)
+					if c then
+						Resolve(PlainName(c), p.outcome)
+						return
+					end
 				end
 			end
 		else

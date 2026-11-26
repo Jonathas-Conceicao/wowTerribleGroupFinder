@@ -562,7 +562,7 @@ end
 -------------------------------------------------------------------------------
 --  The secure click: our cover over the eye, and the two click-delegates
 -------------------------------------------------------------------------------
-local cover, pickCategory, pickActivity, coverEvents
+local cover, coverFrame, pickCategory, pickActivity, coverEvents
 local armed = { quest = nil, activity = nil, activityName = nil }
 
 -- One of our secure buttons. The macro's /click is a key up: act on it whatever the
@@ -724,7 +724,9 @@ local function BuildCover()
 	if cover then
 		return cover
 	end
-	local c = SecureButton(nil, "macro")
+	-- kept from a build that failed partway, so a retry never makes a second frame
+	local c = coverFrame or SecureButton(nil, "macro")
+	coverFrame = c
 	c:SetFrameStrata("DIALOG")
 	c:Hide()
 	c:SetScript(
