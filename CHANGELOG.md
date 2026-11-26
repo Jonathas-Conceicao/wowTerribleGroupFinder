@@ -1,5 +1,18 @@
 # Changelog
 
+## v0.3.1
+
+See how your invites ended, and fixes for the elite quest button and the first search after a reload.
+
+### Added
+
+- After you invite a player from the list (Group Invite or Auto-invite), their row says whether they accepted, declined, or the invite expired
+
+### Fixed
+
+- Clicking the elite quest button could raise Lua errors
+- The first search after logging in or reloading could show the whole category instead of the activity you picked
+
 ## v0.3.0
 
 A group finder eye on elite quests, item level and enchants beside each gear slot, and extras you turn on yourself.
