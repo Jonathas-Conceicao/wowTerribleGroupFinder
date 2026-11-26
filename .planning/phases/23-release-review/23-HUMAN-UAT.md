@@ -14,7 +14,7 @@ updated: 2026-11-26
 
 ### 1. CHANGELOG review
 expected: the `## v0.3.1` section at the top of CHANGELOG.md (the first `## ` heading, the one the release workflow publishes) is a draft: a one-line summary, Added (the invite outcome on rows), Changed (picking an activity narrows the list at once, without Refresh; reworded 2026-11-26 after the author's report that ticking one dungeon after picking Dungeons didn't narrow until Refresh) and Fixed (the elite quest button's Lua errors, which existed in v0.3.0). Review and rewrite as wished. `## v0.3.0` and everything below it are unchanged.
-result: [pending]
+result: passed (author, 2026-11-26: the quest button item says "guarded" rather than "fixed", since it only failed in edge cases; it moved from Fixed to Changed and the summary reads "guards on the elite quest button"; the rest approved as drafted)
 
 ### 2. README wording proposals
 README.md is not edited until approved; only approved lines get applied.

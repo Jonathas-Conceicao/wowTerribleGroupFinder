@@ -2,7 +2,7 @@
 
 ## v0.3.1
 
-See how your invites ended, a list that follows the activities you pick, and a fix for the elite quest button.
+See how your invites ended, a list that follows the activities you pick, and guards on the elite quest button.
 
 ### Added
 
@@ -11,10 +11,7 @@ See how your invites ended, a list that follows the activities you pick, and a f
 ### Changed
 
 - Picking an activity in the Browse tab (for example one dungeon after choosing Dungeons) shows only that activity's listings at once, without pressing Refresh
-
-### Fixed
-
-- Clicking the elite quest button could raise Lua errors
+- The elite quest button's click is guarded, so a rare case that fails no longer raises Lua errors
 
 ## v0.3.0
 
