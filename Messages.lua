@@ -342,7 +342,7 @@ function M.MarkInvited(l, preview)
 end
 
 function StartTracking()
-	-- a global missing or without a name slot is skipped (never a nil hole in the list)
+	-- a global missing or without a name slot is skipped
 	local accepted, declined = {}, {}
 	for _, g in ipairs(ACCEPT_GLOBALS) do
 		local p = PatternOf(g)
