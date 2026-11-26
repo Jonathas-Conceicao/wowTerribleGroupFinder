@@ -1,17 +1,16 @@
 ---
 gsd_state_version: 1.0
-milestone: v0.3.0
-milestone_name: Elite Quests finder and more inspect data
-status: Awaiting next milestone
-stopped_at: Milestone v0.3.0 shipped (tag v0.3.0)
-last_updated: "2026-11-25T11:37:18.716Z"
-last_activity: 2026-11-25 — Milestone v0.3.0 completed and archived
+milestone: v0.3.1
+milestone_name: Small fixes
+status: planning
+last_updated: "2026-11-26T13:29:51.502Z"
+last_activity: 2026-11-26
 progress:
-  total_phases: 4
-  completed_phases: 4
-  total_plans: 7
-  completed_plans: 7
-  percent: 100
+  total_phases: 0
+  completed_phases: 0
+  total_plans: 0
+  completed_plans: 0
+  percent: 0
 ---
 
 # Project State
@@ -25,10 +24,10 @@ See: .planning/PROJECT.md (updated 2026-11-25)
 
 ## Current Position
 
-Phase: Milestone v0.3.0 complete
+Phase: Not started (defining requirements)
 Plan: —
-Status: Awaiting next milestone
-Last activity: 2026-11-25 — Milestone v0.3.0 completed and archived
+Status: Defining requirements
+Last activity: 2026-11-26 — Milestone v0.3.1 started
 
 ## Performance Metrics
 
