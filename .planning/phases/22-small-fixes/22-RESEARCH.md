@@ -405,7 +405,9 @@ Not a rename/refactor/migration phase. Saved variables: none added (outcomes are
 | A5 | The GlobalStrings mirror (Ketho, mainline enUS) matches Forever's client text for these names | Global strings | Low: the code reads the client's own globals at runtime; only the pattern shape is assumed |
 | A6 | Stand-in (`UI/MainFrame.lua`) invites use the same `Table.lua:750` path | Preview | Low |
 
-## Open Questions
+## Open Questions (RESOLVED)
+
+All three RESOLVED in 22-CONTEXT.md "Resolved after research" (the recommendations below were taken).
 
 1. **"Expired" vs the invitee's 60 s popup decline.** Known: the invitee's client sends a decline when its popup times out at 60 s (Blizzard source); no expiry string exists. Unclear: whether the author wants a decline at ~60 s to read "expired". Recommendation: implement `EXPIRE_AS_DECLINE = 55` as above, keep the 120 s fallback timer for non-answering clients, and mention both in the plan so the author can veto at UAT.
 2. **Narrowing when picks are not a subset of the searched set** (A searched, B picked). Recommendation: do not narrow (cannot be derived); `shownFilter = issued`. The author may prefer an intersection/empty list.

@@ -83,7 +83,14 @@
 3. After a `/reload` or login, picking a category and an activity and searching lists that activity on the first search; later searches and Dynamic refresh work as before, and the addon never calls `C_LFGList.Search` itself
 4. The preview shows the invite outcomes; nothing errors where the finder or tracker is missing
 
-**Plans**: TBD
+**Plans**: 4 plans
+
+Plans:
+
+- [ ] 22-01-PLAN.md — guard every step of the elite quest eye's hover and click (Try / Guarded, clear-first secure attributes, idempotent cover build, failed steps in `/tgf quest`)
+- [ ] 22-02-PLAN.md — invite outcomes: `M.MarkInvited`, system-message / roster / timer / preview resolution, Listed cell accepted / declined / expired
+- [ ] 22-03-PLAN.md — first search after a reload: narrow a wider answer to the picked activities (`Listings.Read(previous, only)`, `NarrowSet` in InPlace)
+- [ ] 22-04-PLAN.md — CLAUDE.md entries for the three fixes, 22-HUMAN-UAT.md in-game checks, `stylua .`
 
 ### Phase 23: Release Review
 
@@ -107,7 +114,7 @@
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
-| 22. Small Fixes | v0.3.1 | 0/? | Not started | - |
+| 22. Small Fixes | v0.3.1 | 0/4 | Planned | - |
 | 23. Release Review | v0.3.1 | 0/? | Not started | - |
 
 ## Backlog
