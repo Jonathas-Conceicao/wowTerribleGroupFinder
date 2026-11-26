@@ -2,7 +2,7 @@
 
 WoW Forever addon (interface 16001, game type `camelot`): improves Forever's own group
 finder (`Blizzard_GroupFinder_VanillaStyle`) **in place**: its Browse tab gets a sortable
-table of solo players and groups. Early release (v0.3.0). License: GPL-3.0.
+table of solo players and groups. Early release (v0.3.1). License: GPL-3.0.
 
 ## Key Constraints
 - **Forever only.** One TOC, `## Interface: 16001`. Retail is out of scope for now
