@@ -114,7 +114,7 @@ Plans:
 | 12-15 | v0.2.1 | 7/7 | Complete | 2026-11-16 |
 | 16-17 | v0.2.2 | 4/4 | Complete | 2026-11-20 |
 | 18-21 | v0.3.0 | 7/7 | Complete | 2026-11-25 |
-| 22. Small Fixes | v0.3.1 | 4/4 | Complete   | 2026-11-26 |
+| 22. Small Fixes | v0.3.1 | 4/4 | Complete    | 2026-11-26 |
 | 23. Release Review | v0.3.1 | 0/? | Not started | - |
 
 ## Backlog

@@ -20,17 +20,18 @@ Forever's own group finder.
 
 ### Invite outcome (INV)
 
-- [ ] **INV-01**: A row marked "invited" after a group invite (Group Invite button or
+- [x] **INV-01**: A row marked "invited" after a group invite (Group Invite button or
   Auto-invite) changes to "accepted" when the player joins the group, "declined" when they
   decline, and "expired" when the invite times out, read from the game's own messages for
   that player (matched by plain character name); whisper-only rows keep "sent"
-- [ ] **INV-02**: The outcome follows the listing through refreshes and re-sorts like the
+
+- [x] **INV-02**: The outcome follows the listing through refreshes and re-sorts like the
   "invited" mark does; the colours fit the row (accepted green, declined red, expired grey;
   stock grey on greyed rows); the preview can show the three outcomes
 
 ### Search (SRCH)
 
-- [ ] **SRCH-01**: After a `/reload` or login, the first search after picking a category and
+- [x] **SRCH-01**: After a `/reload` or login, the first search after picking a category and
   activity in Forever's Browse tab lists that activity, not the category's general view, with
   no second refresh needed; Dynamic refresh still never calls `C_LFGList.Search` itself, and
   later searches and refreshes work as before
@@ -57,10 +58,10 @@ Forever's own group finder.
 
 | Requirement | Phase | Status |
 |-------------|-------|--------|
-| QST-05 | Phase 22 | Pending |
-| INV-01 | Phase 22 | Pending |
-| INV-02 | Phase 22 | Pending |
-| SRCH-01 | Phase 22 | Pending |
+| QST-05 | Phase 22 | Complete |
+| INV-01 | Phase 22 | Complete |
+| INV-02 | Phase 22 | Complete |
+| SRCH-01 | Phase 22 | Complete |
 | REL-09 | Phase 23 | Pending |
 
 **Coverage:** 5/5 requirements mapped

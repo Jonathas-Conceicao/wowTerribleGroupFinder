@@ -4,14 +4,14 @@ milestone: v0.3.1
 milestone_name: Small fixes
 status: planning
 stopped_at: Completed 22-01-PLAN.md
-last_updated: "2026-11-26T14:23:38.643Z"
-last_activity: 2026-11-26 — Milestone v0.3.1 roadmap created (2 phases, 5 requirements)
+last_updated: "2026-11-26T14:30:26.853Z"
+last_activity: 2026-11-26
 progress:
-  total_phases: 2
-  completed_phases: 0
+  total_phases: 3
+  completed_phases: 1
   total_plans: 4
-  completed_plans: 1
-  percent: 25
+  completed_plans: 4
+  percent: 33
 ---
 
 # Project State
@@ -25,10 +25,10 @@ See: .planning/PROJECT.md (updated 2026-11-26)
 
 ## Current Position
 
-Phase: 22 of 22-23 (Small Fixes) — not started
-Plan: —
+Phase: 23 of 22-23 (Release Review)
+Plan: Not started
 Status: Ready to plan
-Last activity: 2026-11-26 — Milestone v0.3.1 roadmap created (2 phases, 5 requirements)
+Last activity: 2026-11-26 — Phase 22 complete (in-game checks pending in 22-HUMAN-UAT.md)
 
 ## Performance Metrics
 
